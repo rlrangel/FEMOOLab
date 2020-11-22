@@ -1,8 +1,11 @@
 %% Read Class
 %
+%% Description
+%
 % This class defines a reader object in the StAnOOP program.
-% A reader object is responsible for reading the input file with model/analysis
-% information and store it in the program data structure.
+% A reader object is responsible for reading the input file with
+% <model.html Model> and <anl.html Analysis> information and store it in
+% the program data structure.
 %
 classdef Read < handle
     %% Constructor method
@@ -20,10 +23,14 @@ classdef Read < handle
         function status = inputFile(read,fin,sim)
             status = 1;
             
-            % Create Model, Analysis and Result objects
-            sim.mdl = Model();
-            sim.anl = Anl_LinearElastic();
-            sim.res = Result();
+            % Create Model and Analysis objects
+            sim.mdl = fem.Model();
+            sim.anl = fem.Anl_LinearElastic();
+            
+            % Create Gauss quadrature for quadrilateral and triangular
+            % shapes
+            gauss_quad = fem.Gauss_Quad();
+            gauss_tria = fem.Gauss_Tria();
             
             while status == 1 && ~feof(fin)
                 % Get file line without blank spaces
@@ -31,30 +38,36 @@ classdef Read < handle
                 
                 % Look for tag strings
                 switch string
-                    case '%MODEL.ANALYSIS_MODEL'
+                    case '%HEADER.ANALYSIS'
                         status = read.analysisModel(fin,sim.mdl);
-                    case '%MODEL.NODE_COORD'
+                    case '%NODE.COORD'
                         status = read.nodeCoord(fin,sim.mdl);
-                    case '%MODEL.NODE_SUPPORT'
+                    case '%NODE.SUPPORT'
                         status = read.nodeSupport(fin,sim.mdl);
-                    case '%MODEL.NODE_PRESC_DISPL'
-                        status = read.nodePrescDispl(fin,sim.mdl);
-                    case '%MODEL.MATERIAL_PROPERTY'
+                    case '%MATERIAL.ISOTROPIC'
                         status = read.materialProperty(fin,sim.mdl);
-                    case '%MODEL.ELEMENT_TRI3'
-                        status = read.elementTri3(fin,sim.mdl);
-                    case '%MODEL.ELEMENT_QUAD4'
-                        status = read.elementQuad4(fin,sim.mdl);
-                    case '%MODEL.ELEMENT_TRI6'
-                        status = read.elementTri6(fin,sim.mdl);
-                    case '%MODEL.ELEMENT_QUAD8'
-                        status = read.elementQuad8(fin,sim.mdl);
-                    case '%MODEL.LOAD_POINT'
+                    case '%THICKNESS'
+                        status = read.Thickness(fin,sim.mdl);
+                    case '%INTEGRATION.ORDER'
+                        status = read.IntgrOrder(fin,sim.mdl);
+                    case '%ELEMENT'
+                        status = read.elementTotal(fin,sim.mdl);
+                    case '%ELEMENT.T3'
+                        status = read.elementTria3(fin,sim.mdl,gauss_tria);
+                    case '%ELEMENT.Q4'
+                        status = read.elementQuad4(fin,sim.mdl,gauss_quad);
+                    case '%ELEMENT.T6'
+                        status = read.elementTria6(fin,sim.mdl,gauss_tria);
+                    case '%ELEMENT.Q8'
+                        status = read.elementQuad8(fin,sim.mdl,gauss_quad);
+                    case '%LOAD.CASE.NODAL.DISPLACEMENT'
+                        status = read.nodePrescDispl(fin,sim.mdl);
+                    case '%LOAD.CASE.NODAL.FORCES'
                         status = read.loadPoint(fin,sim.mdl);
-                    case '%MODEL.LOAD_LINE_UNIFORM'
+                    case '%LOAD.CASE.LINE.FORCE.UNIFORM'
                         status = read.loadLineUnif(fin,sim.mdl);
-                    case '%MODEL.LOAD_AREA_UNIFORM'
-                        status = read.loadAreaUnif(fin,sim.mdl);
+                    case '%LOAD.CASE.DOMAIN.FORCE.UNIFORM'
+                        status = read.loadDomainUnif(fin,sim.mdl);
                 end
                 
                 if (strcmp(string,'%END'))
@@ -74,11 +87,17 @@ classdef Read < handle
             string = deblank(fgetl(fin));
             
             if (strcmp(string,'''PLANE_STRESS'''))
-                mdl.anm = Anm_PlaneStress();
+                mdl.anm = fem.Anm_PlaneStress();
+            elseif (strcmp(string,'''plane_stress'''))
+                mdl.anm = fem.Anm_PlaneStress();
             elseif (strcmp(string,'''PLANE_STRAIN'''))
-                mdl.anm = Anm_PlaneStrain();
+                mdl.anm = fem.Anm_PlaneStrain();
+            elseif (strcmp(string,'''plane_strain'''))
+                mdl.anm = fem.Anm_PlaneStrain();
             elseif (strcmp(string,'''AXISYMMETRIC'''))
-                mdl.anm = Anm_Axisymmetric();
+                mdl.anm = fem.Anm_Axisymmetric();
+            elseif (strcmp(string,'''axisymmetric'''))
+                mdl.anm = fem.Anm_Axisymmetric();
             else
                 fprintf('Invalid input data: analysis model!\n');
                 status = 0;
@@ -103,7 +122,7 @@ classdef Read < handle
             
             % Create vector of Node objects and compute total number of equations
             mdl.nnp = n;
-            nodes(n,1) = Node();
+            nodes(n,1) = fem.Node();
             mdl.nodes = nodes;
             mdl.neq = n * mdl.anm.ndof;
             
@@ -154,15 +173,363 @@ classdef Read < handle
                 end
                 
                 % Support condition flags
-                [ebc,count] = fscanf(fin,'%d',3);
-                if (count~= 3 || ~all(ismember(ebc,0:1)))
+                [ebc,count] = fscanf(fin,'%d',6);
+                if (count~= 6 || ~all(ismember(ebc,0:1)))
                     fprintf('Invalid support conditions of node %d\n',id);
                     status = 0;
                     return;
                 end
                 
                 % Store data
-                mdl.nodes(id).ebc = ebc';
+                mdl.nodes(id).ebc = ebc;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = materialProperty(read,fin,mdl)
+            status = 1;
+            
+            % Total number of materials
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,inf,'number of materials'))
+                status = 0;
+                return;
+            end
+            
+            % Create vector of Material objects
+            mdl.nmat = n;
+            materials(n,1) = fem.Material();
+            mdl.materials = materials;
+            
+            for i = 1:n
+                % Material ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,n,'material ID'))
+                    status = 0;
+                    return;
+                end
+                
+                % Material properties: E,v
+                [prop,count] = fscanf(fin,'%f',2);
+                if (~read.chkMatProp(prop,count,id))
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.materials(id).id = id;
+                mdl.materials(id).E  = prop(1);
+                mdl.materials(id).v  = prop(2);
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = Thickness(read,fin,mdl)
+            status = 1;
+            
+            % Total number of thickness values
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,inf,'number of thicknesses'))
+                status = 0;
+                return;
+            end
+
+            % Create vector of thicknesses
+            mdl.nthks = n;
+            thickness = zeros(n,1);
+            mdl.thickness = thickness;
+            
+            for i = 1:n
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,n,'ID of thickness'))
+                    status = 0;
+                    return;
+                end
+                
+                [thk,count] = fscanf(fin,'%d',1);
+                if count~= 1
+                    fprintf('Invalid thickness %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.thickness(id) = thk;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = IntgrOrder(read,fin,mdl)
+            status = 1;
+            
+            % Total number of integration orders
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,inf,'number of integration orders'))
+                status = 0;
+                return;
+            end
+
+            % Create vector of integration orders
+            mdl.nintord = n;
+            intgrorder = zeros(n,2);
+            mdl.intgrorder = intgrorder;
+            
+            for i = 1:n
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,n,'ID of integration order'))
+                    status = 0;
+                    return;
+                end
+                
+                % Stiffness and stress integration orders
+                [order,count] = fscanf(fin,'%d',6);
+                if count~= 6
+                    fprintf('Invalid integration order %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.intgrorder(id,1) = order(1);
+                mdl.intgrorder(id,2) = order(4);
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = elementTotal(read,fin,mdl)
+            status = 1;
+
+            % Total number of elements
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,inf,'number of elements'))
+                status = 0;
+                return;
+            end
+            
+            % Create vector of Element Objects
+            mdl.nel = n;
+            elems(n,1) = fem.Element();
+            mdl.elems = elems;
+        end
+        
+        %------------------------------------------------------------------
+        function status = elementTria3(read,fin,mdl,gauss)
+            %                         3 +
+            %                           |\
+            %                           | \
+            %                           |  \
+            %                           |   \ TRIA3
+            %                           |    \
+            %                         1 +-----+ 2
+            status = 1;
+            if (isempty(mdl.nodes) || isempty(mdl.materials))
+                fprintf('Node coordinates and materials must be provided before elements!\n');
+                status = 0;
+                return;
+            end
+            
+            % Number of elements T3
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,mdl.nel,'number of elements'))
+                status = 0;
+                return;
+            end
+                        
+            for i = 1:n
+                % Element ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,mdl.nel,'element ID'))
+                    status = 0;
+                    return;
+                end
+                
+                % Element properties:
+                % Material ID, Thickness ID, Integration order ID, Connectivity
+                [p,count] = fscanf(fin,'%d',6);
+                if (~read.chkElemProp(mdl,id,p,count,6))
+                    status = 0;
+                    return;
+                end
+                
+                mdl.elems(id).setAnm(mdl.anm);
+                mdl.elems(id).setMaterial(mdl.materials(p(1)));
+                mdl.elems(id).setThickness(mdl.thickness(p(2)));
+                shape = fem.Shape_Tria3([mdl.nodes(p(4));mdl.nodes(p(5));mdl.nodes(p(6))]);
+                mdl.elems(id).setShape(shape);
+                % Always setup Gauss quadrature after setting shape because
+                % element needs shape to define matrix for extrapolating
+                % stresses from integration points to nodes
+                mdl.elems(id).setGauss(gauss, ...
+                                       mdl.intgrorder(p(3),1),mdl.intgrorder(p(3),2));
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = elementQuad4(read,fin,mdl,gauss)
+            %                     4 +---------------+ 3
+            %                       |               |
+            %                       |               |
+            %                       |     QUAD4     |
+            %                       |               |
+            %                       |               |
+            %                     1 +---------------+ 2
+            status = 1;
+            if (isempty(mdl.nodes) || isempty(mdl.materials))
+                fprintf('Node coordinates and materials must be provided before elements!\n');
+                status = 0;
+                return;
+            end
+            
+            % Number of elements Q4
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,mdl.nel,'number of elements'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Element ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,mdl.nel,'element ID'))
+                    status = 0;
+                    return;
+                end
+                
+                % Element properties:
+                % Material ID, Thickness ID, Integration order ID, Connectivity
+                [p,count] = fscanf(fin,'%d',7);
+                if (~read.chkElemProp(mdl,id,p,count,7))
+                    status = 0;
+                    return;
+                end
+                
+                mdl.elems(id).setAnm(mdl.anm);
+                mdl.elems(id).setMaterial(mdl.materials(p(1)));
+                mdl.elems(id).setThickness(mdl.thickness(p(2)));
+                shape = fem.Shape_Quad4([mdl.nodes(p(4));mdl.nodes(p(5));...
+                                         mdl.nodes(p(6));mdl.nodes(p(7))]);
+                mdl.elems(id).setShape(shape);
+                % Always setup Gauss quadrature after setting shape because
+                % element needs shape to define matrix for extrapolating
+                % stresses from integration points to nodes
+                mdl.elems(id).setGauss(gauss, ...
+                                       mdl.intgrorder(p(3),1),mdl.intgrorder(p(3),2));
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = elementTria6(read,fin,mdl,gauss)
+            %                         3 +
+            %                           |\
+            %                           | \
+            %                         6 +  + 5
+            %                           |   \ TRIA6
+            %                           |    \
+            %                         1 +--+--+ 2
+            %                              4
+            status = 1;
+            if (isempty(mdl.nodes) || isempty(mdl.materials))
+                fprintf('Node coordinates and materials must be provided before elements!\n');
+                status = 0;
+                return;
+            end
+            
+            % Number of elements T6
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,mdl.nel,'number of elements'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Element ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,mdl.nel,'element ID'))
+                    status = 0;
+                    return;
+                end
+                
+                % Element properties:
+                % Material ID, Thickness ID, Integration order ID, Connectivity
+                [p,count] = fscanf(fin,'%d',9);
+                if (~read.chkElemProp(mdl,id,p,count,9))
+                    status = 0;
+                    return;
+                end
+                
+                mdl.elems(id).setAnm(mdl.anm);
+                mdl.elems(id).setMaterial(mdl.materials(p(1)));
+                mdl.elems(id).setThickness(mdl.thickness(p(2)));
+                % Node incidence is given in counter clockwise order around
+                % element shape and is converted to corner first incidence
+                shape = fem.Shape_Tria6([mdl.nodes(p(4));mdl.nodes(p(6));...
+                                         mdl.nodes(p(8));mdl.nodes(p(5));...
+                                         mdl.nodes(p(7));mdl.nodes(p(9))]);
+                mdl.elems(id).setShape(shape);
+                % Always setup Gauss quadrature after setting shape because
+                % element needs shape to define matrix for extrapolating
+                % stresses from integration points to nodes
+                mdl.elems(id).setGauss(gauss, ...
+                                       mdl.intgrorder(p(3),1),mdl.intgrorder(p(3),2));
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = elementQuad8(read,fin,mdl,gauss)
+            %                              7
+            %                    4 +-------+-------+ 3
+            %                      |               |
+            %                      |               |
+            %                    8 +     QUAD8     + 6
+            %                      |               |
+            %                      |               |
+            %                    1 +-------+-------+ 2
+            %                              5
+            status = 1;
+            if (isempty(mdl.nodes) || isempty(mdl.materials))
+                fprintf('Node coordinates and materials must be provided before elements!\n');
+                status = 0;
+                return;
+            end
+            
+            % Number of elements Q8
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,mdl.nel,'number of elements'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Element ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,mdl.nel,'element ID'))
+                    status = 0;
+                    return;
+                end
+                
+                % Element properties:
+                % Material ID, Thickness ID, Integration order ID, Connectivity
+                [p,count] = fscanf(fin,'%d',11);
+                if (~read.chkElemProp(mdl,id,p,count,11))
+                    status = 0;
+                    return;
+                end
+                
+                mdl.elems(id).setAnm(mdl.anm);
+                mdl.elems(id).setMaterial(mdl.materials(p(1)));
+                mdl.elems(id).setThickness(mdl.thickness(p(2)));
+                % Node incidence is given in counter clockwise order around
+                % element shape and is converted to corner first incidence
+                shape = fem.Shape_Quad8([mdl.nodes(p(4)); mdl.nodes(p(6));...
+                                         mdl.nodes(p(8)); mdl.nodes(p(10));...
+                                         mdl.nodes(p(5)); mdl.nodes(p(7));...
+                                         mdl.nodes(p(9)); mdl.nodes(p(11))]);
+                mdl.elems(id).setShape(shape);
+                % Always setup Gauss quadrature after setting shape because
+                % element needs shape to define matrix for extrapolating
+                % stresses from integration points to nodes
+                mdl.elems(id).setGauss(gauss, ...
+                                       mdl.intgrorder(p(3),1),mdl.intgrorder(p(3),2));
             end
         end
         
@@ -191,262 +558,15 @@ classdef Read < handle
                 end
                 
                 % Prescribed displacements values
-                [disp,count] = fscanf(fin,'%f',3);
-                if (count ~= 3)
+                [disp,count] = fscanf(fin,'%f',6);
+                if (count ~= 6)
                     fprintf('Invalid prescribed displacements of node %d\n',id);
                     status = 0;
                     return;
                 end
                 
                 % Store data
-                mdl.nodes(id).prescDispl = disp';
-            end
-        end
-        
-        %------------------------------------------------------------------
-        function status = materialProperty(read,fin,mdl)
-            status = 1;
-            
-            % Total number of materials
-            n = fscanf(fin,'%d',1);
-            if (~read.chkInt(n,inf,'number of materials'))
-                status = 0;
-                return;
-            end
-            
-            % Create vector of Material objects
-            mdl.nmat = n;
-            materials(n,1) = Material();
-            mdl.materials = materials;
-            
-            for i = 1:n
-                % Material ID
-                id = fscanf(fin,'%d',1);
-                if (~read.chkInt(id,n,'material ID'))
-                    status = 0;
-                    return;
-                end
-                
-                % Material properties: E,v
-                [prop,count] = fscanf(fin,'%f',2);
-                if (~read.chkMatProp(prop,count,id))
-                    status = 0;
-                    return;
-                end
-                
-                % Store data
-                mdl.materials(id).id = id;
-                mdl.materials(id).E  = prop(1);
-                mdl.materials(id).v  = prop(2);
-            end
-        end
-        
-        %------------------------------------------------------------------
-        function status = elementTri3(read,fin,mdl)
-            %                         3 +
-            %                           |\
-            %                           | \
-            %                           |  \
-            %                           |   \ TRI3
-            %                           |    \
-            %                         1 +-----+ 2
-            status = 1;
-            if (isempty(mdl.nodes) || isempty(mdl.materials))
-                fprintf('Node coordinates and materials must be provided before elements!\n');
-                status = 0;
-                return;
-            end
-            
-            % Number of elements T3
-            n = fscanf(fin,'%d',1);
-            if (~read.chkInt(n,inf,'number of elements'))
-                status = 0;
-                return;
-            end
-            
-            % Create vector of Element Objects
-            mdl.nel = n;
-            elems(n,1) = Element_Tri3();
-            mdl.elems = elems;
-            
-            for i = 1:n
-                % Element ID
-                id = fscanf(fin,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID'))
-                    status = 0;
-                    return;
-                end
-                
-                % Element properties:
-                % Thickness, Material ID, Gauss quadrature orders, Connectivity
-                [p,count] = fscanf(fin,'%f',7);
-                if (~read.chkElemProp(mdl,id,p,count,7))
-                    status = 0;
-                    return;
-                end
-                
-                mdl.elems(id) = Element_Tri3(...
-                                id,mdl.anm,p(1),mdl.materials(p(2)),p(3),p(4),...
-                                [mdl.nodes(p(5));mdl.nodes(p(6));mdl.nodes(p(7))]);
-            end
-        end
-        
-        %------------------------------------------------------------------
-        function status = elementQuad4(read,fin,mdl)
-            %                     4 +---------------+ 3
-            %                       |               |
-            %                       |               |
-            %                       |     QUAD      |
-            %                       |               |
-            %                       |               |
-            %                     1 +---------------+ 2
-            status = 1;
-            if (isempty(mdl.nodes) || isempty(mdl.materials))
-                fprintf('Node coordinates and materials must be provided before elements!\n');
-                status = 0;
-                return;
-            end
-            
-            % Number of elements Q4
-            n = fscanf(fin,'%d',1);
-            if (~read.chkInt(n,inf,'number of elements'))
-                status = 0;
-                return;
-            end
-            
-            % Create vector of Element Objects
-            mdl.nel = n;
-            elems(n,1) = Element_Quad4();
-            mdl.elems = elems;
-            
-            for i = 1:n
-                % Element ID
-                id = fscanf(fin,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID'))
-                    status = 0;
-                    return;
-                end
-                
-                % Element properties:
-                % Thickness, Material ID, Gauss quadrature orders, Connectivity
-                [p,count] = fscanf(fin,'%f',8);
-                if (~read.chkElemProp(mdl,id,p,count,8))
-                    status = 0;
-                    return;
-                end
-                
-                mdl.elems(id) = Element_Quad4(...
-                                id,mdl.anm,p(1),mdl.materials(p(2)),p(3),p(4),...
-                                [mdl.nodes(p(5));mdl.nodes(p(6));...
-                                 mdl.nodes(p(7));mdl.nodes(p(8))]);
-            end
-        end
-        
-        %------------------------------------------------------------------
-        function status = elementTri6(read,fin,mdl)
-            %                         3 +
-            %                           |\
-            %                           | \
-            %                         6 +  + 5
-            %                           |   \ TRI6
-            %                           |    \
-            %                         1 +--+--+ 2
-            %                              4
-            status = 1;
-            if (isempty(mdl.nodes) || isempty(mdl.materials))
-                fprintf('Node coordinates and materials must be provided before elements!\n');
-                status = 0;
-                return;
-            end
-            
-            % Number of elements T6
-            n = fscanf(fin,'%d',1);
-            if (~read.chkInt(n,inf,'number of elements'))
-                status = 0;
-                return;
-            end
-            
-            % Create vector of Element Objects
-            mdl.nel = n;
-            elems(n,1) = Element_Tri6();
-            mdl.elems = elems;
-            
-            for i = 1:n
-                % Element ID
-                id = fscanf(fin,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID'))
-                    status = 0;
-                    return;
-                end
-                
-                % Element properties:
-                % Thickness, Material ID, Gauss quadrature orders, Connectivity
-                [p,count] = fscanf(fin,'%f',10);
-                if (~read.chkElemProp(mdl,id,p,count,10))
-                    status = 0;
-                    return;
-                end
-                
-                mdl.elems(id) = Element_Tri6(...
-                                id,mdl.anm,p(1),mdl.materials(p(2)),p(3),p(4),...
-                                [mdl.nodes(p(5));mdl.nodes(p(6));...
-                                 mdl.nodes(p(7));mdl.nodes(p(8));...
-                                 mdl.nodes(p(9));mdl.nodes(p(10))]);
-            end
-        end
-        
-        %------------------------------------------------------------------
-        function status = elementQuad8(read,fin,mdl)
-            %                              7
-            %                    4 +-------+-------+ 3
-            %                      |               |
-            %                      |               |
-            %                    8 +     QUAD8     + 6
-            %                      |               |
-            %                      |               |
-            %                    1 +-------+-------+ 2
-            %                              5
-            status = 1;
-            if (isempty(mdl.nodes) || isempty(mdl.materials))
-                fprintf('Node coordinates and materials must be provided before elements!\n');
-                status = 0;
-                return;
-            end
-            
-            % Number of elements Q8
-            n = fscanf(fin,'%d',1);
-            if (~read.chkInt(n,inf,'number of elements'))
-                status = 0;
-                return;
-            end
-            
-            % Create vector of Element Objects
-            mdl.nel = n;
-            elems(n,1) = Element_Quad8();
-            mdl.elems = elems;
-            
-            for i = 1:n
-                % Element ID
-                id = fscanf(fin,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID'))
-                    status = 0;
-                    return;
-                end
-                
-                % Element properties:
-                % Thickness, Material ID, Gauss quadrature orders, Connectivity
-                [p,count] = fscanf(fin,'%f',12);
-                if (~read.chkElemProp(mdl,id,p,count,12))
-                    status = 0;
-                    return;
-                end
-                
-                mdl.elems(id) = Element_Quad8(...
-                                id,mdl.anm,p(1),mdl.materials(p(2)),p(3),p(4),...
-                                [mdl.nodes(p(5)); mdl.nodes(p(6));...
-                                 mdl.nodes(p(7)); mdl.nodes(p(8));...
-                                 mdl.nodes(p(9)); mdl.nodes(p(10));...
-                                 mdl.nodes(p(11));mdl.nodes(p(12))]);
+                mdl.nodes(id).prescDispl = disp;
             end
         end
         
@@ -475,15 +595,15 @@ classdef Read < handle
                 end
                 
                 % Point load values
-                [load,count] = fscanf(fin,'%f',3);
-                if (count ~= 3)
+                [load,count] = fscanf(fin,'%f',6);
+                if (count ~= 6)
                     fprintf('Invalid point load of node %d\n',id);
                     status = 0;
                     return;
                 end
                 
                 % Store data
-                mdl.nodes(id).prescDispl = load';
+                mdl.nodes(id).load = load;
             end
         end
         
@@ -512,24 +632,23 @@ classdef Read < handle
                     return;
                 end
                 
-                % Area load information (node1,node2,qx,qy,qz)
-                [load,count] = fscanf(fin,'%f',5);
-                if (count ~= 5)
+                % Domain load information (node1,node2,loc_gbl,qx,qy,qz)
+                [load,count] = fscanf(fin,'%f',6);
+                if (count ~= 6)
                     fprintf('Invalid line load specification of element %d\n',id);
                     status = 0;
                     return;
                 end
-                % CHECK IF NODES ARE ON THE SAME EDGE !!!
                 
                 % Store data
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineLoad(j,:) = load';
+                mdl.elems(id).lineLoad(j,:) = load;
             end
         end
         
         %--------------------------------------------------------------------------
-        function status = loadAreaUnif(read,fin,mdl)
+        function status = loadDomainUnif(read,fin,mdl)
             status = 1;
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before area loads!\n');
@@ -561,7 +680,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.elems(id).areaLoad = load';
+                mdl.elems(id).domainLoad = load;
             end
         end
     
@@ -625,15 +744,12 @@ classdef Read < handle
         %------------------------------------------------------------------
         function status = chkElemProp(read,mdl,id,prop,count,num)
             status = 0;
-            nodesIDs = prop(5:end);
+            nodesIDs = prop(4:end);
             if (count ~= num)
                 fprintf('Invalid properties of element %d\n',id);
-            elseif (prop(1) <= 0)
-                fprintf('Invalid properties of element %d\n',id);
-                fprintf('Thickness must be positive!\n');
-            elseif (~read.chkInt(prop(2),mdl.nmat,'material ID for element definition'))
-            elseif (~read.chkInt(prop(3),4,'Gauss quadrature order for element definition'))
-            elseif (~read.chkInt(prop(4),4,'Gauss quadrature order for element definition'))
+            elseif (~read.chkInt(prop(1),mdl.nmat,'material ID for element definition'))
+            elseif (~read.chkInt(prop(2),mdl.nthks,'thickness ID for element definition'))
+            elseif (~read.chkInt(prop(3),mdl.nintord,'integration order ID for element definition'))
             elseif (min(nodesIDs) <= 0 || max(nodesIDs) > mdl.nnp)
                 fprintf('Invalid properties of element %d\n',id);
                 fprintf('Node IDs must be a positive integer less/equal to the total number of nodes!\n');

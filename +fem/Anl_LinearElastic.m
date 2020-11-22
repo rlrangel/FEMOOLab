@@ -1,15 +1,17 @@
 %% Anl_LinearElastic Class
 %
-% This is a sub-class in the StAnOOP program that implements abstract 
-% methods declared in super-class Anl to deal with linear-elastic analysis.
+%% Description
 %
-classdef Anl_LinearElastic < Anl
+% This is a sub-class in the StAnOOP program that implements abstract 
+% methods declared in <anl.html Anl: analysis super-class> to deal
+% with linear-elastic analysis.
+%
+classdef Anl_LinearElastic < fem.Anl
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function anl = Anl_LinearElastic()
-            c = Constants();
-            anl = anl@Anl(c.LINEAR_ELASTIC);
+        function this = Anl_LinearElastic()
+            this = this@fem.Anl(fem.Anl.LINEAR_ELASTIC);
         end
     end
     
@@ -20,7 +22,7 @@ classdef Anl_LinearElastic < Anl
         % Process linear-elastic analysis based on the direct stiffness
         % method, i.e., assemble global equilibrium system of equations,
         % and calculate state variables (nodal displacements).
-        function status = process(anl,mdl,res)
+        function status = process(this,mdl,res)
             status = 1;
             
             % Assemble global elastic stiffness matrix
@@ -28,7 +30,7 @@ classdef Anl_LinearElastic < Anl
             K = mdl.gblElastStiffMtx();
             
             % Check model stability
-            if (anl.singularMtx(mdl,K))
+            if (this.singularMtx(mdl,K))
                 fprintf(1,'Unstable model!\n');
                 status = 0;
                 return;
@@ -37,16 +39,16 @@ classdef Anl_LinearElastic < Anl
             % Assemble global forcing vector
             fprintf('Assembling forcing vector...\n');
             F = zeros(mdl.neq,1);
-            F = mdl.addPointLoad(F);
+            F = mdl.anm.addPointLoad(mdl,F);
             F = mdl.addEquivLoad(F);
             
             % Add prescribed displacements to global displacement vector
             D = zeros(mdl.neq,1);
-            D = mdl.addPrescDispl(D);
+            D = mdl.anm.addPrescDispl(mdl,D);
             
             % Solve system of equations and store result
             fprintf('Solving system of equations...\n');
-            res.D = anl.solveSystem(mdl,K,F,D);
+            res.D = this.solveSystem(mdl,K,F,D);
         end
     end
 end

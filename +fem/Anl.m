@@ -1,5 +1,7 @@
 %% Anl (Analysis) Class
 %
+%% Description
+%
 % This is an abstract super-class that generically specifies an analysis 
 % type in the StAnOOP program.
 %
@@ -7,10 +9,21 @@
 % functions that should be implemented in a derived sub-class that deals
 % with a specific type of analysis.
 %
+%% Current subclasses:
+%
+%%%
+% * <anl_linearelastic.html Anl_LinearElastic: linear elastic analysis subclass>
+%
 classdef Anl < handle
+    properties (Constant = true, Access = public)
+        % Types of analysis
+        GENERIC        = int32(0);
+        LINEAR_ELASTIC = int32(1);    
+    end
+    
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        type = 0;   % flag for type of analysis
+        type      int32 = int32.empty;  % flag for type of analysis
     end
     
     %% Constructor method
@@ -34,7 +47,7 @@ classdef Anl < handle
         % Pre-process model data to setup mesh information.
         function preProcess(~,mdl)
             % Initialize global d.o.f. numbering matrix
-            mdl.setupDOFNum();
+            mdl.anm.setupDOFNum(mdl);
             
             % Assemble global d.o.f. numbering matrix
             mdl.assembleDOFNum();

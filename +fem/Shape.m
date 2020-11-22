@@ -1,0 +1,102 @@
+%% Shape Class
+%
+%% Description
+%
+% This is an abstract super-class that generically specifies an
+% <element.html element> shape in the FemLab program.
+%
+% Essentially, this super-class declares abstract methods that define the
+% particular behavior of an element. These abstract methods are the
+% functions that should be implemented in a derived sub-class that deals
+% with specific types of elements.
+%
+%% Current subclasses:
+%
+%%%
+% * <shape_tria3.html Shape_Tria3: 3-node linear triangle shape subclass>
+% * <shape_quad4.html Shape_Quad4: 4-node bilinear quadrilateral shape subclass>
+% * <shape_tria6.html Shape_Tria6: 6-node quadratic triangle shape subclass>
+% * <shape_quad8.html Shape_Quad8: 8-node quadratic quadrilateral shape subclass>
+%
+classdef Shape < handle
+    %% Constant values
+    properties (Constant = true, Access = public)
+        GENERIC = int32(0);
+        TRIA3 = int32(1);
+        QUAD4 = int32(2);
+        TRIA6 = int32(3);
+        QUAD8 = int32(4);
+    end
+    
+    %% Public properties
+    properties (SetAccess = public, GetAccess = public)
+        % General:
+        type      int32 = int32.empty;        % Shape type
+        order     int32 = int32.empty;        % linear (1) or quadratic (2)
+        
+        % Geometry
+        nen       int32       =    int32.empty;  % number of nodes
+        nodes     fem.Node    = fem.Node.empty;  % vector of objects of the Node class
+        carCoord  double      =   double.empty;  % matrix of cartesian nodal coordinates
+        parCoord  double      =   double.empty;  % matrix of parametric nodal coordinates
+        ccwLocalNodeIds int32 =    int32.empty;  % vector of local node ids in ccw order
+        ccwNodeIds int32      =    int32.empty;  % vector of global node ids in ccw order
+    end
+    
+    %% Constructor method
+    methods
+        %------------------------------------------------------------------
+        function this = Shape(type,nen)
+            this.type = type;
+            this.nen  = nen;
+        end
+    end
+    
+    %% Abstract methods
+    % Declaration of abstract methods implemented in derived sub-classes.
+    methods (Abstract)
+        %------------------------------------------------------------------
+        % Evaluate matrix of geometry map functions at a given position in
+        % parametric coordinates.
+        M = Mmtx(this,r,s);
+        
+        %------------------------------------------------------------------
+        % Evaluate matrix of displacement shape functions at a given
+        % position in parametric coordinates.
+        N = Nmtx(this,r,s);
+        
+        %------------------------------------------------------------------
+        % Evaluate matrix of edge displacement shape functions at a given
+        % position in parametric coordinates. The edge is defined by two
+        % corner nodes local ids (n1,n2).
+        N = NmtxEdge(this,n1,n2,r);
+        
+        %------------------------------------------------------------------
+        % Evaluate matrix of geometry shape functions derivatives
+        % w.r.t. parametric coordinates at a given position.
+        GradMpar = gradMmtx(this,r,s);
+        
+        %------------------------------------------------------------------
+        % Evaluate matrix of displacement shape functions derivatives
+        % w.r.t. parametric coordinates at a given position.
+        GradNpar = gradNmtx(this,r,s);
+        
+        %------------------------------------------------------------------
+        % Evaluate matrix of edge geometry map functions derivatives
+        % w.r.t. parametric coordinates at a given position. The edge is
+        % defined by two corner nodes local ids (n1,n2).
+        GradMpar = gradMmtxEdge(this,n1,n2,r);
+        
+        %------------------------------------------------------------------
+        % Returns the local ids of the nodes of a shape edge for a given
+        % pair of corner nodes global ids.
+        % In case the given corner nodes global ids do not correspond to
+        % a valid element shape edge, the returned value for the valid
+        % parameter is false. Otherwise, the returned value is true.
+        % The two corner nodes local ids are returned in parameters n1 and
+        % n2. In case there is a mid node at the target edge, the local id
+        % of this node is returned in the parameter mid. Otherwise, the
+        % returned value of mid is zero.
+        [valid,n1,n2,mid] = edgeLocalIds(this,corner1,corner2);
+    end
+end
