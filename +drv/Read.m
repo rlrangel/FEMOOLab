@@ -246,7 +246,7 @@ classdef Read < handle
                     return;
                 end
                 
-                [thk,count] = fscanf(fin,'%d',1);
+                [thk,count] = fscanf(fin,'%f',1);
                 if count~= 1
                     fprintf('Invalid thickness %d\n',id);
                     status = 0;
