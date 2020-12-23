@@ -21,10 +21,11 @@ classdef Anm < handle
     %% Constant values
     properties (Constant = true, Access = public)
         % Types of analysis model
-        GENERIC = int32(0);
-        PLANE_STRESS = int32(1);
-        PLANE_STRAIN = int32(2);
-        AXISYMMETRIC = int32(3);
+        GENERIC          = int32(0);
+        PLANE_STRESS     = int32(1);
+        PLANE_STRAIN     = int32(2);
+        PLANE_CONDUCTION = int32(3);
+        AXISYMMETRIC     = int32(4);
     end
     
     %% Flags for types of responses
@@ -53,6 +54,9 @@ classdef Anm < handle
         MOMENT_1    = logical(false);    % Principal moment 1
         MOMENT_2    = logical(false);    % Principal moment 2
         TORSION_MAX = logical(false);    % Maximum torsion
+        
+        % Thermal properties
+        TEMPERATURE = logical(false);    % Temperature
     end
     
     %% Public properties

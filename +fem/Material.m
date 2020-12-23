@@ -15,6 +15,11 @@ classdef Material < handle
         id    int32  = int32.empty;     % identification number
         E     double = double.empty;    % elasticity modulus
         v     double = double.empty;    % Poisson ratio
+        
+        % Thermal properties
+        rho   double = double.empty;    % density (specific weight)
+        k     double = double.empty;    % thermal conductivity
+        cp    double = double.empty;    % specific heat capacity
     end
     
     %% Constructor method

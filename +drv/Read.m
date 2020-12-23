@@ -44,8 +44,14 @@ classdef Read < handle
                         status = read.nodeCoord(fin,sim.mdl);
                     case '%NODE.SUPPORT'
                         status = read.nodeSupport(fin,sim.mdl);
+                    case '%MATERIAL'
+                        status = read.materialTotal(fin,sim.mdl);
                     case '%MATERIAL.ISOTROPIC'
-                        status = read.materialProperty(fin,sim.mdl);
+                        status = read.materialIsotropic(fin,sim.mdl);
+                    case '%MATERIAL.PROPERTY.DENSITY'
+                        status = read.materialDensity(fin,sim.mdl);
+                    case '%MATERIAL.PROPERTY.THERMAL'
+                        status = read.materialThermal(fin,sim.mdl);
                     case '%THICKNESS'
                         status = read.Thickness(fin,sim.mdl);
                     case '%INTEGRATION.ORDER'
@@ -62,12 +68,18 @@ classdef Read < handle
                         status = read.elementQuad8(fin,sim.mdl,gauss_quad);
                     case '%LOAD.CASE.NODAL.DISPLACEMENT'
                         status = read.nodePrescDispl(fin,sim.mdl);
+                    case '%LOAD.CASE.NODAL.TEMPERATURE'
+                        status = read.nodePrescTemp(fin,sim.mdl);
                     case '%LOAD.CASE.NODAL.FORCES'
                         status = read.loadPoint(fin,sim.mdl);
                     case '%LOAD.CASE.LINE.FORCE.UNIFORM'
                         status = read.loadLineUnif(fin,sim.mdl);
                     case '%LOAD.CASE.DOMAIN.FORCE.UNIFORM'
                         status = read.loadDomainUnif(fin,sim.mdl);
+                    case '%LOAD.CASE.LINE.HEAT.FLUX.UNIFORM'
+                        status = read.fluxLineUnif(fin,sim.mdl);
+                    case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM'
+                        status = read.fluxDomainUnif(fin,sim.mdl);
                 end
                 
                 if (strcmp(string,'%END'))
@@ -94,6 +106,10 @@ classdef Read < handle
                 mdl.anm = fem.Anm_PlaneStrain();
             elseif (strcmp(string,'''plane_strain'''))
                 mdl.anm = fem.Anm_PlaneStrain();
+            elseif (strcmp(string,'''PLANE_CONDUCTION'''))
+                mdl.anm = fem.Anm_PlaneConduction();
+            elseif (strcmp(string,'''plane_conduction'''))
+                mdl.anm = fem.Anm_PlaneConduction();
             elseif (strcmp(string,'''AXISYMMETRIC'''))
                 mdl.anm = fem.Anm_Axisymmetric();
             elseif (strcmp(string,'''axisymmetric'''))
@@ -186,40 +202,145 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = materialProperty(read,fin,mdl)
+        function status = materialTotal(read,fin,mdl)
             status = 1;
-            
+
             % Total number of materials
             n = fscanf(fin,'%d',1);
-            if (~read.chkInt(n,inf,'number of materials'))
+            if (~read.chkInt(n,inf,'total number of materials'))
                 status = 0;
                 return;
             end
             
-            % Create vector of Material objects
+            % Create vector of Element Objects
             mdl.nmat = n;
             materials(n,1) = fem.Material();
             mdl.materials = materials;
+        end
+        
+        %------------------------------------------------------------------
+        function status = materialIsotropic(read,fin,mdl)
+            status = 1;
+            
+            % Number of material isotropic properties
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,mdl.nmat,'number of material isotropic properties'))
+                status = 0;
+                return;
+            end
             
             for i = 1:n
                 % Material ID
                 id = fscanf(fin,'%d',1);
-                if (~read.chkInt(id,n,'material ID'))
+                if (~read.chkInt(id,mdl.nmat,'material ID for isotropic properties'))
                     status = 0;
                     return;
                 end
                 
                 % Material properties: E,v
                 [prop,count] = fscanf(fin,'%f',2);
-                if (~read.chkMatProp(prop,count,id))
+                if (count ~= 2)
+                    fprintf('Invalid isotropic properties for material %d\n',id);
+                    status = 0;
+                    return;
+                elseif (prop(1) <= 0)
+                    fprintf('Invalid isotropic properties for material %d\n',id);
+                    fprintf('Elasticity modulus must be positive!');
+                    status = 0;
+                    return;
+                elseif (prop(2) <= -1 || prop(2) > 0.5)
+                    fprintf('Invalid isotropic properties for material %d\n',id);
+                    fprintf('Poisson ratio must be between -1.0 and +0.5!');
                     status = 0;
                     return;
                 end
                 
                 % Store data
-                mdl.materials(id).id = id;
+                mdl.materials(id).id = id;     % Material ID is not needed now
                 mdl.materials(id).E  = prop(1);
                 mdl.materials(id).v  = prop(2);
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = materialDensity(read,fin,mdl)
+           status = 1;
+            
+            % Number of material densities
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,mdl.nmat,'number of material densities'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Material ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,mdl.nmat,'material ID for densities'))
+                    status = 0;
+                    return;
+                end
+                
+                % Material densities
+                [rho,count] = fscanf(fin,'%f',1);
+                if (count ~= 1)
+                    fprintf('Invalid density for material %d\n',id);
+                    status = 0;
+                    return;
+                elseif (rho <= 0)
+                    fprintf('Invalid properties for material %d\n',id);
+                    fprintf('Density must be positive!');
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.materials(id).id  = id;    % Material ID is not needed now
+                mdl.materials(id).rho = rho;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = materialThermal(read,fin,mdl)
+            status = 1;
+            
+            % Number of material thermal properties
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,mdl.nmat,'number of material thermal properties'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Material ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,mdl.nmat,'material ID for thermal properties'))
+                    status = 0;
+                    return;
+                end
+                
+                % Material properties: cp,k
+                [prop,count] = fscanf(fin,'%f',2);
+                if (count ~= 2)
+                    fprintf('Invalid thermal properties for material %d\n',id);
+                    status = 0;
+                    return;
+                elseif (prop(1) <= 0)
+                    fprintf('Invalid thermal properties for material %d\n',id);
+                    fprintf('Thermal conductivity must be positive!');
+                    status = 0;
+                    return;
+                elseif (prop(2) <= 0)
+                    fprintf('Invalid thermal properties for material %d\n',id);
+                    fprintf('Specific heat capacity must be positive!');
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.materials(id).id = id;    % Material ID is not needed now
+                mdl.materials(id).k  = prop(1);
+                mdl.materials(id).cp = prop(2);
             end
         end
         
@@ -571,6 +692,44 @@ classdef Read < handle
         end
         
         %--------------------------------------------------------------------------
+        function status = nodePrescTemp(read,fin,mdl)
+            status = 1;
+            if (isempty(mdl.nodes))
+                fprintf('Node coordinates must be provided before prescribed temperatures!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of nodes with prescribed temperature
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,mdl.nnp,'number of nodes with prescribed temperature'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Node ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,mdl.nnp,'node ID for prescribed temperature specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Prescribed displacements values
+                [temp,count] = fscanf(fin,'%f',1);
+                if (count ~= 1)
+                    fprintf('Invalid prescribed temperature of node %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.nodes(id).ebc_thermal = 1;
+                mdl.nodes(id).prescTemp = temp;
+            end
+        end
+        
+        %--------------------------------------------------------------------------
         function status = loadPoint(read,fin,mdl)
             status = 1;
             if (isempty(mdl.nodes))
@@ -683,7 +842,84 @@ classdef Read < handle
                 mdl.elems(id).domainLoad = load;
             end
         end
-    
+        
+        %--------------------------------------------------------------------------
+        function status = fluxLineUnif(read,fin,mdl)
+            status = 1;
+            if (isempty(mdl.elems))
+                fprintf('Elements must be provided before line fluxes!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of edges with line flux
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,inf,'number of edges with line flux'))
+                status = 0;
+                return;
+            end
+            
+            a = zeros(n,1);
+            for i = 1:n
+                % Element ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,mdl.nel,'element ID for line flux specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Line flux information (node1,node2,q)
+                [flux,count] = fscanf(fin,'%f',3);
+                if (count ~= 3)
+                    fprintf('Invalid line flux specification of element %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                a(i) = id;
+                j = sum(a(:)==id);
+                mdl.elems(id).lineFlux(j,:) = flux;
+            end
+        end
+        
+        %--------------------------------------------------------------------------
+        function status = fluxDomainUnif(read,fin,mdl)
+            status = 1;
+            if (isempty(mdl.elems))
+                fprintf('Elements must be provided before area fluxes!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of faces with area flux
+            n = fscanf(fin,'%d',1);
+            if (~read.chkInt(n,inf,'number of faces with area flux'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Element ID
+                id = fscanf(fin,'%d',1);
+                if (~read.chkInt(id,mdl.nel,'element ID for area flux specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Area flux information (qx,qy,qz)
+                [flux,count] = fscanf(fin,'%f',1);
+                if (count ~= 1)
+                    fprintf('Invalid area flux specification of element %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.elems(id).areaFlux = flux;
+            end
+        end
+        
     %% Static methods for checking input data
         %------------------------------------------------------------------
         function status = checkInput(~,mdl)
@@ -722,22 +958,6 @@ classdef Read < handle
                     fprintf('It must be a positive integer less/equal to %d!\n',max);
                 end
                 status = 0;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        function status = chkMatProp(~,prop,count,id)
-            status = 0;
-            if (count ~= 2)
-                fprintf('Invalid properties for material %d\n',id);
-            elseif (prop(1) <= 0)
-                fprintf('Invalid properties for material %d\n',id);
-                fprintf('Elasticity modulus must be positive!');
-            elseif (prop(2) <= -1 || prop(2) > 0.5)
-                fprintf('Invalid properties for material %d\n',id);
-                fprintf('Poisson ratio must be between -1.0 and +0.5!');
-            else
-                status = 1;
             end
         end
         

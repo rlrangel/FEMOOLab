@@ -17,6 +17,10 @@ classdef Node < handle
         ebc        int32  = int32.empty;   % vector of essential boundary conditions flags [DX DY DZ RX RY RZ]
         prescDispl double = double.empty;  % vector of prescribed displacement values [DX DY DZ RX RY RZ]
         load       double = double.empty;  % vector of applied load components [FX FY FZ MX MY MZ]
+        
+        % Thermal properties
+        ebc_thermal int32  = int32.empty;   % thermal essential boundary condition flag
+        prescTemp   double = double.empty;  % prescribed temperature value
     end
     
     %% Constructor method
@@ -24,6 +28,7 @@ classdef Node < handle
         %------------------------------------------------------------------
         function node = Node()
             node.ebc = zeros(6,1);
+            node.ebc_thermal = 0;
         end
     end
 end

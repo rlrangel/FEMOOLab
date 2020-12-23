@@ -304,6 +304,24 @@ classdef Model < handle
                     gle = mdl.elems(i).gle;
                     F(gle) = F(gle) + farea;
                 end
+                
+                % Fluxes (IT NEEDS TO BE ORGANIZED!)
+                if (~isempty(mdl.elems(i).lineFlux))
+                    % Get element equivalent nodal flux vectors
+                    fline = mdl.elems(i).edgeEquivFluxVct();
+                    
+                    % Assemble element vector to global vector
+                    gle = mdl.elems(i).gle;
+                    F(gle) = F(gle) + fline;
+                end
+                if (~isempty(mdl.elems(i).areaFlux))
+                    % Get element equivalent nodal flux vectors
+                    farea = mdl.elems(i).domainEquivFluxVct();
+                    
+                    % Assemble element vector to global vector
+                    gle = mdl.elems(i).gle;
+                    F(gle) = F(gle) + farea;
+                end
             end
         end
         

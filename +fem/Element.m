@@ -42,6 +42,10 @@ classdef Element < handle
         % Loads:
         lineLoad double = double.empty;    % matrix of uniform line loads [corner1,corner2,loc_gbl,qx,qy,qz]
         domainLoad double = double.empty;  % vector of uniform domain loads [px,py,pz]
+        
+        % Fluxes:
+        lineFlux double = double.empty;    % matrix of uniform line flux [corner1,corner2,q]
+        areaFlux double = double.empty;    % uniform area flux value
     end
     
     %% Constructor method
@@ -274,6 +278,93 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
+        % Compute equivalent nodal load (ENL) vector for loads
+        % distributed over edges of an element.
+        % It is assumed in global direction (loc_gbl is not used)
+        % MERGE WITH LOAD FUNCTION!
+        function f = edgeEquivFluxVct(elem)
+            ndof   = elem.anm.ndof;
+            nen    = elem.shape.nen;
+            
+            % Initialize element ENL vector
+            f = zeros(nen*ndof,1);
+            
+            % Loop over element line loads
+            for q = 1:size(elem.lineFlux,1)
+                % Global IDs of edge initial and final nodes
+                corner1 = elem.lineFlux(q,1);
+                corner2 = elem.lineFlux(q,2);
+                
+                % Get local IDs of edge nodes
+                [valid,n1,n2,mid] = elem.shape.edgeLocalIds(corner1,corner2);
+                if ~valid
+                    continue;
+                end
+
+                % Compute number of edge nodes and assemble vector of 
+                % edge nodes ids
+                if mid == 0
+                    nedgen = 2;
+                    edgLocIds = [n1,n2];
+                else
+                    nedgen = 3;
+                    edgLocIds = [n1,n2,mid];
+                end
+                
+                % Initialize edge ENL vector
+                fline = zeros(nedgen*ndof,1);
+                
+                % Edge nodes coordinates
+                X = elem.shape.carCoord(edgLocIds,:);
+                
+                % Flux value
+                p = elem.lineFlux(q,3);
+                
+                % Gauss points and weights for integration on edge
+                [ngp,w,gp] = elem.gauss.lineQuadrature(elem.gstiff_order);
+                
+                % Loop over edge Gauss integration points
+                for i = 1:ngp
+                    % Parametric coordinates
+                    r = gp(1,i);
+                    
+                    % Edge displacement shape functions matrix
+                    N = elem.shape.NmtxEdge(n1,n2,r);
+                    
+                    % Matrix of edge geometry map functions derivatives
+                    % w.r.t. parametric coordinates
+                    GradMpar = elem.shape.gradMmtxEdge(n1,n2,r);
+                    
+                    % Jacobian matrix
+                    J = GradMpar * X;
+                    detJ = sqrt(J(1)*J(1) + J(2)*J(2));
+                    
+                    % Accumulate Gauss point contributions
+                    m = 0;
+                    for j = 1:nedgen
+                        for k = 1:ndof
+                            m = m + 1;
+                            fline(m) = fline(m) + w(i) * detJ * N(j) * p(k);
+                        end
+                    end
+                end
+                
+                % Edge gather vector (stores local d.o.f.'s numbers)
+                gledge = zeros(nedgen*ndof,1);
+                m = 0;
+                for j = 1:nedgen
+                    for k = 1:ndof
+                        m = m + 1;
+                        gledge(m) = (edgLocIds(j)-1)*ndof + k;
+                    end
+                end
+                
+                % Assemble edge ENL vetor to element ENL vector
+                f(gledge) = f(gledge) + fline;
+            end
+        end
+        
+        %------------------------------------------------------------------
         % Compute equivalent nodal load (ENL) vector for element domain loads.
         function f = domainEquivLoadVct(elem)
             ndof = elem.anm.ndof;
@@ -311,6 +402,50 @@ classdef Element < handle
                     for k = 1:ndof
                         m = m + 1;
                         f(m) = f(m) + w(i) * detJ * N(j) * elem.domainLoad(k);
+                    end
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Compute equivalent nodal load (ENL) vector for element domain loads.
+        % MERGE WITH LOAD FUNCTION!
+        function f = domainEquivFluxVct(elem)
+            ndof = elem.anm.ndof;
+            nen  = elem.shape.nen;
+
+            % Initialize element ENL vector
+            f = zeros(nen*ndof,1);
+            
+            % Cartesian coordinates matrix
+            X = elem.shape.carCoord;
+            
+            % Gauss points and weights
+            [ngp,w,gp] = elem.gauss.quadrature(elem.gstiff_order);
+            
+            % Loop over Gauss integration points
+            for i = 1:ngp
+                % Parametric coordinates
+                r = gp(1,i);
+                s = gp(2,i);
+                
+                % Shape functions matrix
+                N = elem.shape.Nmtx(r,s);
+                
+                % Matrix of geometry map functions derivatives w.r.t.
+                % parametric coordinates
+                GradMpar = elem.shape.gradMmtx(r,s);
+                
+                % Jacobian matrix
+                J = GradMpar * X;
+                detJ = det(J);
+                
+                % Accumulate Gauss point contributions
+                m = 0;
+                for j = 1:nen
+                    for k = 1:ndof
+                        m = m + 1;
+                        f(m) = f(m) + w(i) * detJ * N(j) * elem.areaFlux(k);
                     end
                 end
             end
