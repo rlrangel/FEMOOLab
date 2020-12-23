@@ -1,8 +1,8 @@
-%% FEMOOLab - Finite Element Method Object-Oriented Laboratory
+%% FEMOOLab (Finite Element Method Object-Oriented Laboratory)
 %
 %% Description
 %
-% This is the main script file of FEMOOLab. This is a MATLAB program for
+% This is an open-source MATLAB program for 
 % linear-elastic, displacement-based, static analysis of two-dimensional
 % finite elements structure models.
 %
@@ -11,12 +11,14 @@
 % results.
 %
 %% Usage
+%
 % Run this script to select the input file with model and analysis data for
 % performing the simulation.
 % Multiple files can be selected, by holding down the Shift or Ctrl key and
 % clicking file names, to run the simulations sequentially.
 %
 %% Brief description
+%
 % This version (1.1) of the program handles plane models with C0 continuity
 % for conventional isoparametric finite element types. 
 %
