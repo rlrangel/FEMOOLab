@@ -2,7 +2,7 @@
 %
 %% Description
 %
-% This class defines a node object in the StAnOOP program.
+% This class defines a node object in the FEMOOLab program.
 % An object of <model.html Model class> has a vector of Node objects.
 % Each <shape.html Shape> object of an <element.html Element> object
 % has a Node incidence vector.

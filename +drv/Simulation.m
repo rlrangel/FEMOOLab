@@ -2,7 +2,7 @@
 %
 %% Description
 %
-% This class defines a simulation object in the StAnOOP program.
+% This class defines a simulation object in the FEMOOLab program.
 % A simulation object is the one with the highest hierarchical level.
 % Its properties are the three fundamental objects to perform a Finite
 % Element analysis: <model.html Model>, <anl.html Analysis>, and
@@ -29,7 +29,7 @@ classdef Simulation < handle
         % Open files and execute each simulation.
         function runAll(sim)
             % Get input file names
-            [file,path] = uigetfile('*.*','StAnOOP - Input file','MultiSelect','on');
+            [file,path] = uigetfile('*.*','FEMOOLab - Input file','MultiSelect','on');
             if (isequal(file,0))
                 return;
             end

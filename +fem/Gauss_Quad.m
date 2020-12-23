@@ -2,7 +2,7 @@
 %
 %% Description
 %
-% This is a sub-class in the StAnOOP program that implements abstract 
+% This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <gauss.html Gauss: integration quadrature super-class>
 % to deal with quadrilateral element shapes.
 %

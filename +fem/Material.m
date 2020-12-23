@@ -3,7 +3,7 @@
 %% Description
 %
 % This class defines a material object of an <element.html element> in the
-% StAnOOP program.
+% FEMOOLab program.
 % All materials are considered to have a linear elastic bahavior.
 % In adition, homogeneous and isotropic properties are also considered,
 % that is, all materials have the same properties at every point and in all

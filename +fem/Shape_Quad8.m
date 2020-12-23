@@ -2,7 +2,7 @@
 %
 %% Description
 %
-% This is a sub-class in the StAnOOP program that implements abstract 
+% This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <shape.html Shape: element shape super-class> to deal
 % with 8-noded isoparametric quadrilateral (Serendipity quadratic
 % quadrilateral) elements:

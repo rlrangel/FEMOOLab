@@ -2,7 +2,7 @@
 %
 %% Description
 %
-% This class defines a result object in the StAnOOP program.
+% This class defines a result object in the FEMOOLab program.
 % A Result object is responsible for storing the analysis results and
 % provide them in text or graphical formats.
 %

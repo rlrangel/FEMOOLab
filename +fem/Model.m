@@ -2,7 +2,7 @@
 %
 %% Description
 %
-% This class defines a model object in the StAnOOP program.
+% This class defines a model object in the FEMOOLab program.
 % A model object is responsible for storing the global variables of a
 % structural model.
 % The methods of a model object are general functions that are not dependent

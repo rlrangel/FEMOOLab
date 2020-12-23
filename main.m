@@ -1,8 +1,8 @@
-%% StAnOOP - Finite Element Model Laboratory
+%% FEMOOLab - Finite Element Method Object-Oriented Laboratory
 %
 %% Description
 %
-% This is the main script file of StAnOOP. This is a MATLAB program for
+% This is the main script file of FEMOOLab. This is a MATLAB program for
 % linear-elastic, displacement-based, static analysis of two-dimensional
 % finite elements structure models.
 %
@@ -71,7 +71,7 @@
 %
 %% Analysis Model Types
 %
-% Current version of StAnOOP program considers only static linear-elastic
+% Current version of FEMOOLab program considers only static linear-elastic
 % structural analysis of 2D (plane) finite elements models of C0 continutity,
 % which can be of the following types:
 %%%
@@ -81,7 +81,7 @@
 %
 %% Element Shape Types
 %
-% Current version of StAnOOP adopts an isoparametric finite element
+% Current version of FEMOOLab adopts an isoparametric finite element
 % formulation with conventional element shape types:
 %%%
 % * Tria3: linear planar triangular isoparametric element with 3 nodes,
@@ -95,7 +95,7 @@
 %
 %% Load Type
 %
-% There are four types of loads considered in the StAnOOP program:
+% There are four types of loads considered in the FEMOOLab program:
 %%%
 % * Concentrated nodal force and moment in global axes directions.
 % * Uniformely distributed force along a side of a planar or solid element.
@@ -107,7 +107,7 @@
 %
 %% Materials
 %
-% All materials in StAnOOP are considered to have linear elastic behavior.
+% All materials in FEMOOLab are considered to have linear elastic behavior.
 % In adition, homogeneous and isotropic properties are also considered,
 % that is, all materials have the same properties at every point and in
 % all directions.
