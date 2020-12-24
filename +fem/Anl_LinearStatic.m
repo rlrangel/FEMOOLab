@@ -1,17 +1,17 @@
-%% Anl_LinearElastic Class
+%% Anl_LinearStatic Class
 %
 %% Description
 %
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <anl.html Anl: analysis super-class> to deal
-% with linear-elastic analysis.
+% with linear-static analysis.
 %
-classdef Anl_LinearElastic < fem.Anl
+classdef Anl_LinearStatic < fem.Anl
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anl_LinearElastic()
-            this = this@fem.Anl(fem.Anl.LINEAR_ELASTIC);
+        function this = Anl_LinearStatic()
+            this = this@fem.Anl(fem.Anl.LINEAR_STATIC);
         end
     end
     
@@ -19,7 +19,7 @@ classdef Anl_LinearElastic < fem.Anl
     % Implementation of the abstract methods declared in super-class Anl
     methods
         %------------------------------------------------------------------
-        % Process linear-elastic analysis based on the direct stiffness
+        % Process linear-static analysis based on the direct stiffness
         % method, i.e., assemble global equilibrium system of equations,
         % and calculate state variables (nodal displacements).
         function status = process(this,mdl,res)

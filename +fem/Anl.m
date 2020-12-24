@@ -12,13 +12,13 @@
 %% Current subclasses:
 %
 %%%
-% * <anl_linearelastic.html Anl_LinearElastic: linear elastic analysis subclass>
+% * <anl_linearstatic.html Anl_LinearStatic: linear static analysis subclass>
 %
 classdef Anl < handle
     properties (Constant = true, Access = public)
         % Types of analysis
-        GENERIC        = int32(0);
-        LINEAR_ELASTIC = int32(1);    
+        GENERIC       = int32(0);
+        LINEAR_STATIC = int32(1);    
     end
     
     %% Public properties

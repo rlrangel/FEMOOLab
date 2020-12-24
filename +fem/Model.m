@@ -4,51 +4,41 @@
 %
 % This class defines a model object in the FEMOOLab program.
 % A model object is responsible for storing the global variables of a
-% structural model.
+% computational model.
 % The methods of a model object are general functions that are not dependent
-% on the <anm.html Anm: analysis model> or <shape.html Shape: element shape>
-% type.
-%
-%% Main properties
-%
-%%%
-% * Object of <anm.html Anm: analysis model class>
-% * Object <result.html Result: Plot results driver class>
-% * Vector of objects of <node.html Node: node class>
-% * Vector of objects of <element.html Element: finite element class>
-% * Vector of objects of <material.html Material: material class>
+% on the analysis type, analysis model, or element shape.
 %
 classdef Model < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        % General:
-        anm        = [];                              % object of Anm (analysis model) class
-        res        drv.Result = drv.Result.empty;     % object of Result (plot results driver) class
+        % General
+        anm = [];                                     % object of Anm (Analysis Model) class
+        res drv.Result = drv.Result.empty;            % object of Result class
         
-        % Model properties:
-        nnp        int32 = int32.empty;               % number of nodes
-        nodes      fem.Node = fem.Node.empty;         % vector of objects of Node class
-        nel        int32 = int32.empty;               % number of elements
-        elems      fem.Element = fem.Element.empty;   % vector of objects of Element (finite element) class
-        nmat       int32 = int32.empty;               % number of materials
+        % Model properties
+        nnp        int32        = int32.empty;        % number of nodes
+        nodes      fem.Node     = fem.Node.empty;     % vector of objects of Node class
+        nel        int32        = int32.empty;        % number of elements
+        elems      fem.Element  = fem.Element.empty;  % vector of objects of Element (finite element) class
+        nmat       int32        = int32.empty;        % number of materials
         materials  fem.Material = fem.Material.empty; % vector of objects of Material class
-        nthks      int32 = int32.empty;               % number of thickness values
-        thickness  double = double.empty;             % vector of element thicknesses
-        nintord    int32 = int32.empty;               % number of integration orders
-        intgrorder int32 = int32.empty;               % vector of pairs of integration orders
+        %nthks      int32        = int32.empty;        % number of thickness values
+        %thickness  double       = double.empty;       % vector of element thicknesses
+        %nintord    int32        = int32.empty;        % number of integration orders
+        %intgrorder int32        = int32.empty;        % vector of pairs of integration orders
         
-        % Degree-of-freedom numbering:
-        ID         int32 = int32.empty;               % global d.o.f. numbering matrix
-        neq        int32 = int32.empty;               % number of d.o.f.'s
-        neqf       int32 = int32.empty;               % number of free d.o.f.'s
-        neqc       int32 = int32.empty;               % number of constrained (fixed) d.o.f.'s
+        % Degree-of-freedom numbering
+        ID   int32 = int32.empty;                     % global d.o.f. numbering matrix
+        neq  int32 = int32.empty;                     % number of d.o.f.'s
+        neqf int32 = int32.empty;                     % number of free d.o.f.'s
+        neqc int32 = int32.empty;                     % number of constrained (fixed) d.o.f.'s
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
         function mdl = Model()
-            return;
+            mdl.res = drv.Result();
         end
     end
     
