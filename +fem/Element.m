@@ -3,7 +3,7 @@
 %% Description
 %
 % This is a class that specifies a generic finite element in the
-% StAnOOP program. This element may have any shape, may have any analysis
+% FEMOOLab program. This element may have any shape, may have any analysis
 % model and may work with any Gauss quadrature.
 %
 %% Main properties

@@ -2,7 +2,7 @@
 %
 %% Description
 %
-% This class defines a reader object in the StAnOOP program.
+% This class defines a reader object in the FEMOOLab program.
 % A reader object is responsible for reading the input file with
 % <model.html Model> and <anl.html Analysis> information and store it in
 % the program data structure.

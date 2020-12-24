@@ -6,7 +6,7 @@ classdef Print_PlaneStrain < Print
         % Prints header of analysis results.
         function print = header(print,fid)
             fprintf(fid, '\n=================================================================\n');
-            fprintf(fid, ' StAnOOP - Structural Analysis with Object Oriented Programming\n');
+            fprintf(fid, ' FEMOOLab - Finite Element Method Object-Oriented Laboratory\n');
             fprintf(fid, '    PONTIFICAL CATHOLIC UNIVERSITY OF RIO DE JANEIRO\n');
             fprintf(fid, '    DEPARTMENT OF CIVIL AND ENVIRONMENTAL ENGINEERING\n');
             fprintf(fid, '                          AND\n');

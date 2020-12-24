@@ -2,7 +2,7 @@
 %
 %% Description
 %
-% This is a sub-class in the StAnOOP program that implements abstract 
+% This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <anl.html Anl: analysis super-class> to deal
 % with linear-elastic analysis.
 %

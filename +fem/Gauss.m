@@ -3,7 +3,7 @@
 %% Description
 %
 % This is an abstract super-class that generically specifies an
-% <element.html element> Gauss integration point in the StAnOOP program.
+% <element.html element> Gauss integration point in the FEMOOLab program.
 %
 % Essentially, this super-class declares abstract methods that define the
 % particular behavior of a Gauss quadrature for integrating the stiffness

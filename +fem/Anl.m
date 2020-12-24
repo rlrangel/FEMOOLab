@@ -3,7 +3,7 @@
 %% Description
 %
 % This is an abstract super-class that generically specifies an analysis 
-% type in the StAnOOP program.
+% type in the FEMOOLab program.
 %
 % Essentially, this super-class declares abstract methods that are the
 % functions that should be implemented in a derived sub-class that deals
