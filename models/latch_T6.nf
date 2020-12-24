@@ -1,9 +1,8 @@
 %HEADER
-Output file created by FEMOOP (version Dec/2003).
-'File created by Mtool program'
+Neutral file created by Mtool
 
 %HEADER.ANALYSIS
-'plane_stress'
+'PLANE_STRESS'
 
 %NODE
 1109
@@ -1153,10 +1152,6 @@ Output file created by FEMOOP (version Dec/2003).
 %MATERIAL
 1
 
-%MATERIAL.LABEL
-1
-1	'mat'
-
 %MATERIAL.ISOTROPIC
 1
 1	10000.0	0.250000
@@ -1166,9 +1161,8 @@ Output file created by FEMOOP (version Dec/2003).
 1	1.000000
 
 %INTEGRATION.ORDER
-2
+1
 1	3 3 1 3 3 1
-2	2 2 1 2 2 1
 
 %ELEMENT
 501
@@ -1676,13 +1670,6 @@ Output file created by FEMOOP (version Dec/2003).
 499	1	1	1	115	119	113	47	46	48	
 500	1	1	1	28	31	78	63	60	33	
 501	1	1	1	61	64	134	55	53	52	
-
-%LOAD
-1
-1	'Load_Case_1'
-
-%LOAD.CASE
-1
 
 %LOAD.CASE.LINE.FORCE.UNIFORM
 3
