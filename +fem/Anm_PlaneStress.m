@@ -1,10 +1,12 @@
-%% Anm_PlaneStress Class
+%% Anm_PlaneStress Class (Plane Stress Model)
 %
 %% Description
 %
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <anm.html Anm: analysis model super-class> to deal
-% with plane stress models.
+% with plane stress models in an elasticity analysis.
+%
+%% Class definition
 %
 classdef Anm_PlaneStress < fem.Anm
     %% Constructor method
@@ -13,14 +15,15 @@ classdef Anm_PlaneStress < fem.Anm
         function this = Anm_PlaneStress()
             this = this@fem.Anm(fem.Anm.PLANE_STRESS,2);
             
-            this.DISPL_X  = true;    % Displacement X
-            this.DISPL_Y  = true;    % Displacement Y
-            this.SIGMA_XX = true;    % Normal stress XX
-            this.SIGMA_YY = true;    % Normal stress YY
-            this.TAU_XY   = true;    % Shear stress XY
-            this.SIGMA_1  = true;    % Principal stress 1
-            this.SIGMA_2  = true;    % Principal stress 2
-            this.TAU_MAX  = true;    % Maximum shear stress
+            % Types of response
+            this.DISPL_X  = true;  % Displacement X
+            this.DISPL_Y  = true;  % Displacement Y
+            this.SIGMA_XX = true;  % Normal stress XX
+            this.SIGMA_YY = true;  % Normal stress YY
+            this.TAU_XY   = true;  % Shear stress XY
+            this.SIGMA_1  = true;  % Principal stress 1
+            this.SIGMA_2  = true;  % Principal stress 2
+            this.TAU_MAX  = true;  % Maximum shear stress
         end
     end
     
@@ -45,13 +48,13 @@ classdef Anm_PlaneStress < fem.Anm
             % Count number of fixed d.o.f.'s and setup ID matrix
             for i = 1:mdl.nnp
                  % Check for fixed translation in global X direction
-                if (mdl.nodes(i).ebc(1) == 1)
+                if (mdl.nodes(i).fixDispl(1))
                     mdl.neqc = mdl.neqc + 1;
                     mdl.ID(1,i) = 1;
                 end
 
                 % Check for fixed translation in global Y direction
-                if (mdl.nodes(i).ebc(2) == 1)
+                if (mdl.nodes(i).fixDispl(2))
                     mdl.neqc = mdl.neqc + 1;
                     mdl.ID(2,i) = 1;
                 end
@@ -95,17 +98,17 @@ classdef Anm_PlaneStress < fem.Anm
         %  D: global displacement vector
         function D = addPrescDispl(~,mdl,D)
             for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).prescDispl))
+                if (~isempty(mdl.nodes(i).ebcDispl))
                     % Add prescribed displacement in global X direction
                     id = mdl.ID(1,i);
                     if (id > mdl.neqf)
-                        D(id) = mdl.nodes(i).prescDispl(1);
+                        D(id) = mdl.nodes(i).ebcDispl(1);
                     end
                     
                     % Add prescribed displacement in global Y direction
                     id = mdl.ID(2,i);
                     if (id > mdl.neqf)
-                        D(id) = mdl.nodes(i).prescDispl(2);
+                        D(id) = mdl.nodes(i).ebcDispl(2);
                     end
                 end
             end

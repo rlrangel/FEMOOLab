@@ -8,6 +8,8 @@
 % The methods of a model object are general functions that are not dependent
 % on the analysis type, analysis model, or element shape.
 %
+%% Class definition
+%
 classdef Model < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
@@ -22,10 +24,6 @@ classdef Model < handle
         elems      fem.Element  = fem.Element.empty;  % vector of objects of Element (finite element) class
         nmat       int32        = int32.empty;        % number of materials
         materials  fem.Material = fem.Material.empty; % vector of objects of Material class
-        %nthks      int32        = int32.empty;        % number of thickness values
-        %thickness  double       = double.empty;       % vector of element thicknesses
-        %nintord    int32        = int32.empty;        % number of integration orders
-        %intgrorder int32        = int32.empty;        % vector of pairs of integration orders
         
         % Degree-of-freedom numbering
         ID   int32 = int32.empty;                     % global d.o.f. numbering matrix
@@ -37,8 +35,8 @@ classdef Model < handle
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function mdl = Model()
-            mdl.res = drv.Result();
+        function this = Model()
+            this.res = drv.Result();
         end
     end
     
@@ -48,61 +46,62 @@ classdef Model < handle
         % 2D inplane analysis model:
         % Compute stresses at Gauss points and principal stresses of all
         % elements.
-        function gaussStressInplane(mdl,anl,res)
+        function gaussStressInplane(mdl,anl)
+            r = mdl.res;
             maxElmGaussPts = mdl.maxGaussStressNpts;
             
-            res.ngp     = zeros(mdl.nel,1);
-            res.x_gp    = zeros(maxElmGaussPts*mdl.nel,1);
-            res.y_gp    = zeros(maxElmGaussPts*mdl.nel,1);
-            res.sxx_gp  = zeros(maxElmGaussPts,mdl.nel);
-            res.syy_gp  = zeros(maxElmGaussPts,mdl.nel);
-            res.txy_gp  = zeros(maxElmGaussPts,mdl.nel);
-            res.s1_gp   = zeros(maxElmGaussPts,mdl.nel);
-            res.s2_gp   = zeros(maxElmGaussPts,mdl.nel);
-            res.tmax_gp = zeros(maxElmGaussPts,mdl.nel);
-            res.s1x_gp  = zeros(maxElmGaussPts*mdl.nel,1);
-            res.s1y_gp  = zeros(maxElmGaussPts*mdl.nel,1);
-            res.s2x_gp  = zeros(maxElmGaussPts*mdl.nel,1);
-            res.s2y_gp  = zeros(maxElmGaussPts*mdl.nel,1);
+            r.ngp     = zeros(mdl.nel,1);
+            r.x_gp    = zeros(maxElmGaussPts*mdl.nel,1);
+            r.y_gp    = zeros(maxElmGaussPts*mdl.nel,1);
+            r.sxx_gp  = zeros(maxElmGaussPts,mdl.nel);
+            r.syy_gp  = zeros(maxElmGaussPts,mdl.nel);
+            r.txy_gp  = zeros(maxElmGaussPts,mdl.nel);
+            r.s1_gp   = zeros(maxElmGaussPts,mdl.nel);
+            r.s2_gp   = zeros(maxElmGaussPts,mdl.nel);
+            r.tmax_gp = zeros(maxElmGaussPts,mdl.nel);
+            r.s1x_gp  = zeros(maxElmGaussPts*mdl.nel,1);
+            r.s1y_gp  = zeros(maxElmGaussPts*mdl.nel,1);
+            r.s2x_gp  = zeros(maxElmGaussPts*mdl.nel,1);
+            r.s2y_gp  = zeros(maxElmGaussPts*mdl.nel,1);
             
             npts = 0;
             for i = 1:mdl.nel
-                d = res.D(mdl.elems(i).gle);
+                d = r.D(mdl.elems(i).gle);
                 
                 [ngp,str,gpc] = mdl.elems(i).gaussStress(d);
-                res.ngp(i)          = ngp;
-                res.sxx_gp(1:ngp,i) = str(1,1:ngp);
-                res.syy_gp(1:ngp,i) = str(2,1:ngp);
-                res.txy_gp(1:ngp,i) = str(3,1:ngp);
+                r.ngp(i)          = ngp;
+                r.sxx_gp(1:ngp,i) = str(1,1:ngp);
+                r.syy_gp(1:ngp,i) = str(2,1:ngp);
+                r.txy_gp(1:ngp,i) = str(3,1:ngp);
                 
                 for j = 1:ngp
                     npts = npts + 1;
-                    res.x_gp(npts) = gpc(1,j);
-                    res.y_gp(npts) = gpc(2,j);
+                    r.x_gp(npts) = gpc(1,j);
+                    r.y_gp(npts) = gpc(2,j);
                     
                     [prc,thetap] = anl.princStress(str(:,j));
-                    res.s1_gp(j,i)   = prc(1);
-                    res.s2_gp(j,i)   = prc(2);
-                    res.tmax_gp(j,i) = prc(3);
-                    res.s1x_gp(npts) = res.s1_gp(j,i)*cos(thetap);
-                    res.s1y_gp(npts) = res.s1_gp(j,i)*sin(thetap);
-                    res.s2x_gp(npts) = res.s2_gp(j,i)*cos(thetap+(pi/2.0));
-                    res.s2y_gp(npts) = res.s2_gp(j,i)*sin(thetap+(pi/2.0));
+                    r.s1_gp(j,i)   = prc(1);
+                    r.s2_gp(j,i)   = prc(2);
+                    r.tmax_gp(j,i) = prc(3);
+                    r.s1x_gp(npts) = r.s1_gp(j,i)*cos(thetap);
+                    r.s1y_gp(npts) = r.s1_gp(j,i)*sin(thetap);
+                    r.s2x_gp(npts) = r.s2_gp(j,i)*cos(thetap+(pi/2.0));
+                    r.s2y_gp(npts) = r.s2_gp(j,i)*sin(thetap+(pi/2.0));
                 end
             end
             
-            res.sxx_gp_min  = min(min(res.sxx_gp));
-            res.sxx_gp_max  = max(max(res.sxx_gp));
-            res.syy_gp_min  = min(min(res.syy_gp));
-            res.syy_gp_max  = max(max(res.syy_gp));
-            res.txy_gp_min  = min(min(res.txy_gp));
-            res.txy_gp_max  = max(max(res.txy_gp));
-            res.s1_gp_min   = min(min(res.s1_gp));
-            res.s1_gp_max   = max(max(res.s1_gp));
-            res.s2_gp_min   = min(min(res.s2_gp));
-            res.s2_gp_max   = max(max(res.s2_gp));
-            res.tmax_gp_min = min(min(res.tmax_gp));
-            res.tmax_gp_max = max(max(res.tmax_gp));
+            r.sxx_gp_min  = min(min(r.sxx_gp));
+            r.sxx_gp_max  = max(max(r.sxx_gp));
+            r.syy_gp_min  = min(min(r.syy_gp));
+            r.syy_gp_max  = max(max(r.syy_gp));
+            r.txy_gp_min  = min(min(r.txy_gp));
+            r.txy_gp_max  = max(max(r.txy_gp));
+            r.s1_gp_min   = min(min(r.s1_gp));
+            r.s1_gp_max   = max(max(r.s1_gp));
+            r.s2_gp_min   = min(min(r.s2_gp));
+            r.s2_gp_max   = max(max(r.s2_gp));
+            r.tmax_gp_min = min(min(r.tmax_gp));
+            r.tmax_gp_max = max(max(r.tmax_gp));
         end
         
         %------------------------------------------------------------------
@@ -111,40 +110,41 @@ classdef Model < handle
         % for all elements.
         % The nodal stress components are computed by extrapolation of Gauss
         % point stress components using the TGN matrix.
-        function elemStressExtrapInplane(mdl,res)
+        function elemStressExtrapInplane(mdl)
+            r = mdl.res;
             maxNen = mdl.maxNumElemNodes;
             
-            res.sxx_elemextrap  = zeros(maxNen,mdl.nel);
-            res.syy_elemextrap  = zeros(maxNen,mdl.nel);
-            res.txy_elemextrap  = zeros(maxNen,mdl.nel);
-            res.s1_elemextrap   = zeros(maxNen,mdl.nel);
-            res.s2_elemextrap   = zeros(maxNen,mdl.nel);
-            res.tmax_elemextrap = zeros(maxNen,mdl.nel);
+            r.sxx_elemextrap  = zeros(maxNen,mdl.nel);
+            r.syy_elemextrap  = zeros(maxNen,mdl.nel);
+            r.txy_elemextrap  = zeros(maxNen,mdl.nel);
+            r.s1_elemextrap   = zeros(maxNen,mdl.nel);
+            r.s2_elemextrap   = zeros(maxNen,mdl.nel);
+            r.tmax_elemextrap = zeros(maxNen,mdl.nel);
             
             for i = 1:mdl.nel
                 TGN = mdl.elems(i).TGN;
                 nen = mdl.elems(i).shape.nen;
-                ngp = res.ngp(i);
-                res.sxx_elemextrap(1:nen,i)  = TGN * res.sxx_gp(1:ngp,i);
-                res.syy_elemextrap(1:nen,i)  = TGN * res.syy_gp(1:ngp,i);
-                res.txy_elemextrap(1:nen,i)  = TGN * res.txy_gp(1:ngp,i);
-                res.s1_elemextrap(1:nen,i)   = TGN * res.s1_gp(1:ngp,i);
-                res.s2_elemextrap(1:nen,i)   = TGN * res.s2_gp(1:ngp,i);
-                res.tmax_elemextrap(1:nen,i) = TGN * res.tmax_gp(1:ngp,i);
+                ngp = r.ngp(i);
+                r.sxx_elemextrap(1:nen,i)  = TGN * r.sxx_gp(1:ngp,i);
+                r.syy_elemextrap(1:nen,i)  = TGN * r.syy_gp(1:ngp,i);
+                r.txy_elemextrap(1:nen,i)  = TGN * r.txy_gp(1:ngp,i);
+                r.s1_elemextrap(1:nen,i)   = TGN * r.s1_gp(1:ngp,i);
+                r.s2_elemextrap(1:nen,i)   = TGN * r.s2_gp(1:ngp,i);
+                r.tmax_elemextrap(1:nen,i) = TGN * r.tmax_gp(1:ngp,i);
             end
             
-            res.sxx_elemextrap_min  = min(min(res.sxx_elemextrap));
-            res.sxx_elemextrap_max  = max(max(res.sxx_elemextrap));
-            res.syy_elemextrap_min  = min(min(res.syy_elemextrap));
-            res.syy_elemextrap_max  = max(max(res.syy_elemextrap));
-            res.txy_elemextrap_min  = min(min(res.txy_elemextrap));
-            res.txy_elemextrap_max  = max(max(res.txy_elemextrap));
-            res.s1_elemextrap_min   = min(min(res.s1_elemextrap));
-            res.s1_elemextrap_max   = max(max(res.s1_elemextrap));
-            res.s2_elemextrap_min   = min(min(res.s2_elemextrap));
-            res.s2_elemextrap_max   = max(max(res.s2_elemextrap));
-            res.tmax_elemextrap_min = min(min(res.tmax_elemextrap));
-            res.tmax_elemextrap_max = max(max(res.tmax_elemextrap));
+            r.sxx_elemextrap_min  = min(min(r.sxx_elemextrap));
+            r.sxx_elemextrap_max  = max(max(r.sxx_elemextrap));
+            r.syy_elemextrap_min  = min(min(r.syy_elemextrap));
+            r.syy_elemextrap_max  = max(max(r.syy_elemextrap));
+            r.txy_elemextrap_min  = min(min(r.txy_elemextrap));
+            r.txy_elemextrap_max  = max(max(r.txy_elemextrap));
+            r.s1_elemextrap_min   = min(min(r.s1_elemextrap));
+            r.s1_elemextrap_max   = max(max(r.s1_elemextrap));
+            r.s2_elemextrap_min   = min(min(r.s2_elemextrap));
+            r.s2_elemextrap_max   = max(max(r.s2_elemextrap));
+            r.tmax_elemextrap_min = min(min(r.tmax_elemextrap));
+            r.tmax_elemextrap_max = max(max(r.tmax_elemextrap));
         end
         
         %------------------------------------------------------------------
@@ -154,7 +154,8 @@ classdef Model < handle
         % The nodal stress components are computed by averaging values of
         % element extrapolated nodal stress components of all elements
         % adjacent to each node.
-        function nodeStressExtrapInplane(mdl,res)
+        function nodeStressExtrapInplane(mdl)
+            r = mdl.res;
             
             % assemble vector with number of adjacent elements of each node
             node_adjelems = zeros(mdl.nnp,1);
@@ -166,47 +167,47 @@ classdef Model < handle
                 end
             end
             
-            res.sxx_nodeextrap  = zeros(mdl.nnp,1);
-            res.syy_nodeextrap  = zeros(mdl.nnp,1);
-            res.txy_nodeextrap  = zeros(mdl.nnp,1);
-            res.s1_nodeextrap   = zeros(mdl.nnp,1);
-            res.s2_nodeextrap   = zeros(mdl.nnp,1);
-            res.tmax_nodeextrap = zeros(mdl.nnp,1);
+            r.sxx_nodeextrap  = zeros(mdl.nnp,1);
+            r.syy_nodeextrap  = zeros(mdl.nnp,1);
+            r.txy_nodeextrap  = zeros(mdl.nnp,1);
+            r.s1_nodeextrap   = zeros(mdl.nnp,1);
+            r.s2_nodeextrap   = zeros(mdl.nnp,1);
+            r.tmax_nodeextrap = zeros(mdl.nnp,1);
             
             for i = 1:mdl.nel
                 nen = mdl.elems(i).shape.nen;
                 for j = 1:nen
                     n = mdl.elems(i).shape.nodes(j).id;
-                    res.sxx_nodeextrap(n)  = res.sxx_nodeextrap(n)  + res.sxx_elemextrap(j,i);
-                    res.syy_nodeextrap(n)  = res.syy_nodeextrap(n)  + res.syy_elemextrap(j,i);
-                    res.txy_nodeextrap(n)  = res.txy_nodeextrap(n)  + res.txy_elemextrap(j,i);
-                    res.s1_nodeextrap(n)   = res.s1_nodeextrap(n)   + res.s1_elemextrap(j,i);
-                    res.s2_nodeextrap(n)   = res.s2_nodeextrap(n)   + res.s2_elemextrap(j,i);
-                    res.tmax_nodeextrap(n) = res.tmax_nodeextrap(n) + res.tmax_elemextrap(j,i);
+                    r.sxx_nodeextrap(n)  = r.sxx_nodeextrap(n)  + r.sxx_elemextrap(j,i);
+                    r.syy_nodeextrap(n)  = r.syy_nodeextrap(n)  + r.syy_elemextrap(j,i);
+                    r.txy_nodeextrap(n)  = r.txy_nodeextrap(n)  + r.txy_elemextrap(j,i);
+                    r.s1_nodeextrap(n)   = r.s1_nodeextrap(n)   + r.s1_elemextrap(j,i);
+                    r.s2_nodeextrap(n)   = r.s2_nodeextrap(n)   + r.s2_elemextrap(j,i);
+                    r.tmax_nodeextrap(n) = r.tmax_nodeextrap(n) + r.tmax_elemextrap(j,i);
                 end
             end
             
             for i = 1:mdl.nnp
-                res.sxx_nodeextrap(i)  = res.sxx_nodeextrap(i)  / node_adjelems(i);
-                res.syy_nodeextrap(i)  = res.syy_nodeextrap(i)  / node_adjelems(i);
-                res.txy_nodeextrap(i)  = res.txy_nodeextrap(i)  / node_adjelems(i);
-                res.s1_nodeextrap(i)   = res.s1_nodeextrap(i)   / node_adjelems(i);
-                res.s2_nodeextrap(i)   = res.s2_nodeextrap(i)   / node_adjelems(i);
-                res.tmax_nodeextrap(i) = res.tmax_nodeextrap(i) / node_adjelems(i);
+                r.sxx_nodeextrap(i)  = r.sxx_nodeextrap(i)  / node_adjelems(i);
+                r.syy_nodeextrap(i)  = r.syy_nodeextrap(i)  / node_adjelems(i);
+                r.txy_nodeextrap(i)  = r.txy_nodeextrap(i)  / node_adjelems(i);
+                r.s1_nodeextrap(i)   = r.s1_nodeextrap(i)   / node_adjelems(i);
+                r.s2_nodeextrap(i)   = r.s2_nodeextrap(i)   / node_adjelems(i);
+                r.tmax_nodeextrap(i) = r.tmax_nodeextrap(i) / node_adjelems(i);
             end
             
-            res.sxx_nodeextrap_min  = min(min(res.sxx_nodeextrap));
-            res.sxx_nodeextrap_max  = max(max(res.sxx_nodeextrap));
-            res.syy_nodeextrap_min  = min(min(res.syy_nodeextrap));
-            res.syy_nodeextrap_max  = max(max(res.syy_nodeextrap));
-            res.txy_nodeextrap_min  = min(min(res.txy_nodeextrap));
-            res.txy_nodeextrap_max  = max(max(res.txy_nodeextrap));
-            res.s1_nodeextrap_min   = min(min(res.s1_nodeextrap));
-            res.s1_nodeextrap_max   = max(max(res.s1_nodeextrap));
-            res.s2_nodeextrap_min   = min(min(res.s2_nodeextrap));
-            res.s2_nodeextrap_max   = max(max(res.s2_nodeextrap));
-            res.tmax_nodeextrap_min = min(min(res.tmax_nodeextrap));
-            res.tmax_nodeextrap_max = max(max(res.tmax_nodeextrap));
+            r.sxx_nodeextrap_min  = min(min(r.sxx_nodeextrap));
+            r.sxx_nodeextrap_max  = max(max(r.sxx_nodeextrap));
+            r.syy_nodeextrap_min  = min(min(r.syy_nodeextrap));
+            r.syy_nodeextrap_max  = max(max(r.syy_nodeextrap));
+            r.txy_nodeextrap_min  = min(min(r.txy_nodeextrap));
+            r.txy_nodeextrap_max  = max(max(r.txy_nodeextrap));
+            r.s1_nodeextrap_min   = min(min(r.s1_nodeextrap));
+            r.s1_nodeextrap_max   = max(max(r.s1_nodeextrap));
+            r.s2_nodeextrap_min   = min(min(r.s2_nodeextrap));
+            r.s2_nodeextrap_max   = max(max(r.s2_nodeextrap));
+            r.tmax_nodeextrap_min = min(min(r.tmax_nodeextrap));
+            r.tmax_nodeextrap_max = max(max(r.tmax_nodeextrap));
         end
     end
     
@@ -304,7 +305,7 @@ classdef Model < handle
                     gle = mdl.elems(i).gle;
                     F(gle) = F(gle) + fline;
                 end
-                if (~isempty(mdl.elems(i).areaFlux))
+                if (~isempty(mdl.elems(i).domainFlux))
                     % Get element equivalent nodal flux vectors
                     farea = mdl.elems(i).domainEquivFluxVct();
                     
@@ -340,11 +341,11 @@ classdef Model < handle
         %------------------------------------------------------------------
         % Compute stresses at Gauss points and principal stresses of all
         % elements.
-        function gaussStress(mdl,anl,res)
+        function gaussStress(mdl,anl)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
-                mdl.gaussStressInplane(anl,res);
+                mdl.gaussStressInplane(anl);
             end
         end
         
@@ -353,11 +354,11 @@ classdef Model < handle
         % for all elements.
         % The nodal stress components are computed by extrapolation of Gauss
         % point stress components using the TGN matrix.
-        function elemStressExtrap(mdl,res)
+        function elemStressExtrap(mdl)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
-                mdl.elemStressExtrapInplane(res);
+                mdl.elemStressExtrapInplane();
             end
         end
         
@@ -367,11 +368,11 @@ classdef Model < handle
         % The nodal stress components are computed by averaging values of
         % element extrapolated nodal stress components of all elements
         % adjacent to each node.
-        function nodeStressExtrap(mdl,res)
+        function nodeStressExtrap(mdl)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
-                mdl.nodeStressExtrapInplane(res);
+                mdl.nodeStressExtrapInplane();
             end
         end
     end

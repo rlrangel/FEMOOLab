@@ -5,7 +5,6 @@
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <shape.html Shape: element shape super-class> to deal
 % with 6-noded isoparametric triangle (quadratic triangular) elements:
-%
 %                           s
 %                           ^
 %                           |
@@ -17,6 +16,9 @@
 %                           |    \
 %                         1 +--+--+ 2  ----> r
 %                              4
+%
+%% Class definition
+%
 classdef Shape_Tria6 < fem.Shape
     %% Constructor method
     methods
@@ -28,13 +30,12 @@ classdef Shape_Tria6 < fem.Shape
                 this.nodes = nodes;
                 
                 % Cartesian nodal coordiantes matrix [X Y]
-                this.carCoord =...
-                [ nodes(1).coord(1)   nodes(1).coord(2);
-                  nodes(2).coord(1)   nodes(2).coord(2);
-                  nodes(3).coord(1)   nodes(3).coord(2);
-                  nodes(4).coord(1)   nodes(4).coord(2);
-                  nodes(5).coord(1)   nodes(5).coord(2);
-                  nodes(6).coord(1)   nodes(6).coord(2) ];
+                this.carCoord = [ nodes(1).coord(1) nodes(1).coord(2);
+                                  nodes(2).coord(1) nodes(2).coord(2);
+                                  nodes(3).coord(1) nodes(3).coord(2);
+                                  nodes(4).coord(1) nodes(4).coord(2);
+                                  nodes(5).coord(1) nodes(5).coord(2);
+                                  nodes(6).coord(1) nodes(6).coord(2) ];
                 
                 % Parametric nodal coordinates matrix [r s]
                 this.parCoord = [ 0.0  0.0;
@@ -45,12 +46,12 @@ classdef Shape_Tria6 < fem.Shape
                                   0.0  0.5 ];
                 
                 % Vector of local node ids in ccw order
-                this.ccwLocalNodeIds = [ 1   4   2   5   3   6 ];
+                this.ccwLocalNodeIds = [ 1  4  2  5  3  6 ];
                 
                 % Vector of global node ids in ccw order
                 this.ccwNodeIds = ...
-                [ nodes(1).id   nodes(4).id   nodes(2).id ...
-                  nodes(5).id   nodes(3).id   nodes(6).id];
+                [ nodes(1).id  nodes(4).id  nodes(2).id ...
+                  nodes(5).id  nodes(3).id  nodes(6).id];
             end
         end
     end

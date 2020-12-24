@@ -6,9 +6,10 @@
 % methods declared in <gauss.html Gauss: integration quadrature super-class>
 % to deal with triangular element shapes.
 %
+% Quadrature of order 2 or 3:
 %                              s
 %                              ^
-% Quadrature of order 2 or 3: |
+%                              |
 %                              +
 %                              |\
 %                              | \
@@ -20,8 +21,10 @@
 %                              |       \
 %                              |        \
 %                              | *     * \
-%                              | 1     2   \
+%                              | 1     2  \
 %                              +-----+-----+ ----> r
+%
+%% Class definition
 %
 classdef Gauss_Tria < fem.Gauss
     %% Constructor method

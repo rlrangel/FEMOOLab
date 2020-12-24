@@ -1,4 +1,4 @@
-%% Anm (Analysis Model) Class
+%% Anm Class (Analysis Model)
 %
 %% Description
 %
@@ -10,12 +10,14 @@
 % are the functions that should be implemented in a derived sub-class
 % that deals with specific types of analysis models.
 %
-%% Current subclasses:
+%% Subclasses
 %
-%%%
 % * <anm_planestress.html Anm_PlaneStress: plane stress analysis model subclass>
 % * <anm_planestrain.html Anm_PlaneStrain: plane strain analysis model subclass>
+% * <anm_planeconduction.html Anm_PlaneConduction: plane conduction analysis model subclass>
 % * <anm_axisymmetric.html Anm_Axisymmetric: axisymmetric analysis model subclass>
+%
+%% Class definition
 %
 classdef Anm < handle
     %% Constant values
@@ -30,6 +32,7 @@ classdef Anm < handle
     
     %% Flags for types of responses
     properties (SetAccess = protected, GetAccess = public)
+        % Elasticity properties
         DISPL_X     = logical(false);    % Displacement X
         DISPL_Y     = logical(false);    % Displacement Y
         DISPL_Z     = logical(false);    % Displacement Z
@@ -61,16 +64,16 @@ classdef Anm < handle
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        type     int32 = int32.empty;  % flag for type of analysis model
-        ndof     int32 = int32.empty;  % number of degrees-of-freedom per node
+        type int32 = int32.empty;  % flag for type of analysis model
+        ndof int32 = int32.empty;  % number of degrees-of-freedom per node
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function anm = Anm(type,ndof)
-            anm.type = type;
-            anm.ndof = ndof;
+        function this = Anm(type,ndof)
+            this.type = type;
+            this.ndof = ndof;
         end
     end
     

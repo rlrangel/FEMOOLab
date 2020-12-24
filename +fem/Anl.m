@@ -1,4 +1,4 @@
-%% Anl (Analysis) Class
+%% Anl Class (Analysis)
 %
 %% Description
 %
@@ -7,14 +7,18 @@
 %
 % Essentially, this super-class declares abstract methods that are the
 % functions that should be implemented in a derived sub-class that deals
-% with a specific type of analysis.
+% with a specific type of analysis. These abstract methods
+% are the functions that should be implemented in a derived sub-class
+% that deals with specific types of analysis.
 %
-%% Current subclasses:
+%% Subclasses
 %
-%%%
 % * <anl_linearstatic.html Anl_LinearStatic: linear static analysis subclass>
 %
+%% Class definition
+%
 classdef Anl < handle
+    %% Constant values
     properties (Constant = true, Access = public)
         % Types of analysis
         GENERIC       = int32(0);
@@ -23,22 +27,23 @@ classdef Anl < handle
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        type      int32 = int32.empty;  % flag for type of analysis
+        type int32 = int32.empty;  % flag for type of analysis
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function anl = Anl(type)
-            anl.type = type;
+        function this = Anl(type)
+            this.type = type;
         end
     end
+    
     %% Abstract methods
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
         %------------------------------------------------------------------
         % Process model data to compute results.
-        status = process(anl,mdl,res);
+        status = process(anl,sim);
     end
     
     %% Public methods
@@ -46,6 +51,9 @@ classdef Anl < handle
         %------------------------------------------------------------------
         % Pre-process model data to setup mesh information.
         function preProcess(~,mdl)
+            % Compute total number of equations
+            mdl.neq = mdl.nnp * mdl.anm.ndof;
+            
             % Initialize global d.o.f. numbering matrix
             mdl.anm.setupDOFNum(mdl);
             
@@ -58,18 +66,18 @@ classdef Anl < handle
         
         %------------------------------------------------------------------
         % Pos-process results to compute derived quantitites.
-        function posProcess(anl,mdl,res)
+        function posProcess(anl,mdl)
             % Compute stresses at Gauss points and principal stresses
-            mdl.gaussStress(anl,res);
+            mdl.gaussStress(anl);
             
             % Extrapolate Gauss point results to element node results
-            mdl.elemStressExtrap(res);
+            mdl.elemStressExtrap();
             
             % Smooth element node result to global node results
-            mdl.nodeStressExtrap(res);
+            mdl.nodeStressExtrap();
             
             % Clear numerical garbage
-            res.clearSmallValues(mdl);
+            mdl.res.clearSmallValues(mdl);
         end
     end
     
@@ -80,11 +88,7 @@ classdef Anl < handle
         % A very low reciprocal condition number indicates that the matrix
         % is badly conditioned and may be singular.
         function singular = singularMtx(mdl,K)
-            if (rcond(K(1:mdl.neqf,1:mdl.neqf)) < 10e-15)
-                singular = 1;
-            else
-                singular = 0;
-            end
+            singular = (rcond(K(1:mdl.neqf,1:mdl.neqf)) < 10e-15);
         end
         
         %------------------------------------------------------------------
@@ -92,10 +96,10 @@ classdef Anl < handle
         %  f --> free d.o.f. (natural B.C. - unknown) 
         %  c --> constrained d.o.f. (essential B.C. - known) 
         %
-        % [ Kff Kfc ] * [ Df ] = [ Ff ]
-        % [ Kcf Kcc ]   [ Dc ] = [ Fc ]
+        % [ Kff Kfc ] * [ Uf ] = [ Ff ]
+        % [ Kcf Kcc ]   [ Uc ] = [ Fc ]
         %
-        function D = solveSystem(mdl,K,F,D)
+        function U = solveSystem(mdl,K,F,U)
             % Free and constrained d.o.f. terms
             f = 1:mdl.neqf;
             c = mdl.neqf+1:mdl.neq;
@@ -104,13 +108,13 @@ classdef Anl < handle
             Kff = K(f,f);
             Kfc = K(f,c);
             Ff  = F(f);
-            Dc  = D(c);
+            Uc  = U(c);
             
-            % Solve for Df
-            Df = Kff \ (Ff - Kfc * Dc);
+            % Solve for Uf
+            Uf = Kff \ (Ff - Kfc * Uc);
             
-            % Reconstruct unknown vector D
-            D = [ Df; Dc ];
+            % Reconstruct unknown vector U
+            U = [ Uf; Uc ];
         end
         
         %------------------------------------------------------------------

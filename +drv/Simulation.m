@@ -7,6 +7,8 @@
 % Its properties are the two fundamental objects to perform a Finite
 % Element analysis: <model.html Model> and <anl.html Analysis>.
 %
+%% Class definition
+%
 classdef Simulation < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
@@ -17,8 +19,8 @@ classdef Simulation < handle
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function sim = Simulation(opt)
-            sim.runFiles(opt);
+        function this = Simulation(opt)
+            this.runFiles(opt);
         end
     end
     
@@ -76,14 +78,14 @@ classdef Simulation < handle
             sim.anl.preProcess(sim.mdl);
             
             % Perform analysis
-            if (sim.anl.process(sim.mdl,sim.res)) % remove inputs (sim.res do not exist)
+            if (sim.anl.process(sim))
                 % Pos-process
                 fprintf('Computing stresses...\n');
-                sim.anl.posProcess(sim.mdl,sim.res); % remove inputs (sim.res do not exist)
+                sim.anl.posProcess(sim.mdl);
                 
                 % Plot results
                 fprintf('Plotting results...\n');
-                sim.res.plot(sim.mdl); % sim.res do not exist
+                sim.mdl.res.plot(sim.mdl);
                 fprintf('Finished!\n');
                 
                 % Print results... (TO DO)

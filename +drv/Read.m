@@ -3,16 +3,19 @@
 %% Description
 %
 % This class defines a reader object in the FEMOOLab program.
-% A reader object is responsible for reading the input file with model and
+% A reader object is responsible for reading a
+% <https://web.tecgraf.puc-rio.br/neutralfile neutral file> with model and
 % analysis information and store it in the simulation data structure.
+%
+%% Class definition
 %
 classdef Read < handle
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function read = Read(fid,sim,opt)
+        function this = Read(fid,sim,opt)
             if (nargin == 3)
-                read.execute(fid,sim,opt);
+                this.execute(fid,sim,opt);
             end
         end
     end
@@ -52,35 +55,34 @@ classdef Read < handle
                     case '%MATERIAL.PROPERTY.THERMAL'
                         status = read.materialThermal(fid,sim.mdl);
                     case '%THICKNESS'
-                        status = read.Thickness(fid,sim.mdl);
+                        [status,thickness] = read.Thickness(fid);
                     case '%INTEGRATION.ORDER'
-                        status = read.IntgrOrder(fid,sim.mdl);
+                        [status,intgrorder] = read.IntgrOrder(fid);
                     case '%ELEMENT'
                         status = read.elementTotal(fid,sim.mdl);
                     case '%ELEMENT.T3'
-                        status = read.elementTria3(fid,sim.mdl,gauss_tria);
+                        status = read.elementTria3(fid,sim.mdl,gauss_tria,thickness,intgrorder);
                     case '%ELEMENT.Q4'
-                        status = read.elementQuad4(fid,sim.mdl,gauss_quad);
+                        status = read.elementQuad4(fid,sim.mdl,gauss_quad,thickness,intgrorder);
                     case '%ELEMENT.T6'
-                        status = read.elementTria6(fid,sim.mdl,gauss_tria);
+                        status = read.elementTria6(fid,sim.mdl,gauss_tria,thickness,intgrorder);
                     case '%ELEMENT.Q8'
-                        status = read.elementQuad8(fid,sim.mdl,gauss_quad);
+                        status = read.elementQuad8(fid,sim.mdl,gauss_quad,thickness,intgrorder);
+                    case '%LOAD.CASE.NODAL.FORCES'
+                        status = read.loadPoint(fid,sim.mdl);
                     case '%LOAD.CASE.NODAL.DISPLACEMENT'
                         status = read.nodePrescDispl(fid,sim.mdl);
                     case '%LOAD.CASE.NODAL.TEMPERATURE'
                         status = read.nodePrescTemp(fid,sim.mdl);
-                    case '%LOAD.CASE.NODAL.FORCES'
-                        status = read.loadPoint(fid,sim.mdl);
                     case '%LOAD.CASE.LINE.FORCE.UNIFORM'
                         status = read.loadLineUnif(fid,sim.mdl);
                     case '%LOAD.CASE.DOMAIN.FORCE.UNIFORM'
                         status = read.loadDomainUnif(fid,sim.mdl);
                     case '%LOAD.CASE.LINE.HEAT.FLUX.UNIFORM'
                         status = read.fluxLineUnif(fid,sim.mdl);
-                    case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM'
+                    case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM' % This is actually DOMAIN heat flux!
                         status = read.fluxDomainUnif(fid,sim.mdl);
                 end
-                
                 if (strcmp(string,'%END'))
                     break;
                 end
@@ -164,11 +166,10 @@ classdef Read < handle
                 return;
             end
             
-            % Create vector of Node objects and compute total number of equations
+            % Create vector of Node objects
             mdl.nnp = n;
             nodes(n,1) = fem.Node();
             mdl.nodes = nodes;
-            mdl.neq = n * mdl.anm.ndof;
             
             for i = 1:n
                 % Node ID
@@ -217,15 +218,15 @@ classdef Read < handle
                 end
                 
                 % Support condition flags
-                [ebc,count] = fscanf(fid,'%d',6);
-                if (count~= 6 || ~all(ismember(ebc,0:1)))
+                [supp,count] = fscanf(fid,'%d',6);
+                if (count ~= 6 || ~all(ismember(supp,0:1)))
                     fprintf('Invalid support conditions of node %d\n',id);
                     status = 0;
                     return;
                 end
                 
                 % Store data
-                mdl.nodes(id).ebc = ebc;
+                mdl.nodes(id).fixDispl = logical(supp);
             end
         end
         
@@ -240,15 +241,25 @@ classdef Read < handle
                 return;
             end
             
-            % Create vector of Element Objects
+            % Create vector of Material objects
             mdl.nmat = n;
             materials(n,1) = fem.Material();
             mdl.materials = materials;
+            
+            % Set materials IDs
+            for i = 1:n
+                mdl.materials(i).id = i;
+            end
         end
         
         %------------------------------------------------------------------
         function status = materialIsotropic(read,fid,mdl)
             status = 1;
+            if (isempty(mdl.materials))
+                fprintf('Total number of materials must be provided before isotropic properties!\n');
+                status = 0;
+                return;
+            end
             
             % Number of material isotropic properties
             n = fscanf(fid,'%d',1);
@@ -283,8 +294,7 @@ classdef Read < handle
                     return;
                 end
                 
-                % Store data
-                mdl.materials(id).id = id;     % Material ID is not needed now
+                % Store isotropic properties
                 mdl.materials(id).E  = prop(1);
                 mdl.materials(id).v  = prop(2);
             end
@@ -293,6 +303,11 @@ classdef Read < handle
         %------------------------------------------------------------------
         function status = materialDensity(read,fid,mdl)
            status = 1;
+            if (isempty(mdl.materials))
+                fprintf('Total number of materials must be provided before densities!\n');
+                status = 0;
+                return;
+            end
             
             % Number of material densities
             n = fscanf(fid,'%d',1);
@@ -322,8 +337,7 @@ classdef Read < handle
                     return;
                 end
                 
-                % Store data
-                mdl.materials(id).id  = id;    % Material ID is not needed now
+                % Store density
                 mdl.materials(id).rho = rho;
             end
         end
@@ -331,6 +345,11 @@ classdef Read < handle
         %------------------------------------------------------------------
         function status = materialThermal(read,fid,mdl)
             status = 1;
+            if (isempty(mdl.materials))
+                fprintf('Total number of materials must be provided before thermal properties!\n');
+                status = 0;
+                return;
+            end
             
             % Number of material thermal properties
             n = fscanf(fid,'%d',1);
@@ -365,15 +384,14 @@ classdef Read < handle
                     return;
                 end
                 
-                % Store data
-                mdl.materials(id).id = id;    % Material ID is not needed now
+                % Store thermal properties
                 mdl.materials(id).k  = prop(1);
                 mdl.materials(id).cp = prop(2);
             end
         end
         
         %------------------------------------------------------------------
-        function status = Thickness(read,fid,mdl)
+        function [status,thickness] = Thickness(read,fid)
             status = 1;
             
             % Total number of thickness values
@@ -382,11 +400,9 @@ classdef Read < handle
                 status = 0;
                 return;
             end
-
+            
             % Create vector of thicknesses
-            mdl.nthks = n;
             thickness = zeros(n,1);
-            mdl.thickness = thickness;
             
             for i = 1:n
                 id = fscanf(fid,'%d',1);
@@ -396,19 +412,19 @@ classdef Read < handle
                 end
                 
                 [thk,count] = fscanf(fid,'%f',1);
-                if count~= 1
+                if (count ~= 1)
                     fprintf('Invalid thickness %d\n',id);
                     status = 0;
                     return;
                 end
                 
                 % Store data
-                mdl.thickness(id) = thk;
+                thickness(id) = thk;
             end
         end
         
         %------------------------------------------------------------------
-        function status = IntgrOrder(read,fid,mdl)
+        function [status,intgrorder] = IntgrOrder(read,fid)
             status = 1;
             
             % Total number of integration orders
@@ -419,9 +435,7 @@ classdef Read < handle
             end
 
             % Create vector of integration orders
-            mdl.nintord = n;
             intgrorder = zeros(n,2);
-            mdl.intgrorder = intgrorder;
             
             for i = 1:n
                 id = fscanf(fid,'%d',1);
@@ -432,15 +446,15 @@ classdef Read < handle
                 
                 % Stiffness and stress integration orders
                 [order,count] = fscanf(fid,'%d',6);
-                if count~= 6
+                if (count ~= 6)
                     fprintf('Invalid integration order %d\n',id);
                     status = 0;
                     return;
                 end
                 
                 % Store data
-                mdl.intgrorder(id,1) = order(1);
-                mdl.intgrorder(id,2) = order(4);
+                intgrorder(id,1) = order(1);
+                intgrorder(id,2) = order(4);
             end
         end
         
@@ -455,14 +469,19 @@ classdef Read < handle
                 return;
             end
             
-            % Create vector of Element Objects
+            % Create vector of Element objects
             mdl.nel = n;
             elems(n,1) = fem.Element();
             mdl.elems = elems;
+            
+            % Set elements IDs
+            for i = 1:n
+                mdl.elems(i).id = i;
+            end
         end
         
         %------------------------------------------------------------------
-        function status = elementTria3(read,fid,mdl,gauss)
+        function status = elementTria3(read,fid,mdl,gauss,thickness,intgrorder)
             %                         3 +
             %                           |\
             %                           | \
@@ -479,15 +498,15 @@ classdef Read < handle
             
             % Number of elements T3
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nel,'number of elements'))
+            if (~read.chkInt(n,mdl.nel,'number of elements T3'))
                 status = 0;
                 return;
             end
-                        
+            
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID'))
+                if (~read.chkInt(id,mdl.nel,'element T3 ID'))
                     status = 0;
                     return;
                 end
@@ -495,26 +514,29 @@ classdef Read < handle
                 % Element properties:
                 % Material ID, Thickness ID, Integration order ID, Connectivity
                 [p,count] = fscanf(fid,'%d',6);
-                if (~read.chkElemProp(mdl,id,p,count,6))
+                if (~read.chkElemProp(mdl,id,p,thickness,intgrorder,count,6))
                     status = 0;
                     return;
                 end
                 
-                mdl.elems(id).setAnm(mdl.anm);
-                mdl.elems(id).setMaterial(mdl.materials(p(1)));
-                mdl.elems(id).setThickness(mdl.thickness(p(2)));
+                % Create shape object
                 shape = fem.Shape_Tria3([mdl.nodes(p(4));mdl.nodes(p(5));mdl.nodes(p(6))]);
-                mdl.elems(id).setShape(shape);
+                
+                % Store properties
+                mdl.elems(id).anm   = mdl.anm;
+                mdl.elems(id).mat   = mdl.materials(p(1));
+                mdl.elems(id).thk   = thickness(p(2));
+                mdl.elems(id).shape = shape;
+                
                 % Always setup Gauss quadrature after setting shape because
                 % element needs shape to define matrix for extrapolating
                 % stresses from integration points to nodes
-                mdl.elems(id).setGauss(gauss, ...
-                                       mdl.intgrorder(p(3),1),mdl.intgrorder(p(3),2));
+                mdl.elems(id).setGauss(gauss,intgrorder(p(3),1),intgrorder(p(3),2));
             end
         end
         
         %------------------------------------------------------------------
-        function status = elementQuad4(read,fid,mdl,gauss)
+        function status = elementQuad4(read,fid,mdl,gauss,thickness,intgrorder)
             %                     4 +---------------+ 3
             %                       |               |
             %                       |               |
@@ -531,7 +553,7 @@ classdef Read < handle
             
             % Number of elements Q4
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nel,'number of elements'))
+            if (~read.chkInt(n,mdl.nel,'number of elements Q4'))
                 status = 0;
                 return;
             end
@@ -539,7 +561,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID'))
+                if (~read.chkInt(id,mdl.nel,'element Q4 ID'))
                     status = 0;
                     return;
                 end
@@ -547,27 +569,30 @@ classdef Read < handle
                 % Element properties:
                 % Material ID, Thickness ID, Integration order ID, Connectivity
                 [p,count] = fscanf(fid,'%d',7);
-                if (~read.chkElemProp(mdl,id,p,count,7))
+                if (~read.chkElemProp(mdl,id,p,thickness,intgrorder,count,7))
                     status = 0;
                     return;
                 end
                 
-                mdl.elems(id).setAnm(mdl.anm);
-                mdl.elems(id).setMaterial(mdl.materials(p(1)));
-                mdl.elems(id).setThickness(mdl.thickness(p(2)));
+                % Create shape object
                 shape = fem.Shape_Quad4([mdl.nodes(p(4));mdl.nodes(p(5));...
                                          mdl.nodes(p(6));mdl.nodes(p(7))]);
-                mdl.elems(id).setShape(shape);
+                
+                % Store properties
+                mdl.elems(id).anm   = mdl.anm;
+                mdl.elems(id).mat   = mdl.materials(p(1));
+                mdl.elems(id).thk   = thickness(p(2));
+                mdl.elems(id).shape = shape;
+                
                 % Always setup Gauss quadrature after setting shape because
                 % element needs shape to define matrix for extrapolating
                 % stresses from integration points to nodes
-                mdl.elems(id).setGauss(gauss, ...
-                                       mdl.intgrorder(p(3),1),mdl.intgrorder(p(3),2));
+                mdl.elems(id).setGauss(gauss,intgrorder(p(3),1),intgrorder(p(3),2));
             end
         end
         
         %------------------------------------------------------------------
-        function status = elementTria6(read,fid,mdl,gauss)
+        function status = elementTria6(read,fid,mdl,gauss,thickness,intgrorder)
             %                         3 +
             %                           |\
             %                           | \
@@ -585,7 +610,7 @@ classdef Read < handle
             
             % Number of elements T6
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nel,'number of elements'))
+            if (~read.chkInt(n,mdl.nel,'number of elements T6'))
                 status = 0;
                 return;
             end
@@ -593,7 +618,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID'))
+                if (~read.chkInt(id,mdl.nel,'element T6 ID'))
                     status = 0;
                     return;
                 end
@@ -601,30 +626,33 @@ classdef Read < handle
                 % Element properties:
                 % Material ID, Thickness ID, Integration order ID, Connectivity
                 [p,count] = fscanf(fid,'%d',9);
-                if (~read.chkElemProp(mdl,id,p,count,9))
+                if (~read.chkElemProp(mdl,id,p,thickness,intgrorder,count,9))
                     status = 0;
                     return;
                 end
                 
-                mdl.elems(id).setAnm(mdl.anm);
-                mdl.elems(id).setMaterial(mdl.materials(p(1)));
-                mdl.elems(id).setThickness(mdl.thickness(p(2)));
+                % Create shape object:
                 % Node incidence is given in counter clockwise order around
                 % element shape and is converted to corner first incidence
                 shape = fem.Shape_Tria6([mdl.nodes(p(4));mdl.nodes(p(6));...
                                          mdl.nodes(p(8));mdl.nodes(p(5));...
                                          mdl.nodes(p(7));mdl.nodes(p(9))]);
-                mdl.elems(id).setShape(shape);
+                
+                % Store properties
+                mdl.elems(id).anm   = mdl.anm;
+                mdl.elems(id).mat   = mdl.materials(p(1));
+                mdl.elems(id).thk   = thickness(p(2));
+                mdl.elems(id).shape = shape;
+                
                 % Always setup Gauss quadrature after setting shape because
                 % element needs shape to define matrix for extrapolating
                 % stresses from integration points to nodes
-                mdl.elems(id).setGauss(gauss, ...
-                                       mdl.intgrorder(p(3),1),mdl.intgrorder(p(3),2));
+                mdl.elems(id).setGauss(gauss,intgrorder(p(3),1),intgrorder(p(3),2));
             end
         end
         
         %------------------------------------------------------------------
-        function status = elementQuad8(read,fid,mdl,gauss)
+        function status = elementQuad8(read,fid,mdl,gauss,thickness,intgrorder)
             %                              7
             %                    4 +-------+-------+ 3
             %                      |               |
@@ -643,7 +671,7 @@ classdef Read < handle
             
             % Number of elements Q8
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nel,'number of elements'))
+            if (~read.chkInt(n,mdl.nel,'number of elements Q8'))
                 status = 0;
                 return;
             end
@@ -651,7 +679,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID'))
+                if (~read.chkInt(id,mdl.nel,'element Q8 ID'))
                     status = 0;
                     return;
                 end
@@ -659,26 +687,66 @@ classdef Read < handle
                 % Element properties:
                 % Material ID, Thickness ID, Integration order ID, Connectivity
                 [p,count] = fscanf(fid,'%d',11);
-                if (~read.chkElemProp(mdl,id,p,count,11))
+                if (~read.chkElemProp(mdl,id,p,thickness,intgrorder,count,11))
                     status = 0;
                     return;
                 end
                 
-                mdl.elems(id).setAnm(mdl.anm);
-                mdl.elems(id).setMaterial(mdl.materials(p(1)));
-                mdl.elems(id).setThickness(mdl.thickness(p(2)));
+                % Create shape object:
                 % Node incidence is given in counter clockwise order around
                 % element shape and is converted to corner first incidence
                 shape = fem.Shape_Quad8([mdl.nodes(p(4)); mdl.nodes(p(6));...
                                          mdl.nodes(p(8)); mdl.nodes(p(10));...
                                          mdl.nodes(p(5)); mdl.nodes(p(7));...
                                          mdl.nodes(p(9)); mdl.nodes(p(11))]);
-                mdl.elems(id).setShape(shape);
+                
+                % Store properties
+                mdl.elems(id).anm   = mdl.anm;
+                mdl.elems(id).mat   = mdl.materials(p(1));
+                mdl.elems(id).thk   = thickness(p(2));
+                mdl.elems(id).shape = shape;
+                
                 % Always setup Gauss quadrature after setting shape because
                 % element needs shape to define matrix for extrapolating
                 % stresses from integration points to nodes
-                mdl.elems(id).setGauss(gauss, ...
-                                       mdl.intgrorder(p(3),1),mdl.intgrorder(p(3),2));
+                mdl.elems(id).setGauss(gauss,intgrorder(p(3),1),intgrorder(p(3),2));
+            end
+        end
+        
+        %--------------------------------------------------------------------------
+        function status = loadPoint(read,fid,mdl)
+            status = 1;
+            if (isempty(mdl.nodes))
+                fprintf('Node coordinates must be provided before point loads!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of nodes with point load
+            n = fscanf(fid,'%d',1);
+            if (~read.chkInt(n,mdl.nnp,'number of nodes with point load'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Node ID
+                id = fscanf(fid,'%d',1);
+                if (~read.chkInt(id,mdl.nnp,'node ID for point load specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Point load values
+                [load,count] = fscanf(fid,'%f',6);
+                if (count ~= 6)
+                    fprintf('Invalid point load of node %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.nodes(id).load = load;
             end
         end
         
@@ -715,7 +783,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.nodes(id).prescDispl = disp;
+                mdl.nodes(id).ebcDispl = disp;
             end
         end
         
@@ -752,45 +820,8 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.nodes(id).ebc_thermal = 1;
-                mdl.nodes(id).prescTemp = temp;
-            end
-        end
-        
-        %--------------------------------------------------------------------------
-        function status = loadPoint(read,fid,mdl)
-            status = 1;
-            if (isempty(mdl.nodes))
-                fprintf('Node coordinates must be provided before point loads!\n');
-                status = 0;
-                return;
-            end
-            
-            % Total number of nodes with point load
-            n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nnp,'number of nodes with load'))
-                status = 0;
-                return;
-            end
-            
-            for i = 1:n
-                % Node ID
-                id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nnp,'node ID for point load specification'))
-                    status = 0;
-                    return;
-                end
-                
-                % Point load values
-                [load,count] = fscanf(fid,'%f',6);
-                if (count ~= 6)
-                    fprintf('Invalid point load of node %d\n',id);
-                    status = 0;
-                    return;
-                end
-                
-                % Store data
-                mdl.nodes(id).load = load;
+                mdl.nodes(id).fixTemp = true;
+                mdl.nodes(id).ebcTemp = temp;
             end
         end
         
@@ -819,7 +850,7 @@ classdef Read < handle
                     return;
                 end
                 
-                % Domain load information (node1,node2,loc_gbl,qx,qy,qz)
+                % Line load information (node1,node2,loc_gbl,qx,qy,qz)
                 [load,count] = fscanf(fid,'%f',6);
                 if (count ~= 6)
                     fprintf('Invalid line load specification of element %d\n',id);
@@ -838,14 +869,14 @@ classdef Read < handle
         function status = loadDomainUnif(read,fid,mdl)
             status = 1;
             if (isempty(mdl.elems))
-                fprintf('Elements must be provided before area loads!\n');
+                fprintf('Elements must be provided before domain loads!\n');
                 status = 0;
                 return;
             end
             
-            % Total number of edges with line load
+            % Total number of elements with doamain load
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of faces with area load'))
+            if (~read.chkInt(n,inf,'number of elements with domain load'))
                 status = 0;
                 return;
             end
@@ -853,15 +884,15 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID for area load specification'))
+                if (~read.chkInt(id,mdl.nel,'element ID for domain load specification'))
                     status = 0;
                     return;
                 end
                 
-                % Area load information (qx,qy,qz)
+                % Domain load information (qx,qy,qz)
                 [load,count] = fscanf(fid,'%f',3);
                 if (count ~= 3)
-                    fprintf('Invalid area load specification of element %d\n',id);
+                    fprintf('Invalid domain load specification of element %d\n',id);
                     status = 0;
                     return;
                 end
@@ -915,14 +946,14 @@ classdef Read < handle
         function status = fluxDomainUnif(read,fid,mdl)
             status = 1;
             if (isempty(mdl.elems))
-                fprintf('Elements must be provided before area fluxes!\n');
+                fprintf('Elements must be provided before domain heat fluxes!\n');
                 status = 0;
                 return;
             end
             
-            % Total number of faces with area flux
+            % Total number of elements with domain heat flux
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of faces with area flux'))
+            if (~read.chkInt(n,inf,'number of elements with domain heat flux'))
                 status = 0;
                 return;
             end
@@ -930,21 +961,21 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID for area flux specification'))
+                if (~read.chkInt(id,mdl.nel,'element ID for domain flux specification'))
                     status = 0;
                     return;
                 end
                 
-                % Area flux information (qx,qy,qz)
+                % Domain flux value
                 [flux,count] = fscanf(fid,'%f',1);
                 if (count ~= 1)
-                    fprintf('Invalid area flux specification of element %d\n',id);
+                    fprintf('Invalid domain flux specification of element %d\n',id);
                     status = 0;
                     return;
                 end
                 
                 % Store data
-                mdl.elems(id).areaFlux = flux;
+                mdl.elems(id).domainFlux = flux;
             end
         end
         
@@ -990,14 +1021,14 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = chkElemProp(read,mdl,id,prop,count,num)
+        function status = chkElemProp(read,mdl,id,prop,thks,intord,count,num)
             status = 0;
             nodesIDs = prop(4:end);
             if (count ~= num)
                 fprintf('Invalid properties of element %d\n',id);
             elseif (~read.chkInt(prop(1),mdl.nmat,'material ID for element definition'))
-            elseif (~read.chkInt(prop(2),mdl.nthks,'thickness ID for element definition'))
-            elseif (~read.chkInt(prop(3),mdl.nintord,'integration order ID for element definition'))
+            elseif (~read.chkInt(prop(2),size(thks,1),'thickness ID for element definition'))
+            elseif (~read.chkInt(prop(3),size(intord,1),'integration order ID for element definition'))
             elseif (min(nodesIDs) <= 0 || max(nodesIDs) > mdl.nnp)
                 fprintf('Invalid properties of element %d\n',id);
                 fprintf('Node IDs must be a positive integer less/equal to the total number of nodes!\n');

@@ -6,6 +6,7 @@
 % methods declared in <shape.html Shape: element shape super-class> to deal
 % with 4-noded isoparametric quadrilateral (bilinear quadrilateral) elements:
 %
+%
 %                         4 +---------------+ 3
 %                           |       s       |
 %                           |       ^       |
@@ -15,6 +16,9 @@
 %                           |     QUAD4     |
 %                           |               |
 %                         1 +---------------+ 2
+%
+%
+%% Class definition
 %
 classdef Shape_Quad4 < fem.Shape
     %% Constructor method
@@ -27,11 +31,10 @@ classdef Shape_Quad4 < fem.Shape
                 this.nodes = nodes;
                 
                 % Cartesian nodal coordiantes matrix [X Y]
-                this.carCoord =...
-                [ nodes(1).coord(1)   nodes(1).coord(2);
-                  nodes(2).coord(1)   nodes(2).coord(2);
-                  nodes(3).coord(1)   nodes(3).coord(2);
-                  nodes(4).coord(1)   nodes(4).coord(2) ];
+                this.carCoord = [ nodes(1).coord(1) nodes(1).coord(2);
+                                  nodes(2).coord(1) nodes(2).coord(2);
+                                  nodes(3).coord(1) nodes(3).coord(2);
+                                  nodes(4).coord(1) nodes(4).coord(2) ];
                 
                 % Parametric nodal coordinates matrix [r s]
                 this.parCoord = [ -1 -1;
@@ -40,11 +43,11 @@ classdef Shape_Quad4 < fem.Shape
                                   -1  1 ];
                 
                 % Vector of local node ids in ccw order
-                this.ccwLocalNodeIds = [ 1   2   3   4 ];
+                this.ccwLocalNodeIds = [ 1  2  3  4 ];
                 
                 % Vector of global node ids in ccw order
                 this.ccwNodeIds = ...
-                [ nodes(1).id   nodes(2).id   nodes(3).id   nodes(4).id ];
+                [ nodes(1).id  nodes(2).id  nodes(3).id  nodes(4).id ];
             end
         end
     end

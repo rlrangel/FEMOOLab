@@ -6,9 +6,10 @@
 % methods declared in <gauss.html Gauss: integration quadrature super-class>
 % to deal with quadrilateral element shapes.
 %
-%                                   ^ s
-%                                   |
-% Quadrature of order 2:           |
+% Quadrature of order 2:
+%                                  ^ s
+%                                  |
+%                                  |
 %                           +---------------+
 %                           |   3   |   4   |
 %                           |   *   |   *   |
@@ -18,6 +19,8 @@
 %                           |   *       *   |
 %                           |   1       2   |
 %                           +---------------+
+%
+%% Class definition
 %
 classdef Gauss_Quad < fem.Gauss
     %% Constructor method

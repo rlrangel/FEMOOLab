@@ -5,7 +5,6 @@
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <shape.html Shape: element shape super-class> to deal
 % with 3-noded isoparametric triangle (linear triangular) elements:
-%
 %                           s
 %                           ^
 %                           |
@@ -16,6 +15,9 @@
 %                           |   \ TRIA3
 %                           |    \
 %                         1 +-----+ 2  ----> r
+%
+%
+%% Class definition
 %
 classdef Shape_Tria3 < fem.Shape
     %% Constructor method
@@ -28,10 +30,9 @@ classdef Shape_Tria3 < fem.Shape
                 this.nodes = nodes;
                 
                 % Cartesian nodal coordiantes matrix [X Y]
-                this.carCoord =...
-                [ nodes(1).coord(1)   nodes(1).coord(2);
-                  nodes(2).coord(1)   nodes(2).coord(2);
-                  nodes(3).coord(1)   nodes(3).coord(2) ];
+                this.carCoord = [ nodes(1).coord(1) nodes(1).coord(2);
+                                  nodes(2).coord(1) nodes(2).coord(2);
+                                  nodes(3).coord(1) nodes(3).coord(2) ];
                 
                 % Parametric nodal coordinates matrix [r s]
                 this.parCoord = [ 0  0;
@@ -39,11 +40,11 @@ classdef Shape_Tria3 < fem.Shape
                                   0  1 ];
                 
                 % Vector of local node ids in ccw order
-                this.ccwLocalNodeIds = [ 1   2   3 ];
+                this.ccwLocalNodeIds = [ 1  2  3 ];
                 
                 % Vector of global node ids in ccw order
                 this.ccwNodeIds = ...
-                [ nodes(1).id   nodes(2).id   nodes(3).id ];
+                [ nodes(1).id  nodes(2).id  nodes(3).id ];
             end
         end
     end

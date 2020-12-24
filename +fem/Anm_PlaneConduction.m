@@ -1,10 +1,21 @@
-%% Anm_PlaneConduction Class
+%% Anm_PlaneConduction Class (Plane Heat Conduction Model)
+%
+%% Description
+%
+% This is a sub-class in the FEMOOLab program that implements abstract 
+% methods declared in <anm.html Anm: analysis model super-class> to deal
+% with plane heat conduction models in a thermal analysis.
+%
+%% Class definition
+%
 classdef Anm_PlaneConduction < fem.Anm
     %% Constructor method
     methods
         %------------------------------------------------------------------
         function this = Anm_PlaneConduction()
             this = this@fem.Anm(fem.Anm.PLANE_CONDUCTION,1);
+            
+            % Types of response
             this.TEMPERATURE = true;  % Temperature
         end
     end
@@ -30,7 +41,7 @@ classdef Anm_PlaneConduction < fem.Anm
             % Count number of fixed d.o.f.'s and setup ID matrix
             for i = 1:mdl.nnp
                 % Check for fixed temperature
-                if (mdl.nodes(i).ebc_thermal == 1)
+                if (mdl.nodes(i).fixTemp)
                     mdl.neqc = mdl.neqc + 1;
                     mdl.ID(1,i) = 1;
                 end
@@ -64,26 +75,11 @@ classdef Anm_PlaneConduction < fem.Anm
         %  D: global displacement vector
         function D = addPrescDispl(~,mdl,D)
             for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).prescDispl))
-                    % Add prescribed displacement in global X direction
-                    id = mdl.ID(1,i);
-                    if (id > mdl.neqf)
-                        D(id) = mdl.nodes(i).prescDispl(1);
-                    end
-                    
-                    % Add prescribed displacement in global Y direction
-                    id = mdl.ID(2,i);
-                    if (id > mdl.neqf)
-                        D(id) = mdl.nodes(i).prescDispl(2);
-                    end
-                end
-                
-                % Temperature (ORGANIZE IT!)
-                if (~isempty(mdl.nodes(i).prescTemp))
+                if (~isempty(mdl.nodes(i).ebcTemp))
                     % Add prescribed temperature
                     id = mdl.ID(1,i);
                     if (id > mdl.neqf)
-                        D(id) = mdl.nodes(i).prescTemp;
+                        D(id) = mdl.nodes(i).ebcTemp;
                     end
                 end
             end

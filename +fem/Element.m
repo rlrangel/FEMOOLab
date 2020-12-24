@@ -3,96 +3,69 @@
 %% Description
 %
 % This is a class that specifies a generic finite element in the
-% FEMOOLab program. This element may have any shape, may have any analysis
-% model and may work with any Gauss quadrature.
-%
-%% Main properties
-%
+% FEMOOLab program. This element may have any shape and analysis
+% model, and may work with any Gauss quadrature.
 % All the specific behaviors of an element are treated by other objects
 % that are properties of an element:
-%%%
 % * anm: object of <anm.html Anm: analysis model class>
 % * shape: object of <shape.html Shape: element shape class>
 % * material: object of <material.html Material: material class>
 % * gauss: object of <gauss.html Gauss: integration quadrature class>
-% 
+%
+%% Class definition
+%
 classdef Element < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        % General:
-        type  int32 = fem.Shape.GENERIC;   % element shape type
-        id    int32 = int32.empty;         % identification number
-        anm = [];                          % object of Anm (analysis model )class
-        gle   int32 = int32.empty;         % gather vector (stores element global d.o.f. numbers)
+        % General
+        id    int32 = int32.empty;              % identification number
+        type  int32 = int32.empty;              % element shape type
+        gle   int32 = int32.empty;              % gather vector (stores element global d.o.f. numbers)
+        anm   = [];                             % object of Anm class
+        shape = [];                             % object of Shape class
         
-        % Physical attributes:
-        thk   double = double.empty;       % thickness
-        mat   fem.Material = fem.Material.empty;  % object of Material class
+        % Physical attributes
+        mat fem.Material = fem.Material.empty;  % object of Material class
+        thk double       = double.empty;        % thickness
         
-        % Geometry and displacement interpolation
-        shape = [];                        % object of element Shape class
+        % Gauss integration quadrature
+        gauss = [];                             % object of Gauss class
+        gstiff_order  int32  = int32.empty;     % order of Gauss quadrature for stiffness matrix computation
+        gstress_order int32  = int32.empty;     % order of Gauss quadrature for stress computation
+        gstress_npts  int32  = int32.empty;     % number of gauss points for stress computation
+        TGN           double = double.empty;    % transformation matrix of Gauss points results to nodal results
         
-        % Gauss integration quadrature:
-        gauss = [];                        % object of element Gauss integration quadrature class
-        gstiff_order  int32 = int32.empty; % order of Gauss quadrature for stiffness matrix computation
-        gstress_order int32 = int32.empty; % order of Gauss quadrature for stress computation
-        gstress_npts  int32 = int32.empty; % number of gauss points for stress computation
-        TGN   double = double.empty;       % transformation matrix of gauss results to node results
+        % Loads
+        lineLoad   double = double.empty;       % matrix of uniform line loads [corner1,corner2,loc_gbl,qx,qy,qz]
+                                                % (currently, the direction loc_gbl is not being considered)
+        domainLoad double = double.empty;       % vector of uniform domain load [px,py,pz]
         
-        % Loads:
-        lineLoad double = double.empty;    % matrix of uniform line loads [corner1,corner2,loc_gbl,qx,qy,qz]
-        domainLoad double = double.empty;  % vector of uniform domain loads [px,py,pz]
-        
-        % Fluxes:
-        lineFlux double = double.empty;    % matrix of uniform line flux [corner1,corner2,q]
-        areaFlux double = double.empty;    % uniform area flux value
+        % Thermal fluxes
+        lineFlux   double = double.empty;       % matrix of uniform line flux [corner1,corner2,q]
+        domainFlux double = double.empty;       % uniform domain flux value
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function elem = Element()
-            elem.type = fem.Shape.GENERIC;
+        function this = Element()
+            this.type = fem.Shape.GENERIC;
         end
     end
     
     %% Public methods
-    methods        
+    methods
         %------------------------------------------------------------------
-        % Set element analysis model object.
-        function setAnm(this,anm)
-            this.anm = anm;
+        % Set Gauss object and properties.
+        function setGauss(elem,gauss,gstiff_order,gstress_order)
+            elem.gauss = gauss;
+            elem.gstiff_order = gstiff_order;
+            elem.gstress_order = gstress_order;
+            [elem.gstress_npts,elem.TGN] = elem.TGNmtx();
         end
         
         %------------------------------------------------------------------
-        % Set element thickness property.
-        function setThickness(this,thk)
-            this.thk = thk;
-        end
-        
-        %------------------------------------------------------------------
-        % Set element material object.
-        function setMaterial(this,mat)
-            this.mat = mat;
-        end
-        
-        %------------------------------------------------------------------
-        % Set element shape object.
-        function setShape(this,shape)
-            this.shape = shape;
-        end
-        
-        %------------------------------------------------------------------
-        % Set element Gauss object and properties.
-        function setGauss(this,gauss,gstiff_order,gstress_order)
-            this.gauss = gauss;
-            this.gstiff_order = gstiff_order;
-            this.gstress_order = gstress_order;
-            [this.gstress_npts,this.TGN] = this.TGNmtx();
-        end
-        
-        %------------------------------------------------------------------
-        % Compute transformation matrix of gauss-to-node results .
+        % Compute transformation matrix of gauss-to-node results.
         % Refs.:
         % -Hinton & Campbell, "Local and Global Smoothing of Discontinous
         % Finite Element Functions using a Least Squares Method",
@@ -445,7 +418,7 @@ classdef Element < handle
                 for j = 1:nen
                     for k = 1:ndof
                         m = m + 1;
-                        f(m) = f(m) + w(i) * detJ * N(j) * elem.areaFlux(k);
+                        f(m) = f(m) + w(i) * detJ * N(j) * elem.domainFlux(k);
                     end
                 end
             end

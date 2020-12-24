@@ -9,26 +9,31 @@
 % A node is always considered as a three-dimensional entity, with
 % coordinates and boundary conditions specified accordingly.
 %
+%% Class definition
+%
 classdef Node < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        id         int32  = int32.empty;   % identification number
-        coord      double = double.empty;  % vector of coordinates in global system [X Y Z]
-        ebc        int32  = int32.empty;   % vector of essential boundary conditions flags [DX DY DZ RX RY RZ]
-        prescDispl double = double.empty;  % vector of prescribed displacement values [DX DY DZ RX RY RZ]
-        load       double = double.empty;  % vector of applied load components [FX FY FZ MX MY MZ]
+        % General properties
+        id       int32  = int32.empty;     % identification number
+        coord    double = double.empty;    % vector of coordinates in global system [X Y Z]
+        
+        % Elasticity properties
+        fixDispl logical = logical.empty;  % vector of essential boundary conditions flags [DX DY DZ RX RY RZ]
+        ebcDispl double  = double.empty;   % vector of prescribed displacement values [DX DY DZ RX RY RZ]
+        load     double  = double.empty;   % vector of applied load components [FX FY FZ MX MY MZ]
         
         % Thermal properties
-        ebc_thermal int32  = int32.empty;   % thermal essential boundary condition flag
-        prescTemp   double = double.empty;  % prescribed temperature value
+        fixTemp  logical = logical.empty;  % thermal essential boundary condition flag
+        ebcTemp  double  = double.empty;   % prescribed temperature value
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function node = Node()
-            node.ebc = zeros(6,1);
-            node.ebc_thermal = 0;
+        function this = Node()
+            this.fixDispl = false(6,1);
+            this.fixTemp  = false;
         end
     end
 end
