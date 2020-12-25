@@ -35,14 +35,13 @@ classdef Element < handle
         gstress_npts  int32  = int32.empty;     % number of gauss points for stress computation
         TGN           double = double.empty;    % transformation matrix of Gauss points results to nodal results
         
-        % Loads
-        lineLoad   double = double.empty;       % matrix of uniform line loads [corner1,corner2,loc_gbl,qx,qy,qz]
-                                                % (currently, the direction loc_gbl is not being considered)
-        domainLoad double = double.empty;       % vector of uniform domain load [px,py,pz]
-        
-        % Thermal fluxes
-        lineFlux   double = double.empty;       % matrix of uniform line flux [corner1,corner2,q]
-        domainFlux double = double.empty;       % uniform domain flux value
+        % Forcing terms
+        lineForce   double = double.empty;      % matrix of uniform line forcing components:
+                                                % * line loads [corner1,corner2,qx,qy,qz]
+                                                % * line heat fluxes [corner1,corner2,q]
+        domainForce double = double.empty;      % vector of uniform domain forcing components:
+                                                % * domain load [px,py,pz]
+                                                % * domain heat flux [G]
     end
     
     %% Constructor method
@@ -165,21 +164,21 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
-        % Compute equivalent nodal load (ENL) vector for loads
+        % Compute equivalent nodal forcing vector for element line forces,
         % distributed over edges of an element.
-        % It is assumed in global direction (loc_gbl is not used)
-        function f = edgeEquivLoadVct(this)
+        % Loads are assumed in global direction (loc_gbl is not used)
+        function f = edgeEquivForceVct(this)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
             
-            % Initialize element ENL vector
+            % Initialize element forcing vector
             f = zeros(nen*ndof,1);
             
-            % Loop over element line loads
-            for q = 1:size(this.lineLoad,1)
+            % Loop over element line forces
+            for q = 1:size(this.lineForce,1)
                 % Global IDs of edge initial and final nodes
-                corner1 = this.lineLoad(q,1);
-                corner2 = this.lineLoad(q,2);
+                corner1 = this.lineForce(q,1);
+                corner2 = this.lineForce(q,2);
                 
                 % Get local IDs of edge nodes
                 [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
@@ -187,8 +186,7 @@ classdef Element < handle
                     continue;
                 end
 
-                % Compute number of edge nodes and assemble vector of 
-                % edge nodes ids
+                % Compute number of edge nodes and assemble vector of edge nodes ids
                 if mid == 0
                     nedgen = 2;
                     edgLocIds = [n1,n2];
@@ -197,14 +195,14 @@ classdef Element < handle
                     edgLocIds = [n1,n2,mid];
                 end
 
-                % Initialize edge ENL vector
+                % Initialize edge forcing vector
                 fline = zeros(nedgen*ndof,1);
                 
                 % Edge nodes coordinates
                 X = this.shape.carCoord(edgLocIds,:);
                 
                 % Load components
-                p = this.lineLoad(q,4:6);
+                p = this.lineForce(q,3:end);
                 
                 % Gauss points and weights for integration on edge
                 [ngp,w,gp] = this.gauss.lineQuadrature(this.gstiff_order);
@@ -214,10 +212,10 @@ classdef Element < handle
                     % Parametric coordinates
                     r = gp(1,i);
                     
-                    % Edge displacement shape functions matrix
+                    % Edge d.o.f. shape functions matrix
                     N = this.shape.NmtxEdge(n1,n2,r);
                     
-                    % Matrix of edge geometry map functions derivatives
+                    % Matrix of edge geometry shape functions derivatives
                     % w.r.t. parametric coordinates
                     GradMpar = this.shape.gradMmtxEdge(n1,n2,r);
                     
@@ -245,105 +243,18 @@ classdef Element < handle
                     end
                 end
                 
-                % Assemble edge ENL vetor to element ENL vector
+                % Assemble edge forcing vetor to element forcing vector
                 f(gledge) = f(gledge) + fline;
             end
         end
         
         %------------------------------------------------------------------
-        % Compute equivalent nodal load (ENL) vector for loads
-        % distributed over edges of an element.
-        % It is assumed in global direction (loc_gbl is not used)
-        % MERGE WITH LOAD FUNCTION!
-        function f = edgeEquivFluxVct(this)
-            ndof = this.anm.ndof;
-            nen  = this.shape.nen;
-            
-            % Initialize element ENL vector
-            f = zeros(nen*ndof,1);
-            
-            % Loop over element line loads
-            for q = 1:size(this.lineFlux,1)
-                % Global IDs of edge initial and final nodes
-                corner1 = this.lineFlux(q,1);
-                corner2 = this.lineFlux(q,2);
-                
-                % Get local IDs of edge nodes
-                [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
-                if ~valid
-                    continue;
-                end
-
-                % Compute number of edge nodes and assemble vector of 
-                % edge nodes ids
-                if mid == 0
-                    nedgen = 2;
-                    edgLocIds = [n1,n2];
-                else
-                    nedgen = 3;
-                    edgLocIds = [n1,n2,mid];
-                end
-                
-                % Initialize edge ENL vector
-                fline = zeros(nedgen*ndof,1);
-                
-                % Edge nodes coordinates
-                X = this.shape.carCoord(edgLocIds,:);
-                
-                % Flux value
-                p = this.lineFlux(q,3);
-                
-                % Gauss points and weights for integration on edge
-                [ngp,w,gp] = this.gauss.lineQuadrature(this.gstiff_order);
-                
-                % Loop over edge Gauss integration points
-                for i = 1:ngp
-                    % Parametric coordinates
-                    r = gp(1,i);
-                    
-                    % Edge displacement shape functions matrix
-                    N = this.shape.NmtxEdge(n1,n2,r);
-                    
-                    % Matrix of edge geometry map functions derivatives
-                    % w.r.t. parametric coordinates
-                    GradMpar = this.shape.gradMmtxEdge(n1,n2,r);
-                    
-                    % Jacobian matrix
-                    J = GradMpar * X;
-                    detJ = sqrt(J(1)*J(1) + J(2)*J(2));
-                    
-                    % Accumulate Gauss point contributions
-                    m = 0;
-                    for j = 1:nedgen
-                        for k = 1:ndof
-                            m = m + 1;
-                            fline(m) = fline(m) + w(i) * detJ * N(j) * p(k);
-                        end
-                    end
-                end
-                
-                % Edge gather vector (stores local d.o.f.'s numbers)
-                gledge = zeros(nedgen*ndof,1);
-                m = 0;
-                for j = 1:nedgen
-                    for k = 1:ndof
-                        m = m + 1;
-                        gledge(m) = (edgLocIds(j)-1)*ndof + k;
-                    end
-                end
-                
-                % Assemble edge ENL vetor to element ENL vector
-                f(gledge) = f(gledge) + fline;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Compute equivalent nodal load (ENL) vector for element domain loads.
-        function f = domainEquivLoadVct(this)
+        % Compute equivalent nodal forcing vector for element domain forces.
+        function f = domainEquivForceVct(this)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
 
-            % Initialize element ENL vector
+            % Initialize element forcing vector
             f = zeros(nen*ndof,1);
             
             % Cartesian coordinates matrix
@@ -361,7 +272,7 @@ classdef Element < handle
                 % Shape functions matrix
                 N = this.shape.Nmtx(r,s);
                 
-                % Matrix of geometry map functions derivatives w.r.t.
+                % Matrix of geometry shape functions derivatives w.r.t.
                 % parametric coordinates
                 GradMpar = this.shape.gradMmtx(r,s);
                 
@@ -374,51 +285,7 @@ classdef Element < handle
                 for j = 1:nen
                     for k = 1:ndof
                         m = m + 1;
-                        f(m) = f(m) + w(i) * detJ * N(j) * this.domainLoad(k);
-                    end
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Compute equivalent nodal load (ENL) vector for element domain loads.
-        % MERGE WITH LOAD FUNCTION!
-        function f = domainEquivFluxVct(this)
-            ndof = this.anm.ndof;
-            nen  = this.shape.nen;
-
-            % Initialize element ENL vector
-            f = zeros(nen*ndof,1);
-            
-            % Cartesian coordinates matrix
-            X = this.shape.carCoord;
-            
-            % Gauss points and weights
-            [ngp,w,gp] = this.gauss.quadrature(this.gstiff_order);
-            
-            % Loop over Gauss integration points
-            for i = 1:ngp
-                % Parametric coordinates
-                r = gp(1,i);
-                s = gp(2,i);
-                
-                % Shape functions matrix
-                N = this.shape.Nmtx(r,s);
-                
-                % Matrix of geometry map functions derivatives w.r.t.
-                % parametric coordinates
-                GradMpar = this.shape.gradMmtx(r,s);
-                
-                % Jacobian matrix
-                J = GradMpar * X;
-                detJ = det(J);
-                
-                % Accumulate Gauss point contributions
-                m = 0;
-                for j = 1:nen
-                    for k = 1:ndof
-                        m = m + 1;
-                        f(m) = f(m) + w(i) * detJ * N(j) * this.domainFlux(k);
+                        f(m) = f(m) + w(i) * detJ * N(j) * this.domainForce(k);
                     end
                 end
             end

@@ -80,9 +80,9 @@ classdef Anm_PlaneConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Add point forcing contributions to global forcing vector,
+        % Add point force contributions to global forcing vector,
         % including the components that correspond to fixed d.o.f.'s.
-        function F = addPointForcing(~,~,F)
+        function F = addPointForce(~,~,F)
             % Point flux is not considered
             return;
         end

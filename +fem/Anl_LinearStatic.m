@@ -42,8 +42,8 @@ classdef Anl_LinearStatic < fem.Anl
             % Assemble global forcing vector
             fprintf('Assembling forcing vector...\n');
             F = zeros(mdl.neq,1);
-            F = mdl.anm.addPointForcing(mdl,F);
-            F = mdl.addEquivLoad(F);
+            F = mdl.anm.addPointForce(mdl,F);
+            F = mdl.addEquivForce(F);
             
             % Assemble global vector of state variables
             U = zeros(mdl.neq,1);

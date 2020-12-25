@@ -859,9 +859,10 @@ classdef Read < handle
                 end
                 
                 % Store data
+                % All loads are considered in global directions, so loc_gbl is ignored
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineLoad(j,:) = load;
+                mdl.elems(id).lineForce(j,:) = [load(1),load(2),load(4),load(5),load(6)];
             end
         end
         
@@ -898,7 +899,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.elems(id).domainLoad = load;
+                mdl.elems(id).domainForce = load;
             end
         end
         
@@ -938,7 +939,7 @@ classdef Read < handle
                 % Store data
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineFlux(j,:) = flux;
+                mdl.elems(id).lineForce(j,:) = flux;
             end
         end
         
@@ -975,7 +976,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.elems(id).domainFlux = flux;
+                mdl.elems(id).domainForce = flux;
             end
         end
         

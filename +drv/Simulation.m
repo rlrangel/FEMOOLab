@@ -80,7 +80,7 @@ classdef Simulation < handle
             % Perform analysis
             if (this.anl.process(this))
                 % Pos-process
-                fprintf('Computing stresses...\n');
+                fprintf('Computing derived quantities...\n');
                 this.anl.posProcess(this.mdl);
                 
                 % Plot results

@@ -121,9 +121,9 @@ classdef Anm_Axisymmetric < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Add point forcing contributions to global forcing vector,
+        % Add point force contributions to global forcing vector,
         % including the components that correspond to fixed d.o.f.'s.
-        function F = addPointForcing(~,mdl,F)
+        function F = addPointForce(~,mdl,F)
             for i = 1:mdl.nnp
                 if (~isempty(mdl.nodes(i).load))
                      for j = 1:this.ndof

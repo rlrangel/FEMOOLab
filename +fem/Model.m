@@ -275,43 +275,25 @@ classdef Model < handle
         end
         
         %------------------------------------------------------------------
-        % Add equivalent nodal loads from distributed line and area loads
+        % Add equivalent nodal forcing terms from element distributed forces
         % to global forcing vector.
-        function F = addEquivLoad(this,F)
+        function F = addEquivForce(this,F)
             for i = 1:this.nel
-                if (~isempty(this.elems(i).lineLoad))
-                    % Get element equivalent nodal load vectors
-                    fline = this.elems(i).edgeEquivLoadVct();
+                if (~isempty(this.elems(i).lineForce))
+                    % Get element equivalent nodal forcing vector
+                    fline = this.elems(i).edgeEquivForceVct();
                     
                     % Assemble element vector to global vector
                     gle = this.elems(i).gle;
                     F(gle) = F(gle) + fline;
                 end
-                if (~isempty(this.elems(i).domainLoad))
-                    % Get element equivalent nodal load vectors
-                    farea = this.elems(i).domainEquivLoadVct();
+                if (~isempty(this.elems(i).domainForce))
+                    % Get element equivalent nodal forcing vector
+                    fdom = this.elems(i).domainEquivForceVct();
                     
                     % Assemble element vector to global vector
                     gle = this.elems(i).gle;
-                    F(gle) = F(gle) + farea;
-                end
-                
-                % Fluxes (IT NEEDS TO BE ORGANIZED!)
-                if (~isempty(this.elems(i).lineFlux))
-                    % Get element equivalent nodal flux vectors
-                    fline = this.elems(i).edgeEquivFluxVct();
-                    
-                    % Assemble element vector to global vector
-                    gle = this.elems(i).gle;
-                    F(gle) = F(gle) + fline;
-                end
-                if (~isempty(this.elems(i).domainFlux))
-                    % Get element equivalent nodal flux vectors
-                    farea = this.elems(i).domainEquivFluxVct();
-                    
-                    % Assemble element vector to global vector
-                    gle = this.elems(i).gle;
-                    F(gle) = F(gle) + farea;
+                    F(gle) = F(gle) + fdom;
                 end
             end
         end
