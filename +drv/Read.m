@@ -24,11 +24,11 @@ classdef Read < handle
     methods
         %% Main function
         %------------------------------------------------------------------
-        function status = execute(read,fid,sim,opt)
+        function status = execute(this,fid,sim,opt)
             status = 1;
             
             % Set result plotting options (they will be read from file in the future)
-            read.setResultPlottingOpt(sim.mdl,opt);
+            this.setResultPlottingOpt(sim.mdl,opt);
             
             % Create Gauss quadrature for triangular and quadrilateral shapes
             gauss_tria = fem.Gauss_Tria();
@@ -41,54 +41,54 @@ classdef Read < handle
                 % Look for tag strings
                 switch string
                     case '%HEADER.ANALYSIS'
-                        status = read.analysisModel(fid,sim);
+                        status = this.analysisModel(fid,sim);
                     case '%NODE.COORD'
-                        status = read.nodeCoord(fid,sim.mdl);
+                        status = this.nodeCoord(fid,sim.mdl);
                     case '%NODE.SUPPORT'
-                        status = read.nodeSupport(fid,sim.mdl);
+                        status = this.nodeSupport(fid,sim.mdl);
                     case '%MATERIAL'
-                        status = read.materialTotal(fid,sim.mdl);
+                        status = this.materialTotal(fid,sim.mdl);
                     case '%MATERIAL.ISOTROPIC'
-                        status = read.materialIsotropic(fid,sim.mdl);
+                        status = this.materialIsotropic(fid,sim.mdl);
                     case '%MATERIAL.PROPERTY.DENSITY'
-                        status = read.materialDensity(fid,sim.mdl);
+                        status = this.materialDensity(fid,sim.mdl);
                     case '%MATERIAL.PROPERTY.THERMAL'
-                        status = read.materialThermal(fid,sim.mdl);
+                        status = this.materialThermal(fid,sim.mdl);
                     case '%THICKNESS'
-                        [status,thickness] = read.Thickness(fid);
+                        [status,thickness] = this.Thickness(fid);
                     case '%INTEGRATION.ORDER'
-                        [status,intgrorder] = read.IntgrOrder(fid);
+                        [status,intgrorder] = this.IntgrOrder(fid);
                     case '%ELEMENT'
-                        status = read.elementTotal(fid,sim.mdl);
+                        status = this.elementTotal(fid,sim.mdl);
                     case '%ELEMENT.T3'
-                        status = read.elementTria3(fid,sim.mdl,gauss_tria,thickness,intgrorder);
+                        status = this.elementTria3(fid,sim.mdl,gauss_tria,thickness,intgrorder);
                     case '%ELEMENT.Q4'
-                        status = read.elementQuad4(fid,sim.mdl,gauss_quad,thickness,intgrorder);
+                        status = this.elementQuad4(fid,sim.mdl,gauss_quad,thickness,intgrorder);
                     case '%ELEMENT.T6'
-                        status = read.elementTria6(fid,sim.mdl,gauss_tria,thickness,intgrorder);
+                        status = this.elementTria6(fid,sim.mdl,gauss_tria,thickness,intgrorder);
                     case '%ELEMENT.Q8'
-                        status = read.elementQuad8(fid,sim.mdl,gauss_quad,thickness,intgrorder);
+                        status = this.elementQuad8(fid,sim.mdl,gauss_quad,thickness,intgrorder);
                     case '%LOAD.CASE.NODAL.FORCES'
-                        status = read.loadPoint(fid,sim.mdl);
+                        status = this.loadPoint(fid,sim.mdl);
                     case '%LOAD.CASE.NODAL.DISPLACEMENT'
-                        status = read.nodePrescDispl(fid,sim.mdl);
+                        status = this.nodePrescDispl(fid,sim.mdl);
                     case '%LOAD.CASE.NODAL.TEMPERATURE'
-                        status = read.nodePrescTemp(fid,sim.mdl);
+                        status = this.nodePrescTemp(fid,sim.mdl);
                     case '%LOAD.CASE.LINE.FORCE.UNIFORM'
-                        status = read.loadLineUnif(fid,sim.mdl);
+                        status = this.loadLineUnif(fid,sim.mdl);
                     case '%LOAD.CASE.DOMAIN.FORCE.UNIFORM'
-                        status = read.loadDomainUnif(fid,sim.mdl);
+                        status = this.loadDomainUnif(fid,sim.mdl);
                     case '%LOAD.CASE.LINE.HEAT.FLUX.UNIFORM'
-                        status = read.fluxLineUnif(fid,sim.mdl);
+                        status = this.fluxLineUnif(fid,sim.mdl);
                     case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM' % This is actually DOMAIN heat flux!
-                        status = read.fluxDomainUnif(fid,sim.mdl);
+                        status = this.fluxDomainUnif(fid,sim.mdl);
                 end
                 if (strcmp(string,'%END'))
                     break;
                 end
             end
             if (status == 1)
-                status = read.checkInput(sim.mdl);
+                status = this.checkInput(sim.mdl);
             end
             fclose(fid);
         end
@@ -151,7 +151,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = nodeCoord(read,fid,mdl)
+        function status = nodeCoord(this,fid,mdl)
             status = 1;
             if (isempty(mdl.anm))
                 fprintf('Analysis model must be provided before node coordinates!\n');
@@ -161,7 +161,7 @@ classdef Read < handle
             
             % Total number of nodes
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of nodes'))
+            if (~this.chkInt(n,inf,'number of nodes'))
                 status = 0;
                 return;
             end
@@ -174,7 +174,7 @@ classdef Read < handle
             for i = 1:n
                 % Node ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,n,'node ID for coordinate specification'))
+                if (~this.chkInt(id,n,'node ID for coordinate specification'))
                     status = 0;
                     return;
                 end
@@ -194,7 +194,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = nodeSupport(read,fid,mdl)
+        function status = nodeSupport(this,fid,mdl)
             status = 1;
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before node supports!\n');
@@ -204,7 +204,7 @@ classdef Read < handle
             
             % Total number of nodes with supports
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nnp,'number of nodes with support conditions'))
+            if (~this.chkInt(n,mdl.nnp,'number of nodes with support conditions'))
                 status = 0;
                 return;
             end
@@ -212,7 +212,7 @@ classdef Read < handle
             for i = 1:n
                 % Node ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nnp,'node ID for support condition specification'))
+                if (~this.chkInt(id,mdl.nnp,'node ID for support condition specification'))
                     status = 0;
                     return;
                 end
@@ -231,12 +231,12 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = materialTotal(read,fid,mdl)
+        function status = materialTotal(this,fid,mdl)
             status = 1;
 
             % Total number of materials
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'total number of materials'))
+            if (~this.chkInt(n,inf,'total number of materials'))
                 status = 0;
                 return;
             end
@@ -253,7 +253,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = materialIsotropic(read,fid,mdl)
+        function status = materialIsotropic(this,fid,mdl)
             status = 1;
             if (isempty(mdl.materials))
                 fprintf('Total number of materials must be provided before isotropic properties!\n');
@@ -263,7 +263,7 @@ classdef Read < handle
             
             % Number of material isotropic properties
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nmat,'number of material isotropic properties'))
+            if (~this.chkInt(n,mdl.nmat,'number of material isotropic properties'))
                 status = 0;
                 return;
             end
@@ -271,7 +271,7 @@ classdef Read < handle
             for i = 1:n
                 % Material ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nmat,'material ID for isotropic properties'))
+                if (~this.chkInt(id,mdl.nmat,'material ID for isotropic properties'))
                     status = 0;
                     return;
                 end
@@ -301,7 +301,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = materialDensity(read,fid,mdl)
+        function status = materialDensity(this,fid,mdl)
            status = 1;
             if (isempty(mdl.materials))
                 fprintf('Total number of materials must be provided before densities!\n');
@@ -311,7 +311,7 @@ classdef Read < handle
             
             % Number of material densities
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nmat,'number of material densities'))
+            if (~this.chkInt(n,mdl.nmat,'number of material densities'))
                 status = 0;
                 return;
             end
@@ -319,7 +319,7 @@ classdef Read < handle
             for i = 1:n
                 % Material ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nmat,'material ID for densities'))
+                if (~this.chkInt(id,mdl.nmat,'material ID for densities'))
                     status = 0;
                     return;
                 end
@@ -343,7 +343,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = materialThermal(read,fid,mdl)
+        function status = materialThermal(this,fid,mdl)
             status = 1;
             if (isempty(mdl.materials))
                 fprintf('Total number of materials must be provided before thermal properties!\n');
@@ -353,7 +353,7 @@ classdef Read < handle
             
             % Number of material thermal properties
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nmat,'number of material thermal properties'))
+            if (~this.chkInt(n,mdl.nmat,'number of material thermal properties'))
                 status = 0;
                 return;
             end
@@ -361,7 +361,7 @@ classdef Read < handle
             for i = 1:n
                 % Material ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nmat,'material ID for thermal properties'))
+                if (~this.chkInt(id,mdl.nmat,'material ID for thermal properties'))
                     status = 0;
                     return;
                 end
@@ -391,12 +391,12 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function [status,thickness] = Thickness(read,fid)
+        function [status,thickness] = Thickness(this,fid)
             status = 1;
             
             % Total number of thickness values
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of thicknesses'))
+            if (~this.chkInt(n,inf,'number of thicknesses'))
                 status = 0;
                 return;
             end
@@ -406,7 +406,7 @@ classdef Read < handle
             
             for i = 1:n
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,n,'ID of thickness'))
+                if (~this.chkInt(id,n,'ID of thickness'))
                     status = 0;
                     return;
                 end
@@ -424,12 +424,12 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function [status,intgrorder] = IntgrOrder(read,fid)
+        function [status,intgrorder] = IntgrOrder(this,fid)
             status = 1;
             
             % Total number of integration orders
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of integration orders'))
+            if (~this.chkInt(n,inf,'number of integration orders'))
                 status = 0;
                 return;
             end
@@ -439,7 +439,7 @@ classdef Read < handle
             
             for i = 1:n
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,n,'ID of integration order'))
+                if (~this.chkInt(id,n,'ID of integration order'))
                     status = 0;
                     return;
                 end
@@ -459,12 +459,12 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = elementTotal(read,fid,mdl)
+        function status = elementTotal(this,fid,mdl)
             status = 1;
 
             % Total number of elements
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of elements'))
+            if (~this.chkInt(n,inf,'number of elements'))
                 status = 0;
                 return;
             end
@@ -481,7 +481,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = elementTria3(read,fid,mdl,gauss,thickness,intgrorder)
+        function status = elementTria3(this,fid,mdl,gauss,thickness,intgrorder)
             %                         3 +
             %                           |\
             %                           | \
@@ -498,7 +498,7 @@ classdef Read < handle
             
             % Number of elements T3
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nel,'number of elements T3'))
+            if (~this.chkInt(n,mdl.nel,'number of elements T3'))
                 status = 0;
                 return;
             end
@@ -506,7 +506,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element T3 ID'))
+                if (~this.chkInt(id,mdl.nel,'element T3 ID'))
                     status = 0;
                     return;
                 end
@@ -514,7 +514,7 @@ classdef Read < handle
                 % Element properties:
                 % Material ID, Thickness ID, Integration order ID, Connectivity
                 [p,count] = fscanf(fid,'%d',6);
-                if (~read.chkElemProp(mdl,id,p,thickness,intgrorder,count,6))
+                if (~this.chkElemProp(mdl,id,p,thickness,intgrorder,count,6))
                     status = 0;
                     return;
                 end
@@ -536,7 +536,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = elementQuad4(read,fid,mdl,gauss,thickness,intgrorder)
+        function status = elementQuad4(this,fid,mdl,gauss,thickness,intgrorder)
             %                     4 +---------------+ 3
             %                       |               |
             %                       |               |
@@ -553,7 +553,7 @@ classdef Read < handle
             
             % Number of elements Q4
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nel,'number of elements Q4'))
+            if (~this.chkInt(n,mdl.nel,'number of elements Q4'))
                 status = 0;
                 return;
             end
@@ -561,7 +561,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element Q4 ID'))
+                if (~this.chkInt(id,mdl.nel,'element Q4 ID'))
                     status = 0;
                     return;
                 end
@@ -569,7 +569,7 @@ classdef Read < handle
                 % Element properties:
                 % Material ID, Thickness ID, Integration order ID, Connectivity
                 [p,count] = fscanf(fid,'%d',7);
-                if (~read.chkElemProp(mdl,id,p,thickness,intgrorder,count,7))
+                if (~this.chkElemProp(mdl,id,p,thickness,intgrorder,count,7))
                     status = 0;
                     return;
                 end
@@ -592,7 +592,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = elementTria6(read,fid,mdl,gauss,thickness,intgrorder)
+        function status = elementTria6(this,fid,mdl,gauss,thickness,intgrorder)
             %                         3 +
             %                           |\
             %                           | \
@@ -610,7 +610,7 @@ classdef Read < handle
             
             % Number of elements T6
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nel,'number of elements T6'))
+            if (~this.chkInt(n,mdl.nel,'number of elements T6'))
                 status = 0;
                 return;
             end
@@ -618,7 +618,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element T6 ID'))
+                if (~this.chkInt(id,mdl.nel,'element T6 ID'))
                     status = 0;
                     return;
                 end
@@ -626,7 +626,7 @@ classdef Read < handle
                 % Element properties:
                 % Material ID, Thickness ID, Integration order ID, Connectivity
                 [p,count] = fscanf(fid,'%d',9);
-                if (~read.chkElemProp(mdl,id,p,thickness,intgrorder,count,9))
+                if (~this.chkElemProp(mdl,id,p,thickness,intgrorder,count,9))
                     status = 0;
                     return;
                 end
@@ -652,7 +652,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = elementQuad8(read,fid,mdl,gauss,thickness,intgrorder)
+        function status = elementQuad8(this,fid,mdl,gauss,thickness,intgrorder)
             %                              7
             %                    4 +-------+-------+ 3
             %                      |               |
@@ -671,7 +671,7 @@ classdef Read < handle
             
             % Number of elements Q8
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nel,'number of elements Q8'))
+            if (~this.chkInt(n,mdl.nel,'number of elements Q8'))
                 status = 0;
                 return;
             end
@@ -679,7 +679,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element Q8 ID'))
+                if (~this.chkInt(id,mdl.nel,'element Q8 ID'))
                     status = 0;
                     return;
                 end
@@ -687,7 +687,7 @@ classdef Read < handle
                 % Element properties:
                 % Material ID, Thickness ID, Integration order ID, Connectivity
                 [p,count] = fscanf(fid,'%d',11);
-                if (~read.chkElemProp(mdl,id,p,thickness,intgrorder,count,11))
+                if (~this.chkElemProp(mdl,id,p,thickness,intgrorder,count,11))
                     status = 0;
                     return;
                 end
@@ -714,7 +714,7 @@ classdef Read < handle
         end
         
         %--------------------------------------------------------------------------
-        function status = loadPoint(read,fid,mdl)
+        function status = loadPoint(this,fid,mdl)
             status = 1;
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before point loads!\n');
@@ -724,7 +724,7 @@ classdef Read < handle
             
             % Total number of nodes with point load
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nnp,'number of nodes with point load'))
+            if (~this.chkInt(n,mdl.nnp,'number of nodes with point load'))
                 status = 0;
                 return;
             end
@@ -732,7 +732,7 @@ classdef Read < handle
             for i = 1:n
                 % Node ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nnp,'node ID for point load specification'))
+                if (~this.chkInt(id,mdl.nnp,'node ID for point load specification'))
                     status = 0;
                     return;
                 end
@@ -751,7 +751,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = nodePrescDispl(read,fid,mdl)
+        function status = nodePrescDispl(this,fid,mdl)
             status = 1;
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before prescribed displacements!\n');
@@ -761,7 +761,7 @@ classdef Read < handle
             
             % Total number of nodes with prescribed displacements
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nnp,'number of nodes with prescribed displacements'))
+            if (~this.chkInt(n,mdl.nnp,'number of nodes with prescribed displacements'))
                 status = 0;
                 return;
             end
@@ -769,7 +769,7 @@ classdef Read < handle
             for i = 1:n
                 % Node ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nnp,'node ID for prescribed displacement specification'))
+                if (~this.chkInt(id,mdl.nnp,'node ID for prescribed displacement specification'))
                     status = 0;
                     return;
                 end
@@ -788,7 +788,7 @@ classdef Read < handle
         end
         
         %--------------------------------------------------------------------------
-        function status = nodePrescTemp(read,fid,mdl)
+        function status = nodePrescTemp(this,fid,mdl)
             status = 1;
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before prescribed temperatures!\n');
@@ -798,7 +798,7 @@ classdef Read < handle
             
             % Total number of nodes with prescribed temperature
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,mdl.nnp,'number of nodes with prescribed temperature'))
+            if (~this.chkInt(n,mdl.nnp,'number of nodes with prescribed temperature'))
                 status = 0;
                 return;
             end
@@ -806,7 +806,7 @@ classdef Read < handle
             for i = 1:n
                 % Node ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nnp,'node ID for prescribed temperature specification'))
+                if (~this.chkInt(id,mdl.nnp,'node ID for prescribed temperature specification'))
                     status = 0;
                     return;
                 end
@@ -826,7 +826,7 @@ classdef Read < handle
         end
         
         %--------------------------------------------------------------------------
-        function status = loadLineUnif(read,fid,mdl)
+        function status = loadLineUnif(this,fid,mdl)
             status = 1;
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before line loads!\n');
@@ -836,7 +836,7 @@ classdef Read < handle
             
             % Total number of edges with line load
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of edges with line load'))
+            if (~this.chkInt(n,inf,'number of edges with line load'))
                 status = 0;
                 return;
             end
@@ -845,7 +845,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID for line load specification'))
+                if (~this.chkInt(id,mdl.nel,'element ID for line load specification'))
                     status = 0;
                     return;
                 end
@@ -866,7 +866,7 @@ classdef Read < handle
         end
         
         %--------------------------------------------------------------------------
-        function status = loadDomainUnif(read,fid,mdl)
+        function status = loadDomainUnif(this,fid,mdl)
             status = 1;
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before domain loads!\n');
@@ -876,7 +876,7 @@ classdef Read < handle
             
             % Total number of elements with doamain load
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of elements with domain load'))
+            if (~this.chkInt(n,inf,'number of elements with domain load'))
                 status = 0;
                 return;
             end
@@ -884,7 +884,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID for domain load specification'))
+                if (~this.chkInt(id,mdl.nel,'element ID for domain load specification'))
                     status = 0;
                     return;
                 end
@@ -903,7 +903,7 @@ classdef Read < handle
         end
         
         %--------------------------------------------------------------------------
-        function status = fluxLineUnif(read,fid,mdl)
+        function status = fluxLineUnif(this,fid,mdl)
             status = 1;
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before line fluxes!\n');
@@ -913,7 +913,7 @@ classdef Read < handle
             
             % Total number of edges with line flux
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of edges with line flux'))
+            if (~this.chkInt(n,inf,'number of edges with line flux'))
                 status = 0;
                 return;
             end
@@ -922,7 +922,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID for line flux specification'))
+                if (~this.chkInt(id,mdl.nel,'element ID for line flux specification'))
                     status = 0;
                     return;
                 end
@@ -943,7 +943,7 @@ classdef Read < handle
         end
         
         %--------------------------------------------------------------------------
-        function status = fluxDomainUnif(read,fid,mdl)
+        function status = fluxDomainUnif(this,fid,mdl)
             status = 1;
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before domain heat fluxes!\n');
@@ -953,7 +953,7 @@ classdef Read < handle
             
             % Total number of elements with domain heat flux
             n = fscanf(fid,'%d',1);
-            if (~read.chkInt(n,inf,'number of elements with domain heat flux'))
+            if (~this.chkInt(n,inf,'number of elements with domain heat flux'))
                 status = 0;
                 return;
             end
@@ -961,7 +961,7 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~read.chkInt(id,mdl.nel,'element ID for domain flux specification'))
+                if (~this.chkInt(id,mdl.nel,'element ID for domain flux specification'))
                     status = 0;
                     return;
                 end
@@ -1021,14 +1021,14 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = chkElemProp(read,mdl,id,prop,thks,intord,count,num)
+        function status = chkElemProp(this,mdl,id,prop,thks,intord,count,num)
             status = 0;
             nodesIDs = prop(4:end);
             if (count ~= num)
                 fprintf('Invalid properties of element %d\n',id);
-            elseif (~read.chkInt(prop(1),mdl.nmat,'material ID for element definition'))
-            elseif (~read.chkInt(prop(2),size(thks,1),'thickness ID for element definition'))
-            elseif (~read.chkInt(prop(3),size(intord,1),'integration order ID for element definition'))
+            elseif (~this.chkInt(prop(1),mdl.nmat,'material ID for element definition'))
+            elseif (~this.chkInt(prop(2),size(thks,1),'thickness ID for element definition'))
+            elseif (~this.chkInt(prop(3),size(intord,1),'integration order ID for element definition'))
             elseif (min(nodesIDs) <= 0 || max(nodesIDs) > mdl.nnp)
                 fprintf('Invalid properties of element %d\n',id);
                 fprintf('Node IDs must be a positive integer less/equal to the total number of nodes!\n');

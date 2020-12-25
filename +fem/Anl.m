@@ -43,7 +43,7 @@ classdef Anl < handle
     methods (Abstract)
         %------------------------------------------------------------------
         % Process model data to compute results.
-        status = process(anl,sim);
+        status = process(this,sim);
     end
     
     %% Public methods
@@ -66,9 +66,9 @@ classdef Anl < handle
         
         %------------------------------------------------------------------
         % Pos-process results to compute derived quantitites.
-        function posProcess(anl,mdl)
+        function posProcess(this,mdl)
             % Compute stresses at Gauss points and principal stresses
-            mdl.gaussStress(anl);
+            mdl.gaussStress(this);
             
             % Extrapolate Gauss point results to element node results
             mdl.elemStressExtrap();

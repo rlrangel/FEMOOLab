@@ -58,19 +58,19 @@ classdef Shape < handle
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
         %------------------------------------------------------------------
-        % Evaluate matrix of geometry map functions at a given position in
+        % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.
         M = Mmtx(this,r,s);
         
         %------------------------------------------------------------------
-        % Evaluate matrix of displacement shape functions at a given
-        % position in parametric coordinates.
+        % Evaluate matrix of d.o.f. shape functions at a given position in
+        % parametric coordinates.
         N = Nmtx(this,r,s);
         
         %------------------------------------------------------------------
-        % Evaluate matrix of edge displacement shape functions at a given
-        % position in parametric coordinates. The edge is defined by two
-        % corner nodes local ids (n1,n2).
+        % Evaluate matrix of edge d.o.f. shape functions at a given
+        % position in parametric coordinates.
+        % The edge is defined by two corner nodes local ids (n1,n2).
         N = NmtxEdge(this,n1,n2,r);
         
         %------------------------------------------------------------------
@@ -79,14 +79,14 @@ classdef Shape < handle
         GradMpar = gradMmtx(this,r,s);
         
         %------------------------------------------------------------------
-        % Evaluate matrix of displacement shape functions derivatives
+        % Evaluate matrix of d.o.f. shape functions derivatives
         % w.r.t. parametric coordinates at a given position.
         GradNpar = gradNmtx(this,r,s);
         
         %------------------------------------------------------------------
-        % Evaluate matrix of edge geometry map functions derivatives
-        % w.r.t. parametric coordinates at a given position. The edge is
-        % defined by two corner nodes local ids (n1,n2).
+        % Evaluate matrix of edge geometry shape functions derivatives
+        % w.r.t. parametric coordinates at a given position.
+        % The edge is defined by two corner nodes local ids (n1,n2).
         GradMpar = gradMmtxEdge(this,n1,n2,r);
         
         %------------------------------------------------------------------

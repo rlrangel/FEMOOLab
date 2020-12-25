@@ -9,11 +9,17 @@
 %% Class definition
 %
 classdef Anm_Axisymmetric < fem.Anm
+    %% Public properties
+    properties (SetAccess = public, GetAccess = public)
+        gla int32 = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
+    end
+    
     %% Constructor method
     methods
         %------------------------------------------------------------------
         function this = Anm_Axisymmetric()
             this = this@fem.Anm(fem.Anm.AXISYMMETRIC,2);
+            this.gla = [1 2];
             
             % Types of response
             this.DISPL_X  = true;  % Displacement X
@@ -37,8 +43,6 @@ classdef Anm_Axisymmetric < fem.Anm
         %  ID matrix initialization:
         %  if ID(j,i) = 0, d.o.f. j of node i is free.
         %  if ID(j,i) = 1, d.o.f. j of node i is fixed.
-        % Input arguments:
-        %  mdl: handle to an object of the Model class
         function setupDOFNum(this,mdl)
             % Dimension global d.o.f. numbering matrix
             mdl.ID = zeros(this.ndof,mdl.nnp);
@@ -48,71 +52,20 @@ classdef Anm_Axisymmetric < fem.Anm
             
             % Count number of fixed d.o.f.'s and setup ID matrix
             for i = 1:mdl.nnp
-                 % Check for fixed translation in global X direction
-                if (mdl.nodes(i).fixDispl(1))
-                    mdl.neqc = mdl.neqc + 1;
-                    mdl.ID(1,i) = 1;
-                end
-
-                % Check for fixed translation in global Y direction
-                if (mdl.nodes(i).fixDispl(2))
-                    mdl.neqc = mdl.neqc + 1;
-                    mdl.ID(2,i) = 1;
+                for j = 1:this.ndof
+                    % Get d.o.f number
+                    dof = this.gla(j);
+                    
+                    % Check for fixed d.o.f
+                    if (mdl.nodes(i).fixDispl(dof))
+                        mdl.neqc = mdl.neqc + 1;
+                        mdl.ID(j,i) = 1;
+                    end
                 end
             end
             
             % Compute total number of free d.o.f.
             mdl.neqf = mdl.neq - mdl.neqc;
-        end
-        
-        %------------------------------------------------------------------
-        % Add point loads to global forcing vector, including the
-        % components that correspond to fixed d.o.f.'s.
-        % Input arguments:
-        %  mdl: handle to an object of the Model class
-        %  F: global forcing vector
-        % Output arguments:
-        %  F: global forcing vector
-        function F = addPointLoad(~,mdl,F)
-            for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).load))
-                     % Add applied force in global X direction
-                    id = mdl.ID(1,i);
-                    F(id) = mdl.nodes(i).load(1);
-                    
-                    % Add applied force in global Y direction
-                    id = mdl.ID(2,i);
-                    F(id) = mdl.nodes(i).load(2);
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Adds prescribed displacements (known support settlement values)
-        % to global displacement vector.
-        % Avoids storing a prescribed displacement component in a position
-        % of global displacement vector that corresponds to a free d.o.f.
-        % Input arguments:
-        %  mdl: handle to an object of the Model class
-        %  D: global displacement vector
-        % Output arguments:
-        %  D: global displacement vector
-        function D = addPrescDispl(~,mdl,D)
-            for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).ebcDispl))
-                    % Add prescribed displacement in global X direction
-                    id = mdl.ID(1,i);
-                    if (id > mdl.neqf)
-                        D(id) = mdl.nodes(i).ebcDispl(1);
-                    end
-                    
-                    % Add prescribed displacement in global Y direction
-                    id = mdl.ID(2,i);
-                    if (id > mdl.neqf)
-                        D(id) = mdl.nodes(i).ebcDispl(2);
-                    end
-                end
-            end
         end
         
         %------------------------------------------------------------------
@@ -129,23 +82,20 @@ classdef Anm_Axisymmetric < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Assemble strain-displacement matrix at a given position of
-        % an element.
+        % Assemble strain matrix at a given position in parametric
+        % coordinates of an element.
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
-        %  r,s: parametric coordinates
         function B = Bmtx(this,elem,GradNcar,r,s)                
-            % Geometry map functions matrix evaluated at this point
+            % Geometry and d.o.f. shape functions matrix evaluated at this point
             M = elem.shape.Mmtx(r,s);
-
-            % Displacement shape functions matrix evaluated at this point
             N = elem.shape.Nmtx(r,s);
             
             % Location of evaluation point (X coordinate is the radius in axisymm.)
             p = M * elem.carCoord;
             radius = p(1);
             
-            % Assemble strain-displacement matrix
+            % Assemble strain matrix
             B = zeros(4,elem.shape.nen*this.ndof);
             
             for i = 1:elem.shape.nen
@@ -157,17 +107,57 @@ classdef Anm_Axisymmetric < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Returns the ridigity coefficient according to analysis model
-        % at a given position in parametric coordinates of an element.
-        % For axi-symmetric analysis, the rigidity coefficient is the
-        % radius at the given point.
+        % Returns the ridigity coefficient at a given position in
+        % parametric coordinates of an element.
         function coeff = rigidityCoeff(~,elem,r,s)
-            % Geometry map functions matrix evaluated at this point
+            % Geometry shape functions matrix evaluated at this point
             M = elem.shape.Mmtx(r,s);
             
             % Location of evaluation point (X coordinate is the radius in axisymm.)
+            % For axisymmetric analysis, the rigidity coefficient is the
+            % radius at the given point.
             p = M * elem.carCoord;
             coeff = p(1);
+        end
+        
+        %------------------------------------------------------------------
+        % Add point forcing contributions to global forcing vector,
+        % including the components that correspond to fixed d.o.f.'s.
+        function F = addPointForcing(~,mdl,F)
+            for i = 1:mdl.nnp
+                if (~isempty(mdl.nodes(i).load))
+                     for j = 1:this.ndof
+                        % Get d.o.f numbers
+                        id  = mdl.ID(j,i);
+                        dof = this.gla(j);
+                        
+                        % Add load to reference load vector
+                        F(id) = F(id) + mdl.nodes(i).load(dof);
+                    end
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Add essencial boundary conditions (prescribed values of state
+        % variables) to global vector of state variables.
+        % Avoid storing a prescribed value in a position of global vector
+        % of state variables that corresponds to a free d.o.f.
+        function U = addEBC(~,mdl,U)
+            for i = 1:mdl.nnp
+                if (~isempty(mdl.nodes(i).ebcDispl))
+                    for j = 1:this.ndof
+                        % Get d.o.f numbers
+                        id  = mdl.ID(j,i);
+                        dof = this.gla(j);
+                        
+                        % Add prescribed displacement to global vector
+                        if (id > mdl.neqf)
+                            U(id) = mdl.nodes(i).ebcDispl(dof);
+                        end
+                    end
+                end
+            end
         end
         
         %------------------------------------------------------------------

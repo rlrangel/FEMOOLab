@@ -57,7 +57,7 @@ classdef Result < handle
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        D = [];             % global displacement vector
+        U                   double = double.empty; % global displacement vector
         
         % Gauss point results
         ngp                 int32  = int32.empty;  % vector of number of element gauss pts
@@ -140,7 +140,7 @@ classdef Result < handle
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function res = Result()
+        function this = Result()
             return;
         end
     end
@@ -150,73 +150,73 @@ classdef Result < handle
         %------------------------------------------------------------------
         % 2D inplane analysis model:
         % Clear numerical garbage from analysis. (TEMPORARY SIMPLIFICATION !!)
-        function clearSmallValuesInplane(res,mdl)
-            if (abs(res.sxx_gp_min) < 0.00001 && abs(res.sxx_gp_max) < 0.00001)
-                res.sxx_gp_min = 0.0;
-                res.sxx_gp_max = 0.0;
-                res.sxx_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
+        function clearSmallValuesInplane(this,mdl)
+            if (abs(this.sxx_gp_min) < 0.00001 && abs(this.sxx_gp_max) < 0.00001)
+                this.sxx_gp_min = 0.0;
+                this.sxx_gp_max = 0.0;
+                this.sxx_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(res.syy_gp_min) < 0.00001 && abs(res.syy_gp_max) < 0.00001)
-                res.syy_gp_min = 0.0;
-                res.syy_gp_max = 0.0;
-                res.syy_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
+            if (abs(this.syy_gp_min) < 0.00001 && abs(this.syy_gp_max) < 0.00001)
+                this.syy_gp_min = 0.0;
+                this.syy_gp_max = 0.0;
+                this.syy_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(res.txy_gp_min) < 0.00001 && abs(res.txy_gp_max) < 0.00001)
-                res.txy_gp_min = 0.0;
-                res.txy_gp_max = 0.0;
-                res.txy_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
+            if (abs(this.txy_gp_min) < 0.00001 && abs(this.txy_gp_max) < 0.00001)
+                this.txy_gp_min = 0.0;
+                this.txy_gp_max = 0.0;
+                this.txy_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(res.s1_gp_min) < 0.00001 && abs(res.s1_gp_max) < 0.00001)
-                res.s1_gp_min = 0.0;
-                res.s1_gp_max = 0.0;
-                res.s1_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
+            if (abs(this.s1_gp_min) < 0.00001 && abs(this.s1_gp_max) < 0.00001)
+                this.s1_gp_min = 0.0;
+                this.s1_gp_max = 0.0;
+                this.s1_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(res.s2_gp_min) < 0.00001 && abs(res.s2_gp_max) < 0.00001)
-                res.s2_gp_min = 0.0;
-                res.s2_gp_max = 0.0;
-                res.s2_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
+            if (abs(this.s2_gp_min) < 0.00001 && abs(this.s2_gp_max) < 0.00001)
+                this.s2_gp_min = 0.0;
+                this.s2_gp_max = 0.0;
+                this.s2_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(res.tmax_gp_min) < 0.00001 && abs(res.tmax_gp_max) < 0.00001)
-                res.tmax_gp_min = 0.0;
-                res.tmax_gp_max = 0.0;
-                res.tmax_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
+            if (abs(this.tmax_gp_min) < 0.00001 && abs(this.tmax_gp_max) < 0.00001)
+                this.tmax_gp_min = 0.0;
+                this.tmax_gp_max = 0.0;
+                this.tmax_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(res.sxx_elemextrap_min) < 0.00001 && abs(res.sxx_elemextrap_max) < 0.00001)
-                res.sxx_elemextrap_min = 0.0;
-                res.sxx_elemextrap_max = 0.0;
-                res.sxx_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            if (abs(this.sxx_elemextrap_min) < 0.00001 && abs(this.sxx_elemextrap_max) < 0.00001)
+                this.sxx_elemextrap_min = 0.0;
+                this.sxx_elemextrap_max = 0.0;
+                this.sxx_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(res.syy_elemextrap_min) < 0.00001 && abs(res.syy_elemextrap_max) < 0.00001)
-                res.syy_elemextrap_min = 0.0;
-                res.syy_elemextrap_max = 0.0;
-                res.syy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            if (abs(this.syy_elemextrap_min) < 0.00001 && abs(this.syy_elemextrap_max) < 0.00001)
+                this.syy_elemextrap_min = 0.0;
+                this.syy_elemextrap_max = 0.0;
+                this.syy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(res.txy_elemextrap_min) < 0.00001 && abs(res.txy_elemextrap_max) < 0.00001)
-                res.txy_elemextrap_min = 0.0;
-                res.txy_elemextrap_max = 0.0;
-                res.txy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            if (abs(this.txy_elemextrap_min) < 0.00001 && abs(this.txy_elemextrap_max) < 0.00001)
+                this.txy_elemextrap_min = 0.0;
+                this.txy_elemextrap_max = 0.0;
+                this.txy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(res.s1_elemextrap_min) < 0.00001 && abs(res.s1_elemextrap_max) < 0.00001)
-                res.s1_elemextrap_min = 0.0;
-                res.s1_elemextrap_max = 0.0;
-                res.s1_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            if (abs(this.s1_elemextrap_min) < 0.00001 && abs(this.s1_elemextrap_max) < 0.00001)
+                this.s1_elemextrap_min = 0.0;
+                this.s1_elemextrap_max = 0.0;
+                this.s1_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(res.s2_elemextrap_min) < 0.00001 && abs(res.s2_elemextrap_max) < 0.00001)
-                res.s2_elemextrap_min = 0.0;
-                res.s2_elemextrap_max = 0.0;
-                res.s2_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            if (abs(this.s2_elemextrap_min) < 0.00001 && abs(this.s2_elemextrap_max) < 0.00001)
+                this.s2_elemextrap_min = 0.0;
+                this.s2_elemextrap_max = 0.0;
+                this.s2_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(res.tmax_elemextrap_min) < 0.00001 && abs(res.tmax_elemextrap_max) < 0.00001)
-                res.tmax_elemextrap_min = 0.0;
-                res.tmax_elemextrap_max = 0.0;
-                res.tmax_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            if (abs(this.tmax_elemextrap_min) < 0.00001 && abs(this.tmax_elemextrap_max) < 0.00001)
+                this.tmax_elemextrap_min = 0.0;
+                this.tmax_elemextrap_max = 0.0;
+                this.tmax_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
         end
         
         %------------------------------------------------------------------
         % 2D inplane analysis model:
         % Plot analysis results.
-        function plotInplane(res,mdl)
+        function plotInplane(this,mdl)
             % Assemble vectors of nodal coordinates
             x = zeros(mdl.nnp,1);
             y = zeros(mdl.nnp,1);
@@ -240,78 +240,78 @@ classdef Result < handle
             plot_ymax = cy + size_y * 0.55;
             
             % Create figures (windows) for displaying results.
-            deform_fac = res.createFigs(mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax);
+            deform_fac = this.createFigs(mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax);
             
             % Display deformed mesh.
-            figure(res.fig_deform);
-            res.plotMesh(mdl,x,y,'k');
-            res.plotDeformMesh(mdl,x,y,deform_fac,'b');
+            figure(this.fig_deform);
+            this.plotMesh(mdl,x,y,'k');
+            this.plotDeformMesh(mdl,x,y,deform_fac,'b');
             
             % Display principal stress vectors.
-            figure(res.fig_strbar);
-            res.plotMesh(mdl,x,y,'k');
-            quiver(res.x_gp,res.y_gp,res.s1x_gp,res.s1y_gp,'r');
-            quiver(res.x_gp,res.y_gp,res.s2x_gp,res.s2y_gp,'b');
+            figure(this.fig_strbar);
+            this.plotMesh(mdl,x,y,'k');
+            quiver(this.x_gp,this.y_gp,this.s1x_gp,this.s1y_gp,'r');
+            quiver(this.x_gp,this.y_gp,this.s2x_gp,this.s2y_gp,'b');
             
             % Display stress results.
-            if res.sxx
-                figure(res.fig_sxx);
-                if res.smooth
-                    res.plotNodeContourInplane(mdl,x,y,drv.Result.SXX_NODEEXTRAP);
+            if this.sxx
+                figure(this.fig_sxx);
+                if this.smooth
+                    this.plotNodeContourInplane(mdl,x,y,drv.Result.SXX_NODEEXTRAP);
                 else
-                    res.plotElemContourInplane(mdl,x,y,drv.Result.SXX_ELEMEXTRAP);
+                    this.plotElemContourInplane(mdl,x,y,drv.Result.SXX_ELEMEXTRAP);
                 end
-                res.plotMesh(mdl,x,y,'k');
+                this.plotMesh(mdl,x,y,'k');
             end
             
-            if res.syy
-                figure(res.fig_syy);
-                if res.smooth
-                    res.plotNodeContourInplane(mdl,x,y,drv.Result.SYY_NODEEXTRAP);
+            if this.syy
+                figure(this.fig_syy);
+                if this.smooth
+                    this.plotNodeContourInplane(mdl,x,y,drv.Result.SYY_NODEEXTRAP);
                 else
-                    res.plotElemContourInplane(mdl,x,y,drv.Result.SYY_ELEMEXTRAP);
+                    this.plotElemContourInplane(mdl,x,y,drv.Result.SYY_ELEMEXTRAP);
                 end
-                res.plotMesh(mdl,x,y,'k');
+                this.plotMesh(mdl,x,y,'k');
             end
             
-            if res.txy
-                figure(res.fig_txy);
-                if res.smooth
-                    res.plotNodeContourInplane(mdl,x,y,drv.Result.TXY_NODEEXTRAP);
+            if this.txy
+                figure(this.fig_txy);
+                if this.smooth
+                    this.plotNodeContourInplane(mdl,x,y,drv.Result.TXY_NODEEXTRAP);
                 else
-                    res.plotElemContourInplane(mdl,x,y,drv.Result.TXY_ELEMEXTRAP);
+                    this.plotElemContourInplane(mdl,x,y,drv.Result.TXY_ELEMEXTRAP);
                 end
-                res.plotMesh(mdl,x,y,'k');
+                this.plotMesh(mdl,x,y,'k');
             end
             
-            if res.s1
-                figure(res.fig_s1);
-                if res.smooth
-                    res.plotNodeContourInplane(mdl,x,y,drv.Result.S1_NODEEXTRAP);
+            if this.s1
+                figure(this.fig_s1);
+                if this.smooth
+                    this.plotNodeContourInplane(mdl,x,y,drv.Result.S1_NODEEXTRAP);
                 else
-                    res.plotElemContourInplane(mdl,x,y,drv.Result.S1_ELEMEXTRAP);
+                    this.plotElemContourInplane(mdl,x,y,drv.Result.S1_ELEMEXTRAP);
                 end
-                res.plotMesh(mdl,x,y,'k');
+                this.plotMesh(mdl,x,y,'k');
             end
             
-            if res.s2
-                figure(res.fig_s2);
-                if res.smooth
-                    res.plotNodeContourInplane(mdl,x,y,drv.Result.S2_NODEEXTRAP);
+            if this.s2
+                figure(this.fig_s2);
+                if this.smooth
+                    this.plotNodeContourInplane(mdl,x,y,drv.Result.S2_NODEEXTRAP);
                 else
-                    res.plotElemContourInplane(mdl,x,y,drv.Result.S2_ELEMEXTRAP);
+                    this.plotElemContourInplane(mdl,x,y,drv.Result.S2_ELEMEXTRAP);
                 end
-                res.plotMesh(mdl,x,y,'k');
+                this.plotMesh(mdl,x,y,'k');
             end
             
-            if res.taumax
-                figure(res.fig_tmax);
-                if res.smooth
-                    res.plotNodeContourInplane(mdl,x,y,drv.Result.TMAX_NODEEXTRAP);
+            if this.taumax
+                figure(this.fig_tmax);
+                if this.smooth
+                    this.plotNodeContourInplane(mdl,x,y,drv.Result.TMAX_NODEEXTRAP);
                 else
-                    res.plotElemContourInplane(mdl,x,y,drv.Result.TMAX_ELEMEXTRAP);
+                    this.plotElemContourInplane(mdl,x,y,drv.Result.TMAX_ELEMEXTRAP);
                 end
-                res.plotMesh(mdl,x,y,'k');
+                this.plotMesh(mdl,x,y,'k');
             end
         end
         
@@ -320,14 +320,14 @@ classdef Result < handle
         % Create figures for post-processing results.
         % Eight windows are created and positioned on the screen.
         % Each window plots a type of post-process result.
-        function deform_fac = createFigsInplane(res,mdl, ...
+        function deform_fac = createFigsInplane(this,mdl, ...
                                    plot_xmin,plot_xmax,plot_ymin,plot_ymax)
             % Get current screen sizes.
             screen_sizes = get(0,'ScreenSize');
             
             % Create nodal displacement response data
-            udispl = res.D(mdl.ID(1,:));
-            vdispl = res.D(mdl.ID(2,:));
+            udispl = this.U(mdl.ID(1,:));
+            vdispl = this.U(mdl.ID(2,:));
             udispl_min = min(udispl);
             udispl_max = max(udispl);
             vdispl_min = min(vdispl);
@@ -340,10 +340,10 @@ classdef Result < handle
             
             % Create figure for mesh and deformed mesh plot and get its handle.
             % Locate figure at the up left corner of screen.
-            res.fig_deform = figure;
-            fig_deform_pos = get( res.fig_deform, 'Position' );
+            this.fig_deform = figure;
+            fig_deform_pos = get( this.fig_deform, 'Position' );
             fig_deform_pos(1) = 0;
-            set( res.fig_deform, 'Position', fig_deform_pos );
+            set( this.fig_deform, 'Position', fig_deform_pos );
             title_text = sprintf( 'Mesh and deformed mesh. Deformed factor: %s', num2str(deform_fac) );
             title( title_text );
             set( gca,'DataAspectRatio',[1 1 1] );
@@ -357,10 +357,10 @@ classdef Result < handle
             
             % Create figure for stress bar response plots and get handle to it.
             % Locate figure at the up right corner of screen.
-            res.fig_strbar = figure;
-            fig_strbar_pos = get( res.fig_strbar, 'Position' );
+            this.fig_strbar = figure;
+            fig_strbar_pos = get( this.fig_strbar, 'Position' );
             fig_strbar_pos(1) = screen_sizes(3) - fig_strbar_pos(3);
-            set( res.fig_strbar, 'Position', fig_strbar_pos );
+            set( this.fig_strbar, 'Position', fig_strbar_pos );
             title( 'Principal stress directions' );
             set( gca,'DataAspectRatio',[1 1 1] );
             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
@@ -368,108 +368,108 @@ classdef Result < handle
             
              % Create figure for sigma x plot and get its handle.
              % Locate figure at the second level left side of screen.
-             res.fig_sxx = figure;
-             fig_sxx_pos = get( res.fig_sxx, 'Position' );
+             this.fig_sxx = figure;
+             fig_sxx_pos = get( this.fig_sxx, 'Position' );
              fig_sxx_pos(1) = 0;
              fig_sxx_pos(2) = (screen_sizes(4) - fig_sxx_pos(4))/2;
-             set( res.fig_sxx, 'Position', fig_sxx_pos );
+             set( this.fig_sxx, 'Position', fig_sxx_pos );
              title( 'Sigma XX stress component' );
              set( gca,'DataAspectRatio',[1 1 1] );
              axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if res.smooth
-                 caxis([res.sxx_nodeextrap_min res.sxx_nodeextrap_max]);
+             if this.smooth
+                 caxis([this.sxx_nodeextrap_min this.sxx_nodeextrap_max]);
              else
-                 caxis([res.sxx_elemextrap_min res.sxx_elemextrap_max]);
+                 caxis([this.sxx_elemextrap_min this.sxx_elemextrap_max]);
              end
              colorbar;
              hold on;
             
              % Create figure for sigma y plot and get its handle.
              % Locate figure at the second level right side of screen.
-             res.fig_syy = figure;
-             fig_syy_pos = get( res.fig_syy, 'Position' );
+             this.fig_syy = figure;
+             fig_syy_pos = get( this.fig_syy, 'Position' );
              fig_syy_pos(1) = screen_sizes(3) - fig_syy_pos(3);
              fig_syy_pos(2) = (screen_sizes(4) - fig_syy_pos(4))/2;
-             set( res.fig_syy, 'Position', fig_syy_pos );
+             set( this.fig_syy, 'Position', fig_syy_pos );
              title( 'Sigma YY stress component' );
              set( gca,'DataAspectRatio',[1 1 1] );
              axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if res.smooth
-                 caxis([res.syy_nodeextrap_min res.syy_nodeextrap_max]);
+             if this.smooth
+                 caxis([this.syy_nodeextrap_min this.syy_nodeextrap_max]);
              else
-                 caxis([res.syy_elemextrap_min res.syy_elemextrap_max]);
+                 caxis([this.syy_elemextrap_min this.syy_elemextrap_max]);
              end
              colorbar;
              hold on;
              
              % Create figure for tau xy plot and get its handle.
              % Locate figure at the third level left side of screen.
-             res.fig_txy = figure;
-             fig_txy_pos = get( res.fig_txy, 'Position' );
+             this.fig_txy = figure;
+             fig_txy_pos = get( this.fig_txy, 'Position' );
              fig_txy_pos(1) = 0;
              fig_txy_pos(2) = (screen_sizes(4) - fig_txy_pos(4))/4;
-             set( res.fig_txy, 'Position', fig_txy_pos );
+             set( this.fig_txy, 'Position', fig_txy_pos );
              title( 'Tau XY stress component' );
              set( gca,'DataAspectRatio',[1 1 1] );
              axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if res.smooth
-                 caxis([res.txy_nodeextrap_min res.txy_nodeextrap_max]);
+             if this.smooth
+                 caxis([this.txy_nodeextrap_min this.txy_nodeextrap_max]);
              else
-                 caxis([res.txy_elemextrap_min res.txy_elemextrap_max]);
+                 caxis([this.txy_elemextrap_min this.txy_elemextrap_max]);
              end
              colorbar;
              hold on;
              
              % Create figure for sigma 1 plot and get its handle.
              % Locate figure at the third level right side of screen.
-             res.fig_s1 = figure;
-             fig_s1_pos = get( res.fig_s1, 'Position' );
+             this.fig_s1 = figure;
+             fig_s1_pos = get( this.fig_s1, 'Position' );
              fig_s1_pos(1) = screen_sizes(3) - fig_s1_pos(3);
              fig_s1_pos(2) = (screen_sizes(4) - fig_s1_pos(4))/4;
-             set( res.fig_s1, 'Position', fig_s1_pos );
+             set( this.fig_s1, 'Position', fig_s1_pos );
              title( 'Maximum principal stress' );
              set( gca,'DataAspectRatio',[1 1 1] );
              axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if res.smooth
-                 caxis([res.s1_nodeextrap_min res.s1_nodeextrap_max]);
+             if this.smooth
+                 caxis([this.s1_nodeextrap_min this.s1_nodeextrap_max]);
              else
-                 caxis([res.s1_elemextrap_min res.s1_elemextrap_max]);
+                 caxis([this.s1_elemextrap_min this.s1_elemextrap_max]);
              end
              colorbar;
              hold on;
              
              % Create figure for sigma 2 plot and get its handle.
              % Locate figure at the forth level left side of screen.
-             res.fig_s2 = figure;
-             fig_s2_pos = get( res.fig_s2, 'Position' );
+             this.fig_s2 = figure;
+             fig_s2_pos = get( this.fig_s2, 'Position' );
              fig_s2_pos(1) = 0;
              fig_s2_pos(2) = 0;
-             set( res.fig_s2, 'Position', fig_s2_pos );
+             set( this.fig_s2, 'Position', fig_s2_pos );
              title( 'Minimum principal stress' );
              set( gca,'DataAspectRatio',[1 1 1] );
              axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if res.smooth
-                 caxis([res.s2_nodeextrap_min res.s2_nodeextrap_max]);
+             if this.smooth
+                 caxis([this.s2_nodeextrap_min this.s2_nodeextrap_max]);
              else
-                 caxis([res.s2_elemextrap_min res.s2_elemextrap_max]);
+                 caxis([this.s2_elemextrap_min this.s2_elemextrap_max]);
              end
              colorbar;
              hold on;
              
              % Create figure for tau max. plot and get its handle.
              % Locate figure at the forth level right side of screen.
-             res.fig_tmax = figure;
-             fig_tmax_pos = get( res.fig_tmax, 'Position' );
+             this.fig_tmax = figure;
+             fig_tmax_pos = get( this.fig_tmax, 'Position' );
              fig_tmax_pos(1) = screen_sizes(3) - fig_tmax_pos(3);
              fig_tmax_pos(2) = 0;
-             set( res.fig_tmax, 'Position', fig_tmax_pos );
+             set( this.fig_tmax, 'Position', fig_tmax_pos );
              title( 'Maximum shear stress' );
              set( gca,'DataAspectRatio',[1 1 1] );
              axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if res.smooth
-                 caxis([res.tmax_nodeextrap_min res.tmax_nodeextrap_max]);
+             if this.smooth
+                 caxis([this.tmax_nodeextrap_min this.tmax_nodeextrap_max]);
              else
-                 caxis([res.tmax_elemextrap_min res.tmax_elemextrap_max]);
+                 caxis([this.tmax_elemextrap_min this.tmax_elemextrap_max]);
              end
              colorbar;
              hold on;
@@ -503,14 +503,14 @@ classdef Result < handle
         %------------------------------------------------------------------
         % 2D inplane analysis model:
         % Plot deformed mesh in current active figure.
-        function plotDeformMeshInplane(res,mdl,x,y,fct,color)
+        function plotDeformMeshInplane(this,mdl,x,y,fct,color)
             maxNen = mdl.maxNumElemNodes;
             
             XX = zeros(1,maxNen+1);
             YY = zeros(1,maxNen+1);
             
-            u = res.D(mdl.ID(1,:));
-            v = res.D(mdl.ID(2,:));
+            u = this.U(mdl.ID(1,:));
+            v = this.U(mdl.ID(2,:));
             
             % Display deformed mesh
             for i = 1:mdl.nel
@@ -533,7 +533,7 @@ classdef Result < handle
         % Plot current active element contour response in current active
         % figure.
         % Element contour is based on non average element results.
-        function plotElemContourInplane(res,mdl,x,y,contour_type)
+        function plotElemContourInplane(this,mdl,x,y,contour_type)
             maxNen = mdl.maxNumElemNodes;
             
             XX = zeros(1,maxNen+1);
@@ -543,17 +543,17 @@ classdef Result < handle
             % Display current active node contour response
             switch contour_type
                 case drv.Result.SXX_ELEMEXTRAP
-                    contour = res.sxx_elemextrap;
+                    contour = this.sxx_elemextrap;
                 case drv.Result.SYY_ELEMEXTRAP
-                    contour = res.syy_elemextrap;
+                    contour = this.syy_elemextrap;
                 case drv.Result.TXY_ELEMEXTRAP
-                    contour = res.txy_elemextrap;
+                    contour = this.txy_elemextrap;
                 case drv.Result.S1_ELEMEXTRAP
-                    contour = res.s1_elemextrap;
+                    contour = this.s1_elemextrap;
                 case drv.Result.S2_ELEMEXTRAP
-                    contour = res.s2_elemextrap;
+                    contour = this.s2_elemextrap;
                 case drv.Result.TMAX_ELEMEXTRAP
-                    contour = res.tmax_elemextrap;
+                    contour = this.tmax_elemextrap;
             end
             
             for i = 1:mdl.nel
@@ -580,7 +580,7 @@ classdef Result < handle
         % Plot current active node contour response in current active
         % figure.
         % Node contour is based on nodal average adjacent element results.
-        function plotNodeContourInplane(res,mdl,x,y,contour_type)
+        function plotNodeContourInplane(this,mdl,x,y,contour_type)
             maxNen = mdl.maxNumElemNodes;
             
             XX = zeros(1,maxNen+1);
@@ -590,17 +590,17 @@ classdef Result < handle
             % Display current active node contour response
             switch contour_type
                 case drv.Result.SXX_NODEEXTRAP
-                    contour = res.sxx_nodeextrap;
+                    contour = this.sxx_nodeextrap;
                 case drv.Result.SYY_NODEEXTRAP
-                    contour = res.syy_nodeextrap;
+                    contour = this.syy_nodeextrap;
                 case drv.Result.TXY_NODEEXTRAP
-                    contour = res.txy_nodeextrap;
+                    contour = this.txy_nodeextrap;
                 case drv.Result.S1_NODEEXTRAP
-                    contour = res.s1_nodeextrap;
+                    contour = this.s1_nodeextrap;
                 case drv.Result.S2_NODEEXTRAP
-                    contour = res.s2_nodeextrap;
+                    contour = this.s2_nodeextrap;
                 case drv.Result.TMAX_NODEEXTRAP
-                    contour = res.tmax_nodeextrap;
+                    contour = this.tmax_nodeextrap;
             end
             
             for i = 1:mdl.nel
@@ -625,21 +625,21 @@ classdef Result < handle
     methods
         %------------------------------------------------------------------
         % Clear numerical garbage from analysis. (TEMPORARY SIMPLIFICATION !!)
-        function clearSmallValues(res,mdl)
+        function clearSmallValues(this,mdl)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
-                res.clearSmallValuesInplane(mdl);
+                this.clearSmallValuesInplane(mdl);
             end
         end
         
         %------------------------------------------------------------------
         % Plot analysis results.
-        function plot(res,mdl)
+        function plot(this,mdl)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
-                res.plotInplane(mdl);
+                this.plotInplane(mdl);
             end
         end
         
@@ -647,33 +647,33 @@ classdef Result < handle
         % Create figures for post-processing results.
         % Eight windows are created and positioned on the screen.
         % Each window plots a type of post-process result.
-        function deform_fac = createFigs(res,mdl, ...
+        function deform_fac = createFigs(this,mdl, ...
                                    plot_xmin,plot_xmax,plot_ymin,plot_ymax)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
-                deform_fac = res.createFigsInplane(mdl, ...
+                deform_fac = this.createFigsInplane(mdl, ...
                                   plot_xmin,plot_xmax,plot_ymin,plot_ymax);
             end
         end
         
         %------------------------------------------------------------------
         % Plot mesh in current active figure.
-        function plotMesh(res,mdl,x,y,color)
+        function plotMesh(this,mdl,x,y,color)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
-                res.plotMeshInplane(mdl,x,y,color);
+                this.plotMeshInplane(mdl,x,y,color);
             end
        end
         
         %------------------------------------------------------------------
         % Plot deformed mesh in current active figure.
-        function plotDeformMesh(res,mdl,x,y,fct,color)
+        function plotDeformMesh(this,mdl,x,y,fct,color)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
-                res.plotDeformMeshInplane(mdl,x,y,fct,color);
+                this.plotDeformMeshInplane(mdl,x,y,fct,color);
             end
         end
     end

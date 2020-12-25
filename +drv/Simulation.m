@@ -28,7 +28,7 @@ classdef Simulation < handle
     methods
         %------------------------------------------------------------------
         % Open files and execute each simulation.
-        function runFiles(sim,opt)
+        function runFiles(this,opt)
             % Get input file names
             [file_names,file_path] = uigetfile('*.*','FEMOOLab - Input file','MultiSelect','on');
             if (isequal(file_names,0))
@@ -54,17 +54,17 @@ classdef Simulation < handle
                 end
                 
                 % Create Model object
-                sim.mdl = fem.Model();
+                this.mdl = fem.Model();
                 
                 % Read input file
                 fprintf('Reading model information...\n');
-                if (~drv.Read().execute(fid,sim,opt))
+                if (~drv.Read().execute(fid,this,opt))
                     fprintf('\n\n');
                     continue;
                 end
                 
                 % Execute simulation
-                sim.run();
+                this.run();
                 fprintf('\n\n');
             end
         end
@@ -72,20 +72,20 @@ classdef Simulation < handle
         %------------------------------------------------------------------
         % Run a simulation and plot/print results, assuming that the
         % simulation object has already been filled correctly.
-        function run(sim)
+        function run(this)
             % Pre-process
             fprintf('Preparing analysis data...\n');
-            sim.anl.preProcess(sim.mdl);
+            this.anl.preProcess(this.mdl);
             
             % Perform analysis
-            if (sim.anl.process(sim))
+            if (this.anl.process(this))
                 % Pos-process
                 fprintf('Computing stresses...\n');
-                sim.anl.posProcess(sim.mdl);
+                this.anl.posProcess(this.mdl);
                 
                 % Plot results
                 fprintf('Plotting results...\n');
-                sim.mdl.res.plot(sim.mdl);
+                this.mdl.res.plot(this.mdl);
                 fprintf('Finished!\n');
                 
                 % Print results... (TO DO)

@@ -86,48 +86,34 @@ classdef Anm < handle
         %  ID matrix initialization:
         %  if ID(j,i) = 0, d.o.f. j of node i is free.
         %  if ID(j,i) = 1, d.o.f. j of node i is fixed.
-        % Input arguments:
-        %  mdl: handle to an object of the Model class
-        setupDOFNum(anm,mdl);
+        setupDOFNum(this,mdl);
         
-        %------------------------------------------------------------------
-        % Add point loads to global forcing vector, including the
-        % components that correspond to fixed d.o.f.'s.
-        % Input arguments:
-        %  mdl: handle to an object of the Model class
-        %  F: global forcing vector
-        % Output arguments:
-        %  F: global forcing vector
-        F = addPointLoad(anm,mdl,F);
-        
-        %------------------------------------------------------------------
-        % Adds prescribed displacements (known support settlement values)
-        % to global displacement vector.
-        % Avoids storing a prescribed displacement component in a position
-        % of global displacement vector that corresponds to a free d.o.f.
-        % Input arguments:
-        %  mdl: handle to an object of the Model class
-        %  D: global displacement vector
-        % Output arguments:
-        %  D: global displacement vector
-        D = addPrescDispl(anm,mdl,D);
-            
         %------------------------------------------------------------------
         % Assemble material constitutive matrix of a given element.
-        C = Cmtx(anm,elem);
+        C = Cmtx(this,elem);
         
         %------------------------------------------------------------------
-        % Assemble strain-displacement matrix at a given position in
+        % Assemble strain matrix at a given position in parametric
+        % coordinates of an element.
+        B = Bmtx(this,elem,GradNcar,r,s);
+        
+        %------------------------------------------------------------------
+        % Returns the ridigity coefficient at a given position in
         % parametric coordinates of an element.
-        B = Bmtx(anm,elem,GradNcar,r,s);
+        coeff = rigidityCoeff(this,elem,r,s);
         
         %------------------------------------------------------------------
-        % Returns the ridigity coefficient according to analysis model
-        % at a given position in parametric coordinates of an element.
-        coeff = rigidityCoeff(anm,elem,r,s);
+        % Add point forcing contributions to global forcing vector,
+        % including the components that correspond to fixed d.o.f.'s.
+        F = addPointForcing(this,mdl,F);
+        
+        %------------------------------------------------------------------
+        % Add essencial boundary conditions (prescribed values of state
+        % variables) to global vector of state variables.
+        U = addEBC(this,mdl,U);
         
         %------------------------------------------------------------------
         % Compute stress components (sx, sy, txy) at a given point of an element.
-        str = pointStress(anm,C,B,d);
+        str = pointStress(this,C,B,d);
     end
 end

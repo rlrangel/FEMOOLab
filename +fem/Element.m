@@ -57,11 +57,11 @@ classdef Element < handle
     methods
         %------------------------------------------------------------------
         % Set Gauss object and properties.
-        function setGauss(elem,gauss,gstiff_order,gstress_order)
-            elem.gauss = gauss;
-            elem.gstiff_order = gstiff_order;
-            elem.gstress_order = gstress_order;
-            [elem.gstress_npts,elem.TGN] = elem.TGNmtx();
+        function setGauss(this,gauss,gstiff_order,gstress_order)
+            this.gauss = gauss;
+            this.gstiff_order = gstiff_order;
+            this.gstress_order = gstress_order;
+            [this.gstress_npts,this.TGN] = this.TGNmtx();
         end
         
         %------------------------------------------------------------------
@@ -74,12 +74,12 @@ classdef Element < handle
         % Addison-Wesley, 1987.
         % -Martha, L.F., "Notas de Aula do Curso CIV 2118 - Metodo dos Elementos
         % Finitos", 1994.
-        function [ngp,TGN] = TGNmtx(elem)
+        function [ngp,TGN] = TGNmtx(this)
             % Get parametric coordinates of Gauss points
-            [ngp,~,gp] = elem.gauss.quadrature(elem.gstress_order);
+            [ngp,~,gp] = this.gauss.quadrature(this.gstress_order);
             
-            if (elem.gstress_order == 1)
-                TGN = ones(elem.shape.nen,1);
+            if (this.gstress_order == 1)
+                TGN = ones(this.shape.nen,1);
             else
                 % Compute S matrix that defines the coefficients of the
                 % smoothing stress plane that fits the Gauss point stress
@@ -104,9 +104,9 @@ classdef Element < handle
                 % Compute nodal stress evaluation matrix, which is obtained
                 % using nodal parametric coordinates in the smoothing stress
                 % plane equation
-                E = ones(elem.shape.nen,3);
-                E(:,2) = elem.shape.parCoord(:,1);
-                E(:,3) = elem.shape.parCoord(:,2);
+                E = ones(this.shape.nen,3);
+                E(:,2) = this.shape.parCoord(:,1);
+                E(:,3) = this.shape.parCoord(:,2);
                 
                 % Compute transformation matrix
                 TGN = E * S;
@@ -114,22 +114,22 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
-        % Compute elastic stiffness matrix.
-        function k = elastStiffMtx(elem)
-            ndof = elem.anm.ndof;
-            nen  = elem.shape.nen;
+        % Compute stiffness matrix.
+        function k = stiffMtx(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
 
             % Initialize element matrix
             k = zeros(nen*ndof,nen*ndof);
             
             % Cartesian coordinates matrix
-            X = elem.shape.carCoord;
+            X = this.shape.carCoord;
             
             % Material constitutive matrix
-            C = elem.anm.Cmtx(elem);
+            C = this.anm.Cmtx(this);
             
             % Gauss points and weights
-            [ngp,w,gp] = elem.gauss.quadrature(elem.gstiff_order);
+            [ngp,w,gp] = this.gauss.quadrature(this.gstiff_order);
             
             % Loop over Gauss integration points
             for i = 1:ngp
@@ -137,27 +137,27 @@ classdef Element < handle
                 r = gp(1,i);
                 s = gp(2,i);
                 
-                % Matrix of geometry map functions derivatives
+                % Matrix of geometry shape functions derivatives
                 % w.r.t. parametric coordinates
-                GradMpar = elem.shape.gradMmtx(r,s);
+                GradMpar = this.shape.gradMmtx(r,s);
                 
                 % Jacobian matrix
                 J = GradMpar * X;
                 detJ = det(J);
                 
-                % Matrix of displacement shape functions derivatives
+                % Matrix of d.o.f. shape functions derivatives
                 % w.r.t. parametric coordinates
-                GradNpar = elem.shape.gradNmtx(r,s);
+                GradNpar = this.shape.gradNmtx(r,s);
                 
-                % Matrix of displacement shape functions derivatives
+                % Matrix of d.o.f. shape functions derivatives
                 % w.r.t. cartesian coordinates
                 GradNcar = J \ GradNpar;
                 
-                % Strain-displacement matrix 
-                B = elem.anm.Bmtx(elem,GradNcar,r,s);
+                % Strain matrix 
+                B = this.anm.Bmtx(this,GradNcar,r,s);
                 
                 % Get the rigidity coefficient at this integration point
-                rigdtyCoeff = elem.anm.rigidityCoeff(elem,r,s);
+                rigdtyCoeff = this.anm.rigidityCoeff(this,r,s);
                 
                 % Accumulate Gauss point contributions
                 k = k + w(i) * rigdtyCoeff * detJ * B' * C * B;
@@ -168,21 +168,21 @@ classdef Element < handle
         % Compute equivalent nodal load (ENL) vector for loads
         % distributed over edges of an element.
         % It is assumed in global direction (loc_gbl is not used)
-        function f = edgeEquivLoadVct(elem)
-            ndof   = elem.anm.ndof;
-            nen    = elem.shape.nen;
+        function f = edgeEquivLoadVct(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
             
             % Initialize element ENL vector
             f = zeros(nen*ndof,1);
             
             % Loop over element line loads
-            for q = 1:size(elem.lineLoad,1)
+            for q = 1:size(this.lineLoad,1)
                 % Global IDs of edge initial and final nodes
-                corner1 = elem.lineLoad(q,1);
-                corner2 = elem.lineLoad(q,2);
+                corner1 = this.lineLoad(q,1);
+                corner2 = this.lineLoad(q,2);
                 
                 % Get local IDs of edge nodes
-                [valid,n1,n2,mid] = elem.shape.edgeLocalIds(corner1,corner2);
+                [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
                 if ~valid
                     continue;
                 end
@@ -201,13 +201,13 @@ classdef Element < handle
                 fline = zeros(nedgen*ndof,1);
                 
                 % Edge nodes coordinates
-                X = elem.shape.carCoord(edgLocIds,:);
+                X = this.shape.carCoord(edgLocIds,:);
                 
                 % Load components
-                p = elem.lineLoad(q,4:6);
+                p = this.lineLoad(q,4:6);
                 
                 % Gauss points and weights for integration on edge
-                [ngp,w,gp] = elem.gauss.lineQuadrature(elem.gstiff_order);
+                [ngp,w,gp] = this.gauss.lineQuadrature(this.gstiff_order);
                 
                 % Loop over edge Gauss integration points
                 for i = 1:ngp
@@ -215,11 +215,11 @@ classdef Element < handle
                     r = gp(1,i);
                     
                     % Edge displacement shape functions matrix
-                    N = elem.shape.NmtxEdge(n1,n2,r);
+                    N = this.shape.NmtxEdge(n1,n2,r);
                     
                     % Matrix of edge geometry map functions derivatives
                     % w.r.t. parametric coordinates
-                    GradMpar = elem.shape.gradMmtxEdge(n1,n2,r);
+                    GradMpar = this.shape.gradMmtxEdge(n1,n2,r);
                     
                     % Jacobian matrix
                     J = GradMpar * X;
@@ -255,21 +255,21 @@ classdef Element < handle
         % distributed over edges of an element.
         % It is assumed in global direction (loc_gbl is not used)
         % MERGE WITH LOAD FUNCTION!
-        function f = edgeEquivFluxVct(elem)
-            ndof   = elem.anm.ndof;
-            nen    = elem.shape.nen;
+        function f = edgeEquivFluxVct(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
             
             % Initialize element ENL vector
             f = zeros(nen*ndof,1);
             
             % Loop over element line loads
-            for q = 1:size(elem.lineFlux,1)
+            for q = 1:size(this.lineFlux,1)
                 % Global IDs of edge initial and final nodes
-                corner1 = elem.lineFlux(q,1);
-                corner2 = elem.lineFlux(q,2);
+                corner1 = this.lineFlux(q,1);
+                corner2 = this.lineFlux(q,2);
                 
                 % Get local IDs of edge nodes
-                [valid,n1,n2,mid] = elem.shape.edgeLocalIds(corner1,corner2);
+                [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
                 if ~valid
                     continue;
                 end
@@ -288,13 +288,13 @@ classdef Element < handle
                 fline = zeros(nedgen*ndof,1);
                 
                 % Edge nodes coordinates
-                X = elem.shape.carCoord(edgLocIds,:);
+                X = this.shape.carCoord(edgLocIds,:);
                 
                 % Flux value
-                p = elem.lineFlux(q,3);
+                p = this.lineFlux(q,3);
                 
                 % Gauss points and weights for integration on edge
-                [ngp,w,gp] = elem.gauss.lineQuadrature(elem.gstiff_order);
+                [ngp,w,gp] = this.gauss.lineQuadrature(this.gstiff_order);
                 
                 % Loop over edge Gauss integration points
                 for i = 1:ngp
@@ -302,11 +302,11 @@ classdef Element < handle
                     r = gp(1,i);
                     
                     % Edge displacement shape functions matrix
-                    N = elem.shape.NmtxEdge(n1,n2,r);
+                    N = this.shape.NmtxEdge(n1,n2,r);
                     
                     % Matrix of edge geometry map functions derivatives
                     % w.r.t. parametric coordinates
-                    GradMpar = elem.shape.gradMmtxEdge(n1,n2,r);
+                    GradMpar = this.shape.gradMmtxEdge(n1,n2,r);
                     
                     % Jacobian matrix
                     J = GradMpar * X;
@@ -339,18 +339,18 @@ classdef Element < handle
         
         %------------------------------------------------------------------
         % Compute equivalent nodal load (ENL) vector for element domain loads.
-        function f = domainEquivLoadVct(elem)
-            ndof = elem.anm.ndof;
-            nen  = elem.shape.nen;
+        function f = domainEquivLoadVct(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
 
             % Initialize element ENL vector
             f = zeros(nen*ndof,1);
             
             % Cartesian coordinates matrix
-            X = elem.shape.carCoord;
+            X = this.shape.carCoord;
             
             % Gauss points and weights
-            [ngp,w,gp] = elem.gauss.quadrature(elem.gstiff_order);
+            [ngp,w,gp] = this.gauss.quadrature(this.gstiff_order);
             
             % Loop over Gauss integration points
             for i = 1:ngp
@@ -359,11 +359,11 @@ classdef Element < handle
                 s = gp(2,i);
                 
                 % Shape functions matrix
-                N = elem.shape.Nmtx(r,s);
+                N = this.shape.Nmtx(r,s);
                 
                 % Matrix of geometry map functions derivatives w.r.t.
                 % parametric coordinates
-                GradMpar = elem.shape.gradMmtx(r,s);
+                GradMpar = this.shape.gradMmtx(r,s);
                 
                 % Jacobian matrix
                 J = GradMpar * X;
@@ -374,7 +374,7 @@ classdef Element < handle
                 for j = 1:nen
                     for k = 1:ndof
                         m = m + 1;
-                        f(m) = f(m) + w(i) * detJ * N(j) * elem.domainLoad(k);
+                        f(m) = f(m) + w(i) * detJ * N(j) * this.domainLoad(k);
                     end
                 end
             end
@@ -383,18 +383,18 @@ classdef Element < handle
         %------------------------------------------------------------------
         % Compute equivalent nodal load (ENL) vector for element domain loads.
         % MERGE WITH LOAD FUNCTION!
-        function f = domainEquivFluxVct(elem)
-            ndof = elem.anm.ndof;
-            nen  = elem.shape.nen;
+        function f = domainEquivFluxVct(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
 
             % Initialize element ENL vector
             f = zeros(nen*ndof,1);
             
             % Cartesian coordinates matrix
-            X = elem.shape.carCoord;
+            X = this.shape.carCoord;
             
             % Gauss points and weights
-            [ngp,w,gp] = elem.gauss.quadrature(elem.gstiff_order);
+            [ngp,w,gp] = this.gauss.quadrature(this.gstiff_order);
             
             % Loop over Gauss integration points
             for i = 1:ngp
@@ -403,11 +403,11 @@ classdef Element < handle
                 s = gp(2,i);
                 
                 % Shape functions matrix
-                N = elem.shape.Nmtx(r,s);
+                N = this.shape.Nmtx(r,s);
                 
                 % Matrix of geometry map functions derivatives w.r.t.
                 % parametric coordinates
-                GradMpar = elem.shape.gradMmtx(r,s);
+                GradMpar = this.shape.gradMmtx(r,s);
                 
                 % Jacobian matrix
                 J = GradMpar * X;
@@ -418,7 +418,7 @@ classdef Element < handle
                 for j = 1:nen
                     for k = 1:ndof
                         m = m + 1;
-                        f(m) = f(m) + w(i) * detJ * N(j) * elem.domainFlux(k);
+                        f(m) = f(m) + w(i) * detJ * N(j) * this.domainFlux(k);
                     end
                 end
             end
@@ -433,19 +433,19 @@ classdef Element < handle
         %  ngp:  number of Gauss points for stress evaluation
         %  str:  stress components (sx,sy,txy) at each Gauss point
         %  gpc:  Gauss point cartesian coordinates array
-        function [ngp,str,gpc] = gaussStress(elem,d)
+        function [ngp,str,gpc] = gaussStress(this,d)
             % Get Gauss points and weights
-            [ngp,~,gp] = elem.gauss.quadrature(elem.gstress_order);
+            [ngp,~,gp] = this.gauss.quadrature(this.gstress_order);
             
             % Initialize stress component matrix and Gauss point coordinates
             str = zeros(3,ngp);
             gpc = zeros(2,ngp);
             
             % Cartesian coordinates
-            X = elem.shape.carCoord;
+            X = this.shape.carCoord;
             
             % Material constituive matrix
-            C = elem.anm.Cmtx(elem);
+            C = this.anm.Cmtx(this);
             
             % Loop over Gauss integration points
             for i = 1:ngp
@@ -454,28 +454,28 @@ classdef Element < handle
                 s = gp(2,i);
                 
                 % Geometry map functions matrix evaluated at this point
-                M = elem.shape.Mmtx(r,s);
+                M = this.shape.Mmtx(r,s);
                 
                 % Matrix of geometry map functions derivatives w.r.t.
                 % parametric coordinates
-                GradMpar = elem.shape.gradMmtx(r,s);
+                GradMpar = this.shape.gradMmtx(r,s);
                 
                 % Jacobian matrix
                 J = GradMpar * X;
                 
                 % Matrix of displacement shape functions derivatives
                 % w.r.t. parametric coordinates
-                GradNpar = elem.shape.gradNmtx(r,s);
+                GradNpar = this.shape.gradNmtx(r,s);
                 
                 % Matrix of displacement shape functions derivatives
                 % w.r.t. cartesian coordinates
                 GradNcar = J \ GradNpar;
                 
                 % Strain-displacemen matrix 
-                B = elem.anm.Bmtx(elem,GradNcar,r,s);
+                B = this.anm.Bmtx(this,GradNcar,r,s);
                 
                 % Gauss point stress components and cartesian coordinates
-                str(:,i) = elem.anm.pointStress(C,B,d);
+                str(:,i) = this.anm.pointStress(C,B,d);
                 gpc(:,i) = M * X;
             end
         end

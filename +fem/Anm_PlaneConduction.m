@@ -29,8 +29,6 @@ classdef Anm_PlaneConduction < fem.Anm
         %  ID matrix initialization:
         %  if ID(j,i) = 0, d.o.f. j of node i is free.
         %  if ID(j,i) = 1, d.o.f. j of node i is fixed.
-        % Input arguments:
-        %  mdl: handle to an object of the Model class
         function setupDOFNum(this,mdl)
             % Dimension global d.o.f. numbering matrix
             mdl.ID = zeros(this.ndof,mdl.nnp);
@@ -52,40 +50,6 @@ classdef Anm_PlaneConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Add point loads to global forcing vector, including the
-        % components that correspond to fixed d.o.f.'s.
-        % Input arguments:
-        %  mdl: handle to an object of the Model class
-        %  F: global forcing vector
-        % Output arguments:
-        %  F: global forcing vector
-        function F = addPointLoad(~,~,F)
-            return;
-        end
-        
-        %------------------------------------------------------------------
-        % Adds prescribed displacements (known support settlement values)
-        % to global displacement vector.
-        % Avoids storing a prescribed displacement component in a position
-        % of global displacement vector that corresponds to a free d.o.f.
-        % Input arguments:
-        %  mdl: handle to an object of the Model class
-        %  D: global displacement vector
-        % Output arguments:
-        %  D: global displacement vector
-        function D = addPrescDispl(~,mdl,D)
-            for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).ebcTemp))
-                    % Add prescribed temperature
-                    id = mdl.ID(1,i);
-                    if (id > mdl.neqf)
-                        D(id) = mdl.nodes(i).ebcTemp;
-                    end
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
         % Assemble material constitutive matrix for a given element.
         function C = Cmtx(~,elem)
             k = elem.mat.k;
@@ -95,8 +59,8 @@ classdef Anm_PlaneConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Assemble strain-displacement matrix at a given position of
-        % an element.
+        % Assemble strain matrix at a given position in parametric
+        % coordinates of an element.
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
         function B = Bmtx(this,elem,GradNcar,~,~)
@@ -109,12 +73,35 @@ classdef Anm_PlaneConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Returns the ridigity coefficient according to analysis model
-        % at a given position in parametric coordinates of an element.
-        % For plane stress analysis, the rigidity coefficient is the
-        % element thickness.
+        % Returns the ridigity coefficient at a given position in
+        % parametric coordinates of an element.
         function coeff = rigidityCoeff(~,elem,~,~)
             coeff = elem.thk;
+        end
+        
+        %------------------------------------------------------------------
+        % Add point forcing contributions to global forcing vector,
+        % including the components that correspond to fixed d.o.f.'s.
+        function F = addPointForcing(~,~,F)
+            % Point flux is not considered
+            return;
+        end
+        
+        %------------------------------------------------------------------
+        % Add essencial boundary conditions (prescribed values of state
+        % variables) to global vector of state variables.
+        % Avoid storing a prescribed value in a position of global vector
+        % of state variables that corresponds to a free d.o.f.
+        function U = addEBC(~,mdl,U)
+            for i = 1:mdl.nnp
+                if (~isempty(mdl.nodes(i).ebcTemp))
+                    % Add prescribed temperature to global vector
+                    id = mdl.ID(1,i);
+                    if (id > mdl.neqf)
+                        U(id) = mdl.nodes(i).ebcTemp;
+                    end
+                end
+            end
         end
         
         %------------------------------------------------------------------
