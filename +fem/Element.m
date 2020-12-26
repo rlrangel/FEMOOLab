@@ -306,6 +306,10 @@ classdef Element < handle
             
             % Initialize stress component matrix and Gauss point coordinates
             str = zeros(3,ngp);
+            if (this.anm.type == fem.Anm.PLANE_CONDUCTION) % CLEAN IT !!!!
+                str = zeros(2,ngp);
+            end
+            
             gpc = zeros(2,ngp);
             
             % Cartesian coordinates
@@ -320,10 +324,10 @@ classdef Element < handle
                 r = gp(1,i);
                 s = gp(2,i);
                 
-                % Geometry map functions matrix evaluated at this point
+                % Geometry shape functions matrix evaluated at this point
                 M = this.shape.Mmtx(r,s);
                 
-                % Matrix of geometry map functions derivatives w.r.t.
+                % Matrix of geometry shape functions derivatives w.r.t.
                 % parametric coordinates
                 GradMpar = this.shape.gradMmtx(r,s);
                 

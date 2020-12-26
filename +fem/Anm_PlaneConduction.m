@@ -112,7 +112,7 @@ classdef Anm_PlaneConduction < fem.Anm
         %  d:   generalized displacements for all d.o.f.'s of element
         function str = pointStress(~,C,B,d)
             % In plane stress, raw stress vector is the target one
-            str = C * B * d;
+            str = - C * B * d;
         end
     end
 end

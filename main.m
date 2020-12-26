@@ -26,7 +26,7 @@ opt.dz     = false;  % Plot contour of displacements in Z directiont (NOT IMPLEM
 opt.rx     = false;  % Plot contour of rotations about X axis (NOT IMPLEMENTED)
 opt.ry     = false;  % Plot contour of rotations about Y axis (NOT IMPLEMENTED)
 opt.rz     = false;  % Plot contour of rotations about Z axis (NOT IMPLEMENTED)
-opt.temp   = true;   % Plot contour of temperature
+opt.temp   = true;   % Plot contour of temperature field
 
 % Smoothing:
 opt.smooth = true;   % Smooth element results at common nodes
@@ -52,6 +52,11 @@ opt.qyz    = false;  % Plot contour of YZ shear force (NOT IMPLEMENTED)
 opt.m1     = false;  % Plot contour of principal moment 1 (NOT IMPLEMENTED)
 opt.m2     = false;  % Plot contour of principal moment 2 (NOT IMPLEMENTED)
 opt.tormax = false;  % Plot contour of maximum torsion (NOT IMPLEMENTED)
+
+% Element flux result:
+opt.fxx    = true;   % Plot contour of heat fluxes in X direction
+opt.fyy    = true;   % Plot contour of heat fluxes in Y direction
+opt.fzz    = true;   % Plot contour of heat fluxes in Z direction
 
 %% Run Analysis
 close(findall(0,'Type','figure')); clearvars -except opt; clc; 

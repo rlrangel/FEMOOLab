@@ -125,6 +125,9 @@ classdef Read < handle
             mdl.res.m1     = opt.m1;
             mdl.res.m2     = opt.m2;
             mdl.res.tormax = opt.tormax;
+            mdl.res.fxx    = opt.fxx;
+            mdl.res.fyy    = opt.fyy;
+            mdl.res.fzz    = opt.fzz;
         end
         
         %% Methods for reading neutral file TAGS

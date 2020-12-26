@@ -1,5 +1,5 @@
 classdef Print_PlaneStrain < Print
-    %% Public exclusive methods
+    %% Public exclusive methods (NOT UPDATED!!!)
     % Exclusive methods of the Print_PlaneStrain sub-class.
     methods
         %------------------------------------------------------------------

@@ -18,7 +18,6 @@ classdef Result < handle
         rx     = logical(false);  % Plot contour of rotations about X axis
         ry     = logical(false);  % Plot contour of rotations about Y axis
         rz     = logical(false);  % Plot contour of rotations about Z axis
-        temp   = logical(false);  % Plot contour of temperature
         smooth = logical(false);  % Smooth element results at common nodes
         sxx    = logical(false);  % Plot contour of normal stresses in X direction
         syy    = logical(false);  % Plot contour of normal stresses in Y direction
@@ -38,9 +37,8 @@ classdef Result < handle
         m1     = logical(false);  % Plot contour of principal moment 1
         m2     = logical(false);  % Plot contour of principal moment 2
         tormax = logical(false);  % Plot contour of maximum torsion
-        fxx    = logical(false);  % Plot contour of heat fluxes in X direction
-        fyy    = logical(false);  % Plot contour of heat fluxes in Y direction
-        fzz    = logical(false);  % Plot contour of heat fluxes in Z direction
+        
+        temp   = logical(false);  % Plot contour of temperature
     end
     
     %% Constant values for contour types
@@ -58,16 +56,11 @@ classdef Result < handle
         S2_NODEEXTRAP   = int32(11);
         TMAX_NODEEXTRAP = int32(12);
         TEMP_NODE       = int32(13);
-        FXX_ELEMEXTRAP  = int32(14);
-        FYY_ELEMEXTRAP  = int32(15);
-        FXX_NODEEXTRAP  = int32(16);
-        FYY_NODEEXTRAP  = int32(17);
     end
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        % Results from equilibrium system
-        U double = double.empty;                   % global displacement vector
+        U                   double = double.empty; % global displacement vector
         
         % Gauss point results
         ngp                 int32  = int32.empty;  % vector of number of element gauss pts
@@ -95,12 +88,6 @@ classdef Result < handle
         s1y_gp              double = double.empty; % vector of s1 vector gauss y components
         s2x_gp              double = double.empty; % vector of s2 vector gauss x components
         s2y_gp              double = double.empty; % vector of s2 vector gauss y components
-        fxx_gp              double = double.empty;
-        fxx_gp_min          double = double.empty;
-        fxx_gp_max          double = double.empty;
-        fyy_gp              double = double.empty;
-        fyy_gp_min          double = double.empty;
-        fyy_gp_max          double = double.empty;
         
         % Element node results
         sxx_elemextrap      double = double.empty; % sigma x element node extrap. stress array
@@ -121,12 +108,6 @@ classdef Result < handle
         tmax_elemextrap     double = double.empty; % tau max. element node extrap. stress array
         tmax_elemextrap_min double = double.empty; % tau max. element node extrap. min stress
         tmax_elemextrap_max double = double.empty; % tau max. element node extrap. max stress
-        fxx_elemextrap      double = double.empty;
-        fxx_elemextrap_min  double = double.empty;
-        fxx_elemextrap_max  double = double.empty;
-        fyy_elemextrap      double = double.empty;
-        fyy_elemextrap_min  double = double.empty;
-        fyy_elemextrap_max  double = double.empty;
         
         % Global node results
         sxx_nodeextrap      double = double.empty; % sigma x extrap. node smoothed stress array
@@ -147,12 +128,6 @@ classdef Result < handle
         tmax_nodeextrap     double = double.empty; % tau max. extrap. node smoothed stress array
         tmax_nodeextrap_min double = double.empty; % tau max. extrap. node smoothed min. stress
         tmax_nodeextrap_max double = double.empty; % tau max. extrap. node smoothed max. stress
-        fxx_nodeextrap      double = double.empty;
-        fxx_nodeextrap_min  double = double.empty;
-        fxx_nodeextrap_max  double = double.empty;
-        fyy_nodeextrap      double = double.empty;
-        fyy_nodeextrap_min  double = double.empty;
-        fyy_nodeextrap_max  double = double.empty;
         
         % Handles to plot figures
         fig_deform = [];    % figure for mesh and deformed mesh plot
@@ -163,9 +138,8 @@ classdef Result < handle
         fig_s1     = []     % figure for sigma 1 plot
         fig_s2     = []     % figure for sigma 2 plot
         fig_tmax   = []     % figure for tau max. plot
+        
         fig_temp   = []     % figure for temperature field
-        fig_fxx    = [];    % figure for flux x plot
-        fig_fyy    = [];    % figure for flux y plot
     end
     
     %% Constructor method
@@ -241,28 +215,6 @@ classdef Result < handle
                 this.tmax_elemextrap_min = 0.0;
                 this.tmax_elemextrap_max = 0.0;
                 this.tmax_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
-            end
-            
-            
-            if (abs(this.fxx_gp_min) < 0.00001 && abs(this.fxx_gp_max) < 0.00001)
-                this.fxx_gp_min = 0.0;
-                this.fxx_gp_max = 0.0;
-                this.fxx_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
-            end
-            if (abs(this.fyy_gp_min) < 0.00001 && abs(this.fyy_gp_max) < 0.00001)
-                this.fyy_gp_min = 0.0;
-                this.fyy_gp_max = 0.0;
-                this.fyy_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
-            end
-            if (abs(this.fxx_elemextrap_min) < 0.00001 && abs(this.fxx_elemextrap_max) < 0.00001)
-                this.fxx_elemextrap_min = 0.0;
-                this.fxx_elemextrap_max = 0.0;
-                this.fxx_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
-            end
-            if (abs(this.fyy_elemextrap_min) < 0.00001 && abs(this.fyy_elemextrap_max) < 0.00001)
-                this.fyy_elemextrap_min = 0.0;
-                this.fyy_elemextrap_max = 0.0;
-                this.fyy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
         end
         
@@ -401,27 +353,6 @@ classdef Result < handle
             if this.temp
                 figure(this.fig_temp);
                 this.plotNodeContourInplane(mdl,x,y,drv.Result.TEMP_NODE);
-                this.plotMesh(mdl,x,y,'k');
-            end
-            
-            % Display flux results
-            if this.fxx
-                figure(this.fig_fxx);
-                if this.smooth
-                    this.plotNodeContourInplane(mdl,x,y,drv.Result.FXX_NODEEXTRAP);
-                else
-                    this.plotElemContourInplane(mdl,x,y,drv.Result.FXX_ELEMEXTRAP);
-                end
-                this.plotMesh(mdl,x,y,'k');
-            end
-            
-            if this.fyy
-                figure(this.fig_fyy);
-                if this.smooth
-                    this.plotNodeContourInplane(mdl,x,y,drv.Result.FYY_NODEEXTRAP);
-                else
-                    this.plotElemContourInplane(mdl,x,y,drv.Result.FYY_ELEMEXTRAP);
-                end
                 this.plotMesh(mdl,x,y,'k');
             end
         end
@@ -612,42 +543,6 @@ classdef Result < handle
             caxis([temp_min temp_max]);
             colorbar;
             hold on;
-            
-            % Create figure for sigma x plot and get its handle.
-             % Locate figure at the second level left side of screen.
-             this.fig_fxx = figure;
-             fig_fxx_pos = get( this.fig_fxx, 'Position' );
-             fig_fxx_pos(1) = 0;
-             fig_fxx_pos(2) = (screen_sizes(4) - fig_fxx_pos(4))/2;
-             set( this.fig_fxx, 'Position', fig_fxx_pos );
-             title( 'Flux X component' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.fxx_nodeextrap_min this.fxx_nodeextrap_max]);
-             else
-                 caxis([this.fxx_elemextrap_min this.fxx_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
-            
-             % Create figure for sigma y plot and get its handle.
-             % Locate figure at the second level right side of screen.
-             this.fig_fyy = figure;
-             fig_fyy_pos = get( this.fig_fyy, 'Position' );
-             fig_fyy_pos(1) = screen_sizes(3) - fig_fyy_pos(3);
-             fig_fyy_pos(2) = (screen_sizes(4) - fig_fyy_pos(4))/2;
-             set( this.fig_fyy, 'Position', fig_fyy_pos );
-             title( 'Flux Y component' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.fyy_nodeextrap_min this.fyy_nodeextrap_max]);
-             else
-                 caxis([this.fyy_elemextrap_min this.fyy_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
         end
         
         %------------------------------------------------------------------
@@ -729,10 +624,6 @@ classdef Result < handle
                     contour = this.s2_elemextrap;
                 case drv.Result.TMAX_ELEMEXTRAP
                     contour = this.tmax_elemextrap;
-                case drv.Result.FXX_ELEMEXTRAP
-                    contour = this.fxx_elemextrap;
-                case drv.Result.FYY_ELEMEXTRAP
-                    contour = this.fyy_elemextrap;
             end
             
             for i = 1:mdl.nel
@@ -785,10 +676,6 @@ classdef Result < handle
                     for i = 1:mdl.nnp
                         contour(i) = this.U(mdl.ID(i));
                     end
-                case drv.Result.FXX_NODEEXTRAP
-                    contour = this.fxx_nodeextrap;
-                case drv.Result.FYY_NODEEXTRAP
-                    contour = this.fyy_nodeextrap;
             end
             
             for i = 1:mdl.nel

@@ -66,9 +66,9 @@ classdef Model < handle
             
             npts = 0;
             for i = 1:this.nel
-                d = r.U(this.elems(i).gle);
+                u = r.U(this.elems(i).gle);
                 
-                [ngp,str,gpc] = this.elems(i).gaussStress(d);
+                [ngp,str,gpc] = this.elems(i).gaussStress(u);
                 r.ngp(i)          = ngp;
                 r.sxx_gp(1:ngp,i) = str(1,1:ngp);
                 r.syy_gp(1:ngp,i) = str(2,1:ngp);
@@ -102,6 +102,42 @@ classdef Model < handle
             r.s2_gp_max   = max(max(r.s2_gp));
             r.tmax_gp_min = min(min(r.tmax_gp));
             r.tmax_gp_max = max(max(r.tmax_gp));
+        end
+        
+        %------------------------------------------------------------------
+        % 2D inplane analysis model:
+        % Compute stresses at Gauss points and principal stresses of all
+        % elements.
+        function gaussFluxInplane(this,~)
+            r = this.res;
+            maxElmGaussPts = this.maxGaussStressNpts;
+            
+            r.ngp    = zeros(this.nel,1);
+            r.x_gp   = zeros(maxElmGaussPts*this.nel,1);
+            r.y_gp   = zeros(maxElmGaussPts*this.nel,1);
+            r.fxx_gp = zeros(maxElmGaussPts,this.nel);
+            r.fyy_gp = zeros(maxElmGaussPts,this.nel);
+            
+            npts = 0;
+            for i = 1:this.nel
+                u = r.U(this.elems(i).gle);
+                
+                [ngp,flx,gpc] = this.elems(i).gaussStress(u);
+                r.ngp(i)          = ngp;
+                r.fxx_gp(1:ngp,i) = flx(1,1:ngp);
+                r.fyy_gp(1:ngp,i) = flx(2,1:ngp);
+                
+                for j = 1:ngp
+                    npts = npts + 1;
+                    r.x_gp(npts) = gpc(1,j);
+                    r.y_gp(npts) = gpc(2,j);
+                end
+            end
+            
+            r.fxx_gp_min  = min(min(r.fxx_gp));
+            r.fxx_gp_max  = max(max(r.fxx_gp));
+            r.fyy_gp_min  = min(min(r.fyy_gp));
+            r.fyy_gp_max  = max(max(r.fyy_gp));
         end
         
         %------------------------------------------------------------------
@@ -145,6 +181,33 @@ classdef Model < handle
             r.s2_elemextrap_max   = max(max(r.s2_elemextrap));
             r.tmax_elemextrap_min = min(min(r.tmax_elemextrap));
             r.tmax_elemextrap_max = max(max(r.tmax_elemextrap));
+        end
+        
+        %------------------------------------------------------------------
+        % 2D inplane analysis model:
+        % Compute node extrapolated stress components and principal stresses
+        % for all elements.
+        % The nodal stress components are computed by extrapolation of Gauss
+        % point stress components using the TGN matrix.
+        function elemFluxExtrapInplane(this)
+            r = this.res;
+            maxNen = this.maxNumElemNodes;
+            
+            r.fxx_elemextrap = zeros(maxNen,this.nel);
+            r.fyy_elemextrap = zeros(maxNen,this.nel);
+            
+            for i = 1:this.nel
+                TGN = this.elems(i).TGN;
+                nen = this.elems(i).shape.nen;
+                ngp = r.ngp(i);
+                r.fxx_elemextrap(1:nen,i) = TGN * r.fxx_gp(1:ngp,i);
+                r.fyy_elemextrap(1:nen,i) = TGN * r.fyy_gp(1:ngp,i);
+            end
+            
+            r.fxx_elemextrap_min = min(min(r.fxx_elemextrap));
+            r.fxx_elemextrap_max = max(max(r.fxx_elemextrap));
+            r.fyy_elemextrap_min = min(min(r.fyy_elemextrap));
+            r.fyy_elemextrap_max = max(max(r.fyy_elemextrap));
         end
         
         %------------------------------------------------------------------
@@ -208,6 +271,49 @@ classdef Model < handle
             r.s2_nodeextrap_max   = max(max(r.s2_nodeextrap));
             r.tmax_nodeextrap_min = min(min(r.tmax_nodeextrap));
             r.tmax_nodeextrap_max = max(max(r.tmax_nodeextrap));
+        end
+        
+        %------------------------------------------------------------------
+        % 2D inplane analysis model:
+        % Compute extrapolated node smoothed stress components and principal
+        % stresses for all nodes.
+        % The nodal stress components are computed by averaging values of
+        % element extrapolated nodal stress components of all elements
+        % adjacent to each node.
+        function nodeFluxExtrapInplane(this)
+            r = this.res;
+            
+            % assemble vector with number of adjacent elements of each node
+            node_adjelems = zeros(this.nnp,1);
+            for i = 1:this.nel
+                nen = this.elems(i).shape.nen;
+                for j = 1:nen
+                    n = this.elems(i).shape.nodes(j).id;
+                    node_adjelems(n) = node_adjelems(n) + 1;
+                end
+            end
+            
+            r.fxx_nodeextrap  = zeros(this.nnp,1);
+            r.fyy_nodeextrap  = zeros(this.nnp,1);
+            
+            for i = 1:this.nel
+                nen = this.elems(i).shape.nen;
+                for j = 1:nen
+                    n = this.elems(i).shape.nodes(j).id;
+                    r.fxx_nodeextrap(n)  = r.fxx_nodeextrap(n) + r.fxx_elemextrap(j,i);
+                    r.fyy_nodeextrap(n)  = r.fyy_nodeextrap(n) + r.fyy_elemextrap(j,i);
+                end
+            end
+            
+            for i = 1:this.nnp
+                r.fxx_nodeextrap(i) = r.fxx_nodeextrap(i) / node_adjelems(i);
+                r.fyy_nodeextrap(i) = r.fyy_nodeextrap(i) / node_adjelems(i);
+            end
+            
+            r.fxx_nodeextrap_min  = min(min(r.fxx_nodeextrap));
+            r.fxx_nodeextrap_max  = max(max(r.fxx_nodeextrap));
+            r.fyy_nodeextrap_min  = min(min(r.fyy_nodeextrap));
+            r.fyy_nodeextrap_max  = max(max(r.fyy_nodeextrap));
         end
     end
     
@@ -328,6 +434,8 @@ classdef Model < handle
                this.anm.type == fem.Anm.PLANE_STRAIN || ...
                this.anm.type == fem.Anm.AXISYMMETRIC
                 this.gaussStressInplane(anl);
+            elseif this.anm.type == fem.Anm.PLANE_CONDUCTION
+                this.gaussFluxInplane(anl);
             end
         end
         
@@ -341,6 +449,8 @@ classdef Model < handle
                this.anm.type == fem.Anm.PLANE_STRAIN || ...
                this.anm.type == fem.Anm.AXISYMMETRIC
                 this.elemStressExtrapInplane();
+            elseif this.anm.type == fem.Anm.PLANE_CONDUCTION
+                this.elemFluxExtrapInplane();
             end
         end
         
@@ -355,6 +465,8 @@ classdef Model < handle
                this.anm.type == fem.Anm.PLANE_STRAIN || ...
                this.anm.type == fem.Anm.AXISYMMETRIC
                 this.nodeStressExtrapInplane();
+            elseif this.anm.type == fem.Anm.PLANE_CONDUCTION
+                this.nodeFluxExtrapInplane();
             end
         end
     end
