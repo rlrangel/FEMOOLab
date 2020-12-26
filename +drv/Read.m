@@ -128,6 +128,7 @@ classdef Read < handle
             mdl.res.fxx    = opt.fxx;
             mdl.res.fyy    = opt.fyy;
             mdl.res.fzz    = opt.fzz;
+            mdl.res.fp     = opt.fp;
         end
         
         %% Methods for reading neutral file TAGS

@@ -79,6 +79,7 @@ classdef Model < handle
                     r.x_gp(npts) = gpc(1,j);
                     r.y_gp(npts) = gpc(2,j);
                     
+                    % Compute principal stresses
                     [prc,thetap] = anl.princStress(str(:,j));
                     r.s1_gp(j,i)   = prc(1);
                     r.s2_gp(j,i)   = prc(2);
@@ -112,11 +113,14 @@ classdef Model < handle
             r = this.res;
             maxElmGaussPts = this.maxGaussStressNpts;
             
-            r.ngp    = zeros(this.nel,1);
-            r.x_gp   = zeros(maxElmGaussPts*this.nel,1);
-            r.y_gp   = zeros(maxElmGaussPts*this.nel,1);
-            r.fxx_gp = zeros(maxElmGaussPts,this.nel);
-            r.fyy_gp = zeros(maxElmGaussPts,this.nel);
+            r.ngp      = zeros(this.nel,1);
+            r.x_gp     = zeros(maxElmGaussPts*this.nel,1);
+            r.y_gp     = zeros(maxElmGaussPts*this.nel,1);
+            r.fxx_gp   = zeros(maxElmGaussPts,this.nel);
+            r.fyy_gp   = zeros(maxElmGaussPts,this.nel);
+            r.fp_gp    = zeros(maxElmGaussPts,this.nel);
+            r.fpx_gp   = zeros(maxElmGaussPts*this.nel,1);
+            r.fpy_gp   = zeros(maxElmGaussPts*this.nel,1);
             
             npts = 0;
             for i = 1:this.nel
@@ -131,13 +135,23 @@ classdef Model < handle
                     npts = npts + 1;
                     r.x_gp(npts) = gpc(1,j);
                     r.y_gp(npts) = gpc(2,j);
+                    
+                    % Compute principal stresses
+                    prc = sqrt(flx(1,j)^2+flx(2,j)^2);
+                    thetap = atan2(flx(2,j),flx(1,j));
+                    
+                    r.fp_gp(j,i)   = prc;
+                    r.fpx_gp(npts) = r.fp_gp(j,i)*cos(thetap);
+                    r.fpy_gp(npts) = r.fp_gp(j,i)*sin(thetap);
                 end
             end
             
-            r.fxx_gp_min  = min(min(r.fxx_gp));
-            r.fxx_gp_max  = max(max(r.fxx_gp));
-            r.fyy_gp_min  = min(min(r.fyy_gp));
-            r.fyy_gp_max  = max(max(r.fyy_gp));
+            r.fxx_gp_min = min(min(r.fxx_gp));
+            r.fxx_gp_max = max(max(r.fxx_gp));
+            r.fyy_gp_min = min(min(r.fyy_gp));
+            r.fyy_gp_max = max(max(r.fyy_gp));
+            r.fp_gp_min  = min(min(r.fp_gp));
+            r.fp_gp_max  = max(max(r.fp_gp));
         end
         
         %------------------------------------------------------------------
@@ -195,6 +209,7 @@ classdef Model < handle
             
             r.fxx_elemextrap = zeros(maxNen,this.nel);
             r.fyy_elemextrap = zeros(maxNen,this.nel);
+            r.fp_elemextrap  = zeros(maxNen,this.nel);
             
             for i = 1:this.nel
                 TGN = this.elems(i).TGN;
@@ -202,12 +217,15 @@ classdef Model < handle
                 ngp = r.ngp(i);
                 r.fxx_elemextrap(1:nen,i) = TGN * r.fxx_gp(1:ngp,i);
                 r.fyy_elemextrap(1:nen,i) = TGN * r.fyy_gp(1:ngp,i);
+                r.fp_elemextrap(1:nen,i)  = TGN * r.fp_gp(1:ngp,i);
             end
             
             r.fxx_elemextrap_min = min(min(r.fxx_elemextrap));
             r.fxx_elemextrap_max = max(max(r.fxx_elemextrap));
             r.fyy_elemextrap_min = min(min(r.fyy_elemextrap));
             r.fyy_elemextrap_max = max(max(r.fyy_elemextrap));
+            r.fp_elemextrap_min  = min(min(r.fp_elemextrap));
+            r.fp_elemextrap_max  = max(max(r.fp_elemextrap));
         end
         
         %------------------------------------------------------------------
@@ -293,27 +311,32 @@ classdef Model < handle
                 end
             end
             
-            r.fxx_nodeextrap  = zeros(this.nnp,1);
-            r.fyy_nodeextrap  = zeros(this.nnp,1);
+            r.fxx_nodeextrap = zeros(this.nnp,1);
+            r.fyy_nodeextrap = zeros(this.nnp,1);
+            r.fp_nodeextrap  = zeros(this.nnp,1);
             
             for i = 1:this.nel
                 nen = this.elems(i).shape.nen;
                 for j = 1:nen
                     n = this.elems(i).shape.nodes(j).id;
-                    r.fxx_nodeextrap(n)  = r.fxx_nodeextrap(n) + r.fxx_elemextrap(j,i);
-                    r.fyy_nodeextrap(n)  = r.fyy_nodeextrap(n) + r.fyy_elemextrap(j,i);
+                    r.fxx_nodeextrap(n) = r.fxx_nodeextrap(n) + r.fxx_elemextrap(j,i);
+                    r.fyy_nodeextrap(n) = r.fyy_nodeextrap(n) + r.fyy_elemextrap(j,i);
+                    r.fp_nodeextrap(n)  = r.fp_nodeextrap(n)  + r.fp_elemextrap(j,i);
                 end
             end
             
             for i = 1:this.nnp
                 r.fxx_nodeextrap(i) = r.fxx_nodeextrap(i) / node_adjelems(i);
                 r.fyy_nodeextrap(i) = r.fyy_nodeextrap(i) / node_adjelems(i);
+                r.fp_nodeextrap(i)  = r.fp_nodeextrap(i)  / node_adjelems(i);
             end
             
-            r.fxx_nodeextrap_min  = min(min(r.fxx_nodeextrap));
-            r.fxx_nodeextrap_max  = max(max(r.fxx_nodeextrap));
-            r.fyy_nodeextrap_min  = min(min(r.fyy_nodeextrap));
-            r.fyy_nodeextrap_max  = max(max(r.fyy_nodeextrap));
+            r.fxx_nodeextrap_min = min(min(r.fxx_nodeextrap));
+            r.fxx_nodeextrap_max = max(max(r.fxx_nodeextrap));
+            r.fyy_nodeextrap_min = min(min(r.fyy_nodeextrap));
+            r.fyy_nodeextrap_max = max(max(r.fyy_nodeextrap));
+            r.fp_nodeextrap_min  = min(min(r.fp_nodeextrap));
+            r.fp_nodeextrap_max  = max(max(r.fp_nodeextrap));
         end
     end
     

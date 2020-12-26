@@ -57,6 +57,7 @@ opt.tormax = false;  % Plot contour of maximum torsion (NOT IMPLEMENTED)
 opt.fxx    = true;   % Plot contour of heat fluxes in X direction
 opt.fyy    = true;   % Plot contour of heat fluxes in Y direction
 opt.fzz    = true;   % Plot contour of heat fluxes in Z direction
+opt.fp     = true;   % Plot contour of principal flux
 
 %% Run Analysis
 close(findall(0,'Type','figure')); clearvars -except opt; clc; 

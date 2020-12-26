@@ -41,6 +41,7 @@ classdef Result < handle
         fxx    = logical(false);  % Plot contour of heat fluxes in X direction
         fyy    = logical(false);  % Plot contour of heat fluxes in Y direction
         fzz    = logical(false);  % Plot contour of heat fluxes in Z direction
+        fp     = logical(false);  % Plot contour of fluxes directions
     end
     
     %% Constant values for contour types
@@ -60,8 +61,10 @@ classdef Result < handle
         TEMP_NODE       = int32(13);
         FXX_ELEMEXTRAP  = int32(14);
         FYY_ELEMEXTRAP  = int32(15);
-        FXX_NODEEXTRAP  = int32(16);
-        FYY_NODEEXTRAP  = int32(17);
+        FP_ELEMEXTRAP   = int32(16);
+        FXX_NODEEXTRAP  = int32(17);
+        FYY_NODEEXTRAP  = int32(18);
+        FP_NODEEXTRAP   = int32(19);
     end
     
     %% Public properties
@@ -101,6 +104,11 @@ classdef Result < handle
         fyy_gp              double = double.empty;
         fyy_gp_min          double = double.empty;
         fyy_gp_max          double = double.empty;
+        fp_gp               double = double.empty;
+        fp_gp_min           double = double.empty;
+        fp_gp_max           double = double.empty;
+        fpx_gp              double = double.empty;
+        fpy_gp              double = double.empty;
         
         % Element node results
         sxx_elemextrap      double = double.empty; % sigma x element node extrap. stress array
@@ -127,6 +135,9 @@ classdef Result < handle
         fyy_elemextrap      double = double.empty;
         fyy_elemextrap_min  double = double.empty;
         fyy_elemextrap_max  double = double.empty;
+        fp_elemextrap       double = double.empty;
+        fp_elemextrap_min   double = double.empty;
+        fp_elemextrap_max   double = double.empty;
         
         % Global node results
         sxx_nodeextrap      double = double.empty; % sigma x extrap. node smoothed stress array
@@ -153,6 +164,9 @@ classdef Result < handle
         fyy_nodeextrap      double = double.empty;
         fyy_nodeextrap_min  double = double.empty;
         fyy_nodeextrap_max  double = double.empty;
+        fp_nodeextrap       double = double.empty;
+        fp_nodeextrap_min   double = double.empty;
+        fp_nodeextrap_max   double = double.empty;
         
         % Handles to plot figures
         fig_deform = [];    % figure for mesh and deformed mesh plot
@@ -164,8 +178,9 @@ classdef Result < handle
         fig_s2     = []     % figure for sigma 2 plot
         fig_tmax   = []     % figure for tau max. plot
         fig_temp   = []     % figure for temperature field
-        fig_fxx    = [];    % figure for flux x plot
-        fig_fyy    = [];    % figure for flux y plot
+        fig_fxx    = [];    % 
+        fig_fyy    = [];    % 
+        fig_fp     = [];    % 
     end
     
     %% Constructor method
@@ -263,6 +278,16 @@ classdef Result < handle
                 this.fyy_elemextrap_min = 0.0;
                 this.fyy_elemextrap_max = 0.0;
                 this.fyy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            end
+            if (abs(this.fp_gp_min) < 0.00001 && abs(this.fp_gp_max) < 0.00001)
+                this.fp_gp_min = 0.0;
+                this.fp_gp_max = 0.0;
+                this.fp_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
+            end
+            if (abs(this.fp_elemextrap_min) < 0.00001 && abs(this.fp_elemextrap_max) < 0.00001)
+                this.fp_elemextrap_min = 0.0;
+                this.fp_elemextrap_max = 0.0;
+                this.fp_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
         end
         
@@ -404,6 +429,13 @@ classdef Result < handle
                 this.plotMesh(mdl,x,y,'k');
             end
             
+            % Display principal stress vector
+            if this.fp
+                figure(this.fig_strbar);
+                quiver(this.x_gp,this.y_gp,this.fpx_gp,this.fpy_gp,'r');
+                this.plotMesh(mdl,x,y,'k');
+            end
+            
             % Display flux results
             if this.fxx
                 figure(this.fig_fxx);
@@ -421,6 +453,16 @@ classdef Result < handle
                     this.plotNodeContourInplane(mdl,x,y,drv.Result.FYY_NODEEXTRAP);
                 else
                     this.plotElemContourInplane(mdl,x,y,drv.Result.FYY_ELEMEXTRAP);
+                end
+                this.plotMesh(mdl,x,y,'k');
+            end
+            
+            if this.fp
+                figure(this.fig_fp);
+                if this.smooth
+                    this.plotNodeContourInplane(mdl,x,y,drv.Result.FP_NODEEXTRAP);
+                else
+                    this.plotElemContourInplane(mdl,x,y,drv.Result.FP_ELEMEXTRAP);
                 end
                 this.plotMesh(mdl,x,y,'k');
             end
@@ -648,6 +690,35 @@ classdef Result < handle
              end
              colorbar;
              hold on;
+             
+             % Create figure for sigma 1 plot and get its handle.
+             % Locate figure at the third level right side of screen.
+             this.fig_fp = figure;
+             fig_fp_pos = get( this.fig_fp, 'Position' );
+             fig_fp_pos(1) = screen_sizes(3) - fig_fp_pos(3);
+             fig_fp_pos(2) = (screen_sizes(4) - fig_fp_pos(4))/4;
+             set( this.fig_fp, 'Position', fig_fp_pos );
+             title( 'Principal flux direction' );
+             set( gca,'DataAspectRatio',[1 1 1] );
+             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+             if this.smooth
+                 caxis([this.fp_nodeextrap_min this.fp_nodeextrap_max]);
+             else
+                 caxis([this.fp_elemextrap_min this.fp_elemextrap_max]);
+             end
+             colorbar;
+             hold on;
+             
+            % Create figure for stress bar response plots and get handle to it.
+            % Locate figure at the up right corner of screen.
+            this.fig_strbar = figure;
+            fig_strbar_pos = get( this.fig_strbar, 'Position' );
+            fig_strbar_pos(1) = screen_sizes(3) - fig_strbar_pos(3);
+            set( this.fig_strbar, 'Position', fig_strbar_pos );
+            title( 'Principal stress directions' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            hold on;
         end
         
         %------------------------------------------------------------------
@@ -733,6 +804,8 @@ classdef Result < handle
                     contour = this.fxx_elemextrap;
                 case drv.Result.FYY_ELEMEXTRAP
                     contour = this.fyy_elemextrap;
+                case drv.Result.FP_ELEMEXTRAP
+                    contour = this.fp_elemextrap;
             end
             
             for i = 1:mdl.nel
@@ -789,6 +862,8 @@ classdef Result < handle
                     contour = this.fxx_nodeextrap;
                 case drv.Result.FYY_NODEEXTRAP
                     contour = this.fyy_nodeextrap;
+                case drv.Result.FP_NODEEXTRAP
+                    contour = this.fp_nodeextrap;
             end
             
             for i = 1:mdl.nel
@@ -852,7 +927,8 @@ classdef Result < handle
         function plotMesh(this,mdl,x,y,color)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
-               mdl.anm.type == fem.Anm.AXISYMMETRIC
+               mdl.anm.type == fem.Anm.AXISYMMETRIC || ...
+               mdl.anm.type == fem.Anm.PLANE_CONDUCTION
                 this.plotMeshInplane(mdl,x,y,color);
             end
        end
