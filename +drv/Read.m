@@ -105,6 +105,7 @@ classdef Read < handle
             mdl.res.rx     = opt.rx;
             mdl.res.ry     = opt.ry;
             mdl.res.rz     = opt.rz;
+            mdl.res.temp   = opt.temp;
             mdl.res.smooth = opt.smooth;
             mdl.res.sxx    = opt.sxx;
             mdl.res.syy    = opt.syy;

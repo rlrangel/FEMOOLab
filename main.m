@@ -26,6 +26,7 @@ opt.dz     = false;  % Plot contour of displacements in Z directiont (NOT IMPLEM
 opt.rx     = false;  % Plot contour of rotations about X axis (NOT IMPLEMENTED)
 opt.ry     = false;  % Plot contour of rotations about Y axis (NOT IMPLEMENTED)
 opt.rz     = false;  % Plot contour of rotations about Z axis (NOT IMPLEMENTED)
+opt.temp   = true;   % Plot contour of temperature
 
 % Smoothing:
 opt.smooth = true;   % Smooth element results at common nodes

@@ -37,6 +37,8 @@ classdef Result < handle
         m1     = logical(false);  % Plot contour of principal moment 1
         m2     = logical(false);  % Plot contour of principal moment 2
         tormax = logical(false);  % Plot contour of maximum torsion
+        
+        temp   = logical(false);  % Plot contour of temperature
     end
     
     %% Constant values for contour types
@@ -53,6 +55,7 @@ classdef Result < handle
         S1_NODEEXTRAP   = int32(10);
         S2_NODEEXTRAP   = int32(11);
         TMAX_NODEEXTRAP = int32(12);
+        TEMP_NODE       = int32(13);
     end
     
     %% Public properties
@@ -135,6 +138,8 @@ classdef Result < handle
         fig_s1     = []     % figure for sigma 1 plot
         fig_s2     = []     % figure for sigma 2 plot
         fig_tmax   = []     % figure for tau max. plot
+        
+        fig_temp   = []     % figure for temperature field
     end
     
     %% Constructor method
@@ -239,10 +244,10 @@ classdef Result < handle
             plot_ymin = cy - size_y * 0.55;
             plot_ymax = cy + size_y * 0.55;
             
-            % Create figures (windows) for displaying results.
+            % Create figures (windows) for displaying results
             deform_fac = this.createFigs(mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax);
             
-            % Display deformed mesh.
+            % Display deformed mesh
             figure(this.fig_deform);
             this.plotMesh(mdl,x,y,'k');
             this.plotDeformMesh(mdl,x,y,deform_fac,'b');
@@ -253,7 +258,7 @@ classdef Result < handle
             quiver(this.x_gp,this.y_gp,this.s1x_gp,this.s1y_gp,'r');
             quiver(this.x_gp,this.y_gp,this.s2x_gp,this.s2y_gp,'b');
             
-            % Display stress results.
+            % Display stress results
             if this.sxx
                 figure(this.fig_sxx);
                 if this.smooth
@@ -317,11 +322,47 @@ classdef Result < handle
         
         %------------------------------------------------------------------
         % 2D inplane analysis model:
+        % Plot heat conduction analysis results.
+        function plotInplaneConduction(this,mdl)
+            % Assemble vectors of nodal coordinates
+            x = zeros(mdl.nnp,1);
+            y = zeros(mdl.nnp,1);
+            for i = 1:mdl.nnp
+                x(i) = mdl.nodes(i).coord(1);
+                y(i) = mdl.nodes(i).coord(2);
+            end
+            
+            % Setup bounding box for displaying results
+            min_x = min(x);
+            max_x = max(x);
+            min_y = min(y);
+            max_y = max(y);
+            size_x = max_x-min_x;
+            size_y = max_y-min_y;
+            cx = min_x + size_x*0.5;
+            cy = min_y + size_y*0.5;
+            plot_xmin = cx - size_x * 0.55;
+            plot_xmax = cx + size_x * 0.55;
+            plot_ymin = cy - size_y * 0.55;
+            plot_ymax = cy + size_y * 0.55;
+            
+            % Create figures (windows) for displaying results
+            this.createFigs(mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax);
+            
+            % Display temperature results
+            if this.temp
+                figure(this.fig_temp);
+                this.plotNodeContourInplane(mdl,x,y,drv.Result.TEMP_NODE);
+                this.plotMesh(mdl,x,y,'k');
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % 2D inplane analysis model:
         % Create figures for post-processing results.
         % Eight windows are created and positioned on the screen.
         % Each window plots a type of post-process result.
-        function deform_fac = createFigsInplane(this,mdl, ...
-                                   plot_xmin,plot_xmax,plot_ymin,plot_ymax)
+        function deform_fac = createFigsInplane(this,mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax)
             % Get current screen sizes.
             screen_sizes = get(0,'ScreenSize');
             
@@ -477,6 +518,35 @@ classdef Result < handle
         
         %------------------------------------------------------------------
         % 2D inplane analysis model:
+        % Create figures for post-processing results.
+        % Eight windows are created and positioned on the screen.
+        % Each window plots a type of post-process result.
+        function createFigsInplaneThermal(this,mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax)
+            % Get current screen sizes.
+            screen_sizes = get(0,'ScreenSize');
+            
+            % Create nodal displacement response data
+            temperature = this.U(mdl.ID(1,:));
+            temp_min = min(temperature);
+            temp_max = max(temperature);
+            
+            % Create figure for temperature plot and get its handle.
+            % Locate figure at the third level right side of screen.
+            this.fig_temp = figure;
+            fig_temp_pos = get( this.fig_temp, 'Position' );
+            fig_temp_pos(1) = screen_sizes(3) - fig_temp_pos(3);
+            fig_temp_pos(2) = (screen_sizes(4) - fig_temp_pos(4))/4;
+            set( this.fig_temp, 'Position', fig_temp_pos );
+            title( 'Temperature field' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            caxis([temp_min temp_max]);
+            colorbar;
+            hold on;
+        end
+        
+        %------------------------------------------------------------------
+        % 2D inplane analysis model:
         % Plot mesh in current active figure.
         function plotMeshInplane(~,mdl,x,y,color)
             maxNen = mdl.maxNumElemNodes;
@@ -601,6 +671,11 @@ classdef Result < handle
                     contour = this.s2_nodeextrap;
                 case drv.Result.TMAX_NODEEXTRAP
                     contour = this.tmax_nodeextrap;
+                case drv.Result.TEMP_NODE
+                    contour = zeros(mdl.nnp,1);
+                    for i = 1:mdl.nnp
+                        contour(i) = this.U(mdl.ID(i));
+                    end
             end
             
             for i = 1:mdl.nel
@@ -640,6 +715,8 @@ classdef Result < handle
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
                 this.plotInplane(mdl);
+            elseif mdl.anm.type == fem.Anm.PLANE_CONDUCTION
+                this.plotInplaneConduction(mdl);
             end
         end
         
@@ -647,13 +724,13 @@ classdef Result < handle
         % Create figures for post-processing results.
         % Eight windows are created and positioned on the screen.
         % Each window plots a type of post-process result.
-        function deform_fac = createFigs(this,mdl, ...
-                                   plot_xmin,plot_xmax,plot_ymin,plot_ymax)
+        function deform_fac = createFigs(this,mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
-                deform_fac = this.createFigsInplane(mdl, ...
-                                  plot_xmin,plot_xmax,plot_ymin,plot_ymax);
+                deform_fac = this.createFigsInplane(mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax);
+            elseif mdl.anm.type == fem.Anm.PLANE_CONDUCTION
+                this.createFigsInplaneThermal(mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax);
             end
         end
         
