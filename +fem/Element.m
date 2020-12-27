@@ -35,13 +35,14 @@ classdef Element < handle
         gstress_npts  int32  = int32.empty;     % number of gauss points for stress computation
         TGN           double = double.empty;    % transformation matrix of Gauss points results to nodal results
         
-        % Forcing terms
-        lineForce   double = double.empty;      % matrix of uniform line forcing components:
-                                                % * line loads [corner1,corner2,qx,qy,qz]
-                                                % * line heat fluxes [corner1,corner2,q]
-        domainForce double = double.empty;      % vector of uniform domain forcing components:
-                                                % * domain load [px,py,pz]
-                                                % * domain heat flux [G]
+        % Loads
+        lineLoad   double = double.empty;       % matrix of uniform line loads [corner1,corner2,qx,qy,qz]
+        domainLoad double = double.empty;       % vector of uniform domain load components [px,py,pz]
+        
+        % Fluxes
+        lineFlux    double = double.empty;      % matrix of uniform line heat fluxes [corner1,corner2,q]
+        lineConvec  double = double.empty;      % matrix of uniform line heat convection [corner1,corner2,h,Tenv]
+        domainFlux  double = double.empty;      % uniform domain heat flux [G]
     end
     
     %% Constructor method
@@ -164,10 +165,87 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
-        % Compute equivalent nodal forcing vector for element line forces,
-        % distributed over edges of an element.
+        % Compute stiffness matrix portion that accounts for convection B.C.
+        function k = stiffConvecMtx(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
+            
+            % Initialize element matrix
+            k = zeros(nen*ndof,nen*ndof);
+            
+            % Loop over element line convection edges
+            for q = 1:size(this.lineConvec,1)
+                % Global IDs of edge initial and final nodes
+                corner1 = this.lineConvec(q,1);
+                corner2 = this.lineConvec(q,2);
+                
+                % Get local IDs of edge nodes
+                [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
+                if ~valid
+                    continue;
+                end
+
+                % Compute number of edge nodes and assemble vector of edge nodes ids
+                if mid == 0
+                    nedgen = 2;
+                    edgLocIds = [n1,n2];
+                else
+                    nedgen = 3;
+                    edgLocIds = [n1,n2,mid];
+                end
+
+                % Initialize edge matrix
+                kline = zeros(nedgen*ndof,nedgen*ndof);
+                
+                % Edge nodes coordinates
+                X = this.shape.carCoord(edgLocIds,:);
+                
+                % Convection coefficient
+                h = this.lineConvec(q,3);
+                
+                % Gauss points and weights for integration on edge
+                [ngp,w,gp] = this.gauss.lineQuadrature(this.gstiff_order);
+                
+                % Loop over edge Gauss integration points
+                for i = 1:ngp
+                    % Parametric coordinates
+                    r = gp(1,i);
+                    
+                    % Edge d.o.f. shape functions matrix
+                    N = this.shape.NmtxEdge(n1,n2,r);
+                    
+                    % Matrix of edge geometry shape functions derivatives
+                    % w.r.t. parametric coordinates
+                    GradMpar = this.shape.gradMmtxEdge(n1,n2,r);
+                    
+                    % Jacobian matrix
+                    J = GradMpar * X;
+                    detJ = sqrt(J(1)*J(1) + J(2)*J(2));
+                    
+                    % Accumulate Gauss point contributions
+                    kline = kline + w(i) * detJ * h * (N' * N);
+                end
+                
+                % Edge gather vector (stores local d.o.f.'s numbers)
+                gledge = zeros(nedgen*ndof,1);
+                m = 0;
+                for i = 1:nedgen
+                    for j = 1:ndof
+                        m = m + 1;
+                        gledge(m) = (edgLocIds(i)-1)*ndof + j;
+                    end
+                end
+                
+                % Assemble edge matrix to element matrix
+                k(gledge,gledge) = k(gledge,gledge) + kline;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Compute equivalent nodal forcing vector for element line forces
+        % (load or flux), distributed over edges of an element.
         % Loads are assumed in global direction (loc_gbl is not used)
-        function f = edgeEquivForceVct(this)
+        function f = edgeEquivForceVct(this,lineForce)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
             
@@ -175,10 +253,10 @@ classdef Element < handle
             f = zeros(nen*ndof,1);
             
             % Loop over element line forces
-            for q = 1:size(this.lineForce,1)
+            for q = 1:size(lineForce,1)
                 % Global IDs of edge initial and final nodes
-                corner1 = this.lineForce(q,1);
-                corner2 = this.lineForce(q,2);
+                corner1 = lineForce(q,1);
+                corner2 = lineForce(q,2);
                 
                 % Get local IDs of edge nodes
                 [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
@@ -202,7 +280,7 @@ classdef Element < handle
                 X = this.shape.carCoord(edgLocIds,:);
                 
                 % Load components
-                p = this.lineForce(q,3:end);
+                p = lineForce(q,3:end);
                 
                 % Gauss points and weights for integration on edge
                 [ngp,w,gp] = this.gauss.lineQuadrature(this.gstiff_order);
@@ -236,10 +314,10 @@ classdef Element < handle
                 % Edge gather vector (stores local d.o.f.'s numbers)
                 gledge = zeros(nedgen*ndof,1);
                 m = 0;
-                for j = 1:nedgen
-                    for k = 1:ndof
+                for i = 1:nedgen
+                    for j = 1:ndof
                         m = m + 1;
-                        gledge(m) = (edgLocIds(j)-1)*ndof + k;
+                        gledge(m) = (edgLocIds(i)-1)*ndof + j;
                     end
                 end
                 
@@ -249,8 +327,9 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
-        % Compute equivalent nodal forcing vector for element domain forces.
-        function f = domainEquivForceVct(this)
+        % Compute equivalent nodal forcing vector for element domain forces
+        % (load or flux).
+        function f = domainEquivForceVct(this,domainForce)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
 
@@ -285,7 +364,7 @@ classdef Element < handle
                 for j = 1:nen
                     for k = 1:ndof
                         m = m + 1;
-                        f(m) = f(m) + w(i) * detJ * N(j) * this.domainForce(k);
+                        f(m) = f(m) + w(i) * detJ * N(j) * domainForce(k);
                     end
                 end
             end

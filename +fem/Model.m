@@ -388,46 +388,6 @@ classdef Model < handle
         end
         
         %------------------------------------------------------------------
-        % Assemble global stiffness matrix.
-        function K = gblStiffMtx(this)
-            % Initialize global stiffness matrix
-            K = zeros(this.neq,this.neq);
-            
-            for i = 1:this.nel
-                % Get element stiffness matrix
-                ke = this.elems(i).stiffMtx();
-                
-                % Assemble element matrix to global matrix
-                gle = this.elems(i).gle;
-                K(gle,gle) = K(gle,gle) + ke;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Add equivalent nodal forcing terms from element distributed forces
-        % to global forcing vector.
-        function F = addEquivForce(this,F)
-            for i = 1:this.nel
-                if (~isempty(this.elems(i).lineForce))
-                    % Get element equivalent nodal forcing vector
-                    fline = this.elems(i).edgeEquivForceVct();
-                    
-                    % Assemble element vector to global vector
-                    gle = this.elems(i).gle;
-                    F(gle) = F(gle) + fline;
-                end
-                if (~isempty(this.elems(i).domainForce))
-                    % Get element equivalent nodal forcing vector
-                    fdom = this.elems(i).domainEquivForceVct();
-                    
-                    % Assemble element vector to global vector
-                    gle = this.elems(i).gle;
-                    F(gle) = F(gle) + fdom;
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
         % Compute maximum number nodes of all elements.
         function nen = maxNumElemNodes(this)
             nen = 0;

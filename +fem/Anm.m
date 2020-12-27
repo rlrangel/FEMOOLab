@@ -103,9 +103,16 @@ classdef Anm < handle
         coeff = rigidityCoeff(this,elem,r,s);
         
         %------------------------------------------------------------------
-        % Add point force contributions to global forcing vector,
-        % including the components that correspond to fixed d.o.f.'s.
+        % Assemble global stiffness matrix.
+        K = gblStiffMtx(this,mdl);
+        
+        %------------------------------------------------------------------
+        % Add point force contributions to global forcing vector.
         F = addPointForce(this,mdl,F);
+        
+        %------------------------------------------------------------------
+        % Add equivalent nodal force contributions to global forcing vector.
+        F = addEquivForce(this,mdl,F);
         
         %------------------------------------------------------------------
         % Add essencial boundary conditions (prescribed values of state

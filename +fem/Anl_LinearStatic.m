@@ -30,11 +30,11 @@ classdef Anl_LinearStatic < fem.Anl
             
             % Assemble global stiffness matrix
             fprintf('Assembling stiffness matrix...\n');
-            K = mdl.gblStiffMtx();
+            K = mdl.anm.gblStiffMtx(mdl);
             
             % Check model stability
             if (this.singularMtx(mdl,K))
-                fprintf(1,'Unstable model!\n');
+                fprintf(1,'Singular stiffness matrix!\n');
                 status = 0;
                 return;
             end
@@ -43,7 +43,7 @@ classdef Anl_LinearStatic < fem.Anl
             fprintf('Assembling forcing vector...\n');
             F = zeros(mdl.neq,1);
             F = mdl.anm.addPointForce(mdl,F);
-            F = mdl.addEquivForce(F);
+            F = mdl.anm.addEquivForce(mdl,F);
             
             % Assemble global vector of state variables
             U = zeros(mdl.neq,1);

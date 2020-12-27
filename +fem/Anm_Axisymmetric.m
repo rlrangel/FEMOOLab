@@ -121,12 +121,25 @@ classdef Anm_Axisymmetric < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Add point force contributions to global forcing vector,
-        % including the components that correspond to fixed d.o.f.'s.
-        function F = addPointForce(~,mdl,F)
+        % Assemble global stiffness matrix.
+        function K = gblStiffMtx(~,mdl)
+            % Initialize global stiffness matrix
+            K = zeros(mdl.neq,mdl.neq);
+            
+            % Get element stiffness matrices and assemble global matrix
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                ke = mdl.elems(i).stiffMtx();
+                K(gle,gle) = K(gle,gle) + ke;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Add point force contributions to global forcing vector.
+        function F = addPointForce(this,mdl,F)
             for i = 1:mdl.nnp
                 if (~isempty(mdl.nodes(i).load))
-                     for j = 1:this.ndof
+                    for j = 1:this.ndof
                         % Get d.o.f numbers
                         id  = mdl.ID(j,i);
                         dof = this.gla(j);
@@ -134,6 +147,25 @@ classdef Anm_Axisymmetric < fem.Anm
                         % Add load to reference load vector
                         F(id) = F(id) + mdl.nodes(i).load(dof);
                     end
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Add equivalent nodal force contributions to global forcing vector.
+        function F = addEquivForce(~,mdl,F)
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                
+                % Get element equivalent nodal load vectors and assemble global vector
+                if (~isempty(mdl.elems(i).lineLoad))
+                    fline = mdl.elems(i).edgeEquivForceVct(mdl.elems(i).lineLoad);
+                    F(gle) = F(gle) + fline;
+                end
+                
+                if (~isempty(mdl.elems(i).domainLoad))
+                    fdom = mdl.elems(i).domainEquivForceVct(mdl.elems(i).domainLoad);
+                    F(gle) = F(gle) + fdom;
                 end
             end
         end

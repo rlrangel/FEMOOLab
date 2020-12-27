@@ -80,11 +80,72 @@ classdef Anm_PlaneConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Add point force contributions to global forcing vector,
-        % including the components that correspond to fixed d.o.f.'s.
-        function F = addPointForce(~,~,F)
-            % Point flux is not considered
-            return;
+        % Assemble global stiffness matrix.
+        function K = gblStiffMtx(~,mdl)
+            % Initialize global stiffness matrix
+            K = zeros(mdl.neq,mdl.neq);
+            
+            % Get element stiffness matrices and assemble global matrix
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                
+                % Convenctional stiffness matrix
+                ke = mdl.elems(i).stiffMtx();
+                
+                % Convection stiffness
+                if (~isempty(mdl.elems(i).lineConvec))
+                    ke = ke + mdl.elems(i).stiffConvecMtx();
+                end
+                
+                K(gle,gle) = K(gle,gle) + ke;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Add point force contributions to global forcing vector.
+        function F = addPointForce(this,mdl,F)
+            for i = 1:mdl.nnp
+                if (~isempty(mdl.nodes(i).flux))
+                    for j = 1:this.ndof
+                        % Get d.o.f numbers
+                        id  = mdl.ID(j,i);
+                        dof = this.gla(j);
+                        
+                        % Add load to reference load vector
+                        F(id) = F(id) + mdl.nodes(i).flux(dof);
+                    end
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Add equivalent nodal force contributions to global forcing vector.
+        function F = addEquivForce(~,mdl,F)
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                
+                % Get element equivalent nodal flux vectors and assemble global vector
+                if (~isempty(mdl.elems(i).lineFlux))
+                    fline = mdl.elems(i).edgeEquivForceVct(mdl.elems(i).lineFlux);
+                    F(gle) = F(gle) + fline;
+                end
+                
+                if (~isempty(mdl.elems(i).lineConvec))
+                    % New matrix whose last column is the product of
+                    % convection coeff. and ambient temperature
+                    % (columns 3 and 4 of property lineConvec)
+                    lineConvec = mdl.elems(i).lineConvec(:,1:3);
+                    lineConvec(:,3) = lineConvec(:,3) .* mdl.elems(i).lineConvec(:,4);
+                    
+                    fconv = mdl.elems(i).edgeEquivForceVct(lineConvec);
+                    F(gle) = F(gle) + fconv;
+                end
+                
+                if (~isempty(mdl.elems(i).domainFlux))
+                    fdom = mdl.elems(i).domainEquivForceVct(mdl.elems(i).domainFlux);
+                    F(gle) = F(gle) + fdom;
+                end
+            end
         end
         
         %------------------------------------------------------------------

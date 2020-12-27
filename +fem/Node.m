@@ -25,7 +25,8 @@ classdef Node < handle
         
         % Thermal properties
         fixTemp  logical = logical.empty;  % thermal essential boundary condition flag
-        ebcTemp  double  = double.empty;   % prescribed temperature value
+        ebcTemp  double  = double.empty;   % prescribed temperature
+        flux     double  = double.empty;   % applied flux
     end
     
     %% Constructor method

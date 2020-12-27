@@ -68,18 +68,22 @@ classdef Read < handle
                         status = this.elementTria6(fid,sim.mdl,gauss_tria,thickness,intgrorder);
                     case '%ELEMENT.Q8'
                         status = this.elementQuad8(fid,sim.mdl,gauss_quad,thickness,intgrorder);
-                    case '%LOAD.CASE.NODAL.FORCES'
-                        status = this.loadPoint(fid,sim.mdl);
                     case '%LOAD.CASE.NODAL.DISPLACEMENT'
                         status = this.nodePrescDispl(fid,sim.mdl);
+                    case '%LOAD.CASE.NODAL.FORCES'
+                        status = this.loadPoint(fid,sim.mdl);
                     case '%LOAD.CASE.NODAL.TEMPERATURE'
                         status = this.nodePrescTemp(fid,sim.mdl);
+                    case '%LOAD.CASE.NODAL.FLUX' % This is not on NF documentation
+                        status = this.fluxPoint(fid,sim.mdl);
                     case '%LOAD.CASE.LINE.FORCE.UNIFORM'
                         status = this.loadLineUnif(fid,sim.mdl);
                     case '%LOAD.CASE.DOMAIN.FORCE.UNIFORM'
                         status = this.loadDomainUnif(fid,sim.mdl);
                     case '%LOAD.CASE.LINE.HEAT.FLUX.UNIFORM'
                         status = this.fluxLineUnif(fid,sim.mdl);
+                    case '%LOAD.CASE.LINE.CONVECTION.UNIFORM'
+                        status = this.ConvecLineUnif(fid,sim.mdl);
                     case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM' % This is actually DOMAIN heat flux!
                         status = this.fluxDomainUnif(fid,sim.mdl);
                 end
@@ -719,43 +723,6 @@ classdef Read < handle
             end
         end
         
-        %--------------------------------------------------------------------------
-        function status = loadPoint(this,fid,mdl)
-            status = 1;
-            if (isempty(mdl.nodes))
-                fprintf('Node coordinates must be provided before point loads!\n');
-                status = 0;
-                return;
-            end
-            
-            % Total number of nodes with point load
-            n = fscanf(fid,'%d',1);
-            if (~this.chkInt(n,mdl.nnp,'number of nodes with point load'))
-                status = 0;
-                return;
-            end
-            
-            for i = 1:n
-                % Node ID
-                id = fscanf(fid,'%d',1);
-                if (~this.chkInt(id,mdl.nnp,'node ID for point load specification'))
-                    status = 0;
-                    return;
-                end
-                
-                % Point load values
-                [load,count] = fscanf(fid,'%f',6);
-                if (count ~= 6)
-                    fprintf('Invalid point load of node %d\n',id);
-                    status = 0;
-                    return;
-                end
-                
-                % Store data
-                mdl.nodes(id).load = load;
-            end
-        end
-        
         %------------------------------------------------------------------
         function status = nodePrescDispl(this,fid,mdl)
             status = 1;
@@ -790,6 +757,43 @@ classdef Read < handle
                 
                 % Store data
                 mdl.nodes(id).ebcDispl = disp;
+            end
+        end
+        
+        %--------------------------------------------------------------------------
+        function status = loadPoint(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.nodes))
+                fprintf('Node coordinates must be provided before point loads!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of nodes with point load
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,mdl.nnp,'number of nodes with point load'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Node ID
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,mdl.nnp,'node ID for point load specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Point load values
+                [load,count] = fscanf(fid,'%f',6);
+                if (count ~= 6)
+                    fprintf('Invalid point load of node %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.nodes(id).load = load;
             end
         end
         
@@ -832,6 +836,43 @@ classdef Read < handle
         end
         
         %--------------------------------------------------------------------------
+        function status = fluxPoint(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.nodes))
+                fprintf('Node coordinates must be provided before point fluxes!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of nodes with point flux
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,mdl.nnp,'number of nodes with point flux'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Node ID
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,mdl.nnp,'node ID for point flux specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Point flux value
+                [flux,count] = fscanf(fid,'%f',1);
+                if (count ~= 1)
+                    fprintf('Invalid point flux of node %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.nodes(id).flux = flux;
+            end
+        end
+        
+        %--------------------------------------------------------------------------
         function status = loadLineUnif(this,fid,mdl)
             status = 1;
             if (isempty(mdl.elems))
@@ -868,7 +909,7 @@ classdef Read < handle
                 % All loads are considered in global directions, so loc_gbl is ignored
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineForce(j,:) = [load(1),load(2),load(4),load(5),load(6)];
+                mdl.elems(id).lineLoad(j,:) = [load(1),load(2),load(4),load(5),load(6)];
             end
         end
         
@@ -905,7 +946,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.elems(id).domainForce = load;
+                mdl.elems(id).domainLoad = load;
             end
         end
         
@@ -945,7 +986,49 @@ classdef Read < handle
                 % Store data
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineForce(j,:) = flux;
+                mdl.elems(id).lineFlux(j,:) = flux;
+            end
+        end
+        
+        %--------------------------------------------------------------------------
+        function status = ConvecLineUnif(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.elems))
+                fprintf('Elements must be provided before line convection!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of edges with line convection
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,inf,'number of edges with line convection'))
+                status = 0;
+                return;
+            end
+            
+            a = zeros(n,1);
+            for i = 1:n
+                % Element ID
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,mdl.nel,'element ID for line convection specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Line convection information (node1,node2,h,Tenv)
+                % h    -> convection coefficient
+                % Tenv -> environment temperature
+                [convec,count] = fscanf(fid,'%f',4);
+                if (count ~= 4)
+                    fprintf('Invalid line convection specification of element %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                a(i) = id;
+                j = sum(a(:)==id);
+                mdl.elems(id).lineConvec(j,:) = convec;
             end
         end
         
@@ -982,7 +1065,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.elems(id).domainForce = flux;
+                mdl.elems(id).domainFlux = flux;
             end
         end
         
@@ -1016,10 +1099,8 @@ classdef Read < handle
                             return;
                         end
                     elseif (mdl.anm.type == fem.Anm.PLANE_CONDUCTION)
-                        if (isempty(mdl.materials(i).rho) ||...
-                            isempty(mdl.materials(i).k)   ||...
-                            isempty(mdl.materials(i).cp))
-                            fprintf('Missing material properties: rho, k, or cp!\n');
+                        if (isempty(mdl.materials(i).k))
+                            fprintf('Missing material properties: conductivity!\n');
                             return;
                         end
                     end
