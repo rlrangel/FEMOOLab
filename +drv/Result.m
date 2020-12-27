@@ -20,6 +20,7 @@ classdef Result < handle
         rz     = logical(false);  % Plot contour of rotations about Z axis
         temp   = logical(false);  % Plot contour of temperature
         smooth = logical(false);  % Smooth element results at common nodes
+        tol    = double(1e-5);    % Tolerance for cleaning small result values and differences
         sxx    = logical(false);  % Plot contour of normal stresses in X direction
         syy    = logical(false);  % Plot contour of normal stresses in Y direction
         szz    = logical(false);  % Plot contour of normal stresses in Z direction
@@ -197,97 +198,169 @@ classdef Result < handle
         % 2D inplane analysis model:
         % Clear numerical garbage from analysis. (TEMPORARY SIMPLIFICATION !!)
         function clearSmallValuesInplane(this,mdl)
-            if (abs(this.sxx_gp_min) < 0.00001 && abs(this.sxx_gp_max) < 0.00001)
+            if (abs(this.sxx_gp_min) < this.tol && abs(this.sxx_gp_max) < this.tol)
                 this.sxx_gp_min = 0.0;
                 this.sxx_gp_max = 0.0;
                 this.sxx_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(this.syy_gp_min) < 0.00001 && abs(this.syy_gp_max) < 0.00001)
+            if (abs(this.syy_gp_min) < this.tol && abs(this.syy_gp_max) < this.tol)
                 this.syy_gp_min = 0.0;
                 this.syy_gp_max = 0.0;
                 this.syy_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(this.txy_gp_min) < 0.00001 && abs(this.txy_gp_max) < 0.00001)
+            if (abs(this.txy_gp_min) < this.tol && abs(this.txy_gp_max) < this.tol)
                 this.txy_gp_min = 0.0;
                 this.txy_gp_max = 0.0;
                 this.txy_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(this.s1_gp_min) < 0.00001 && abs(this.s1_gp_max) < 0.00001)
+            if (abs(this.s1_gp_min) < this.tol && abs(this.s1_gp_max) < this.tol)
                 this.s1_gp_min = 0.0;
                 this.s1_gp_max = 0.0;
                 this.s1_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(this.s2_gp_min) < 0.00001 && abs(this.s2_gp_max) < 0.00001)
+            if (abs(this.s2_gp_min) < this.tol && abs(this.s2_gp_max) < this.tol)
                 this.s2_gp_min = 0.0;
                 this.s2_gp_max = 0.0;
                 this.s2_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(this.tmax_gp_min) < 0.00001 && abs(this.tmax_gp_max) < 0.00001)
+            if (abs(this.tmax_gp_min) < this.tol && abs(this.tmax_gp_max) < this.tol)
                 this.tmax_gp_min = 0.0;
                 this.tmax_gp_max = 0.0;
                 this.tmax_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(this.sxx_elemextrap_min) < 0.00001 && abs(this.sxx_elemextrap_max) < 0.00001)
+            if (abs(this.sxx_elemextrap_min) < this.tol && abs(this.sxx_elemextrap_max) < this.tol)
                 this.sxx_elemextrap_min = 0.0;
                 this.sxx_elemextrap_max = 0.0;
                 this.sxx_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(this.syy_elemextrap_min) < 0.00001 && abs(this.syy_elemextrap_max) < 0.00001)
+            if (abs(this.syy_elemextrap_min) < this.tol && abs(this.syy_elemextrap_max) < this.tol)
                 this.syy_elemextrap_min = 0.0;
                 this.syy_elemextrap_max = 0.0;
                 this.syy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(this.txy_elemextrap_min) < 0.00001 && abs(this.txy_elemextrap_max) < 0.00001)
+            if (abs(this.txy_elemextrap_min) < this.tol && abs(this.txy_elemextrap_max) < this.tol)
                 this.txy_elemextrap_min = 0.0;
                 this.txy_elemextrap_max = 0.0;
                 this.txy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(this.s1_elemextrap_min) < 0.00001 && abs(this.s1_elemextrap_max) < 0.00001)
+            if (abs(this.s1_elemextrap_min) < this.tol && abs(this.s1_elemextrap_max) < this.tol)
                 this.s1_elemextrap_min = 0.0;
                 this.s1_elemextrap_max = 0.0;
                 this.s1_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(this.s2_elemextrap_min) < 0.00001 && abs(this.s2_elemextrap_max) < 0.00001)
+            if (abs(this.s2_elemextrap_min) < this.tol && abs(this.s2_elemextrap_max) < this.tol)
                 this.s2_elemextrap_min = 0.0;
                 this.s2_elemextrap_max = 0.0;
                 this.s2_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            if (abs(this.tmax_elemextrap_min) < 0.00001 && abs(this.tmax_elemextrap_max) < 0.00001)
+            if (abs(this.tmax_elemextrap_min) < this.tol && abs(this.tmax_elemextrap_max) < this.tol)
                 this.tmax_elemextrap_min = 0.0;
                 this.tmax_elemextrap_max = 0.0;
                 this.tmax_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
             end
-            
-            
-            if (abs(this.fxx_gp_min) < 0.00001 && abs(this.fxx_gp_max) < 0.00001)
+        end
+        
+        function clearSmallValuesInplaneConduction(this,mdl)
+            if (abs(this.fxx_gp_min) < this.tol && abs(this.fxx_gp_max) < this.tol)
                 this.fxx_gp_min = 0.0;
                 this.fxx_gp_max = 0.0;
                 this.fxx_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(this.fyy_gp_min) < 0.00001 && abs(this.fyy_gp_max) < 0.00001)
+            if (abs(this.fyy_gp_min) < this.tol && abs(this.fyy_gp_max) < this.tol)
                 this.fyy_gp_min = 0.0;
                 this.fyy_gp_max = 0.0;
                 this.fyy_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(this.fxx_elemextrap_min) < 0.00001 && abs(this.fxx_elemextrap_max) < 0.00001)
-                this.fxx_elemextrap_min = 0.0;
-                this.fxx_elemextrap_max = 0.0;
-                this.fxx_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
-            end
-            if (abs(this.fyy_elemextrap_min) < 0.00001 && abs(this.fyy_elemextrap_max) < 0.00001)
-                this.fyy_elemextrap_min = 0.0;
-                this.fyy_elemextrap_max = 0.0;
-                this.fyy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
-            end
-            if (abs(this.fp_gp_min) < 0.00001 && abs(this.fp_gp_max) < 0.00001)
+            if (abs(this.fp_gp_min) < this.tol && abs(this.fp_gp_max) < this.tol)
                 this.fp_gp_min = 0.0;
                 this.fp_gp_max = 0.0;
                 this.fp_gp = zeros(mdl.elems(1).gstress_npts,mdl.nel);
             end
-            if (abs(this.fp_elemextrap_min) < 0.00001 && abs(this.fp_elemextrap_max) < 0.00001)
+            if (abs(this.fxx_elemextrap_min) < this.tol && abs(this.fxx_elemextrap_max) < this.tol)
+                this.fxx_elemextrap_min = 0.0;
+                this.fxx_elemextrap_max = 0.0;
+                this.fxx_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            end
+            if (abs(this.fyy_elemextrap_min) < this.tol && abs(this.fyy_elemextrap_max) < this.tol)
+                this.fyy_elemextrap_min = 0.0;
+                this.fyy_elemextrap_max = 0.0;
+                this.fyy_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            end
+            if (abs(this.fp_elemextrap_min) < this.tol && abs(this.fp_elemextrap_max) < this.tol)
                 this.fp_elemextrap_min = 0.0;
                 this.fp_elemextrap_max = 0.0;
                 this.fp_elemextrap = zeros(mdl.elems(1).shape.nen,mdl.nel);
+            end
+            if (abs(this.fxx_nodeextrap_min) < this.tol && abs(this.fxx_nodeextrap_max) < this.tol)
+                this.fxx_nodeextrap_min = 0.0;
+                this.fxx_nodeextrap_max = 0.0;
+                this.fxx_nodeextrap = zeros(mdl.nnp,1);
+            end
+            if (abs(this.fyy_nodeextrap_min) < this.tol && abs(this.fyy_nodeextrap_max) < this.tol)
+                this.fyy_nodeextrap_min = 0.0;
+                this.fyy_nodeextrap_max = 0.0;
+                this.fyy_nodeextrap = zeros(mdl.nnp,1);
+            end
+            if (abs(this.fp_nodeextrap_min) < this.tol && abs(this.fp_nodeextrap_max) < this.tol)
+                this.fp_nodeextrap_min = 0.0;
+                this.fp_nodeextrap_max = 0.0;
+                this.fp_nodeextrap = zeros(mdl.nnp,1);
+            end
+            
+            % Smooth constant results
+            if (abs(this.fxx_gp_min - this.fxx_gp_max) < this.tol)
+                mean = (this.fxx_gp_min+this.fxx_gp_max)/2;
+                this.fxx_gp = mean*ones(mdl.elems(1).gstress_npts,mdl.nel);
+                this.fxx_gp_min = this.fxx_gp_min-abs(this.fxx_gp_min/10);
+                this.fxx_gp_max = this.fxx_gp_max+abs(this.fxx_gp_max/10);
+            end
+            if (abs(this.fyy_gp_min - this.fyy_gp_max) < this.tol)
+                mean = (this.fyy_gp_min+this.fyy_gp_max)/2;
+                this.fxx_gp = mean*ones(mdl.elems(1).gstress_npts,mdl.nel);
+                this.fyy_gp_min = this.fyy_gp_min-abs(this.fyy_gp_min/10);
+                this.fyy_gp_max = this.fyy_gp_max+abs(this.fyy_gp_max/10);
+            end
+            if (abs(this.fp_gp_min - this.fp_gp_max) < this.tol)
+                mean = (this.fp_gp_min+this.fp_gp_max)/2;
+                this.fxx_gp = mean*ones(mdl.elems(1).gstress_npts,mdl.nel);
+                this.fp_gp_min = this.fp_gp_min-abs(this.fp_gp_min/10);
+                this.fp_gp_max = this.fp_gp_max+abs(this.fp_gp_max/10);
+            end
+            if (abs(this.fxx_elemextrap_min - this.fxx_elemextrap_max) < this.tol)
+                mean = (this.fxx_elemextrap_min+this.fxx_elemextrap_max)/2;
+                this.fxx_gp = mean*ones(mdl.elems(1).shape.nen,mdl.nel);
+                this.fxx_elemextrap_min = this.fxx_elemextrap_min-abs(this.fxx_elemextrap_min/10);
+                this.fxx_elemextrap_max = this.fxx_elemextrap_max+abs(this.fxx_elemextrap_max/10);
+            end
+            if (abs(this.fyy_elemextrap_min - this.fyy_elemextrap_max) < this.tol)
+                mean = (this.fyy_elemextrap_min+this.fyy_elemextrap_max)/2;
+                this.fxx_gp = mean*ones(mdl.elems(1).shape.nen,mdl.nel);
+                this.fyy_elemextrap_min = this.fyy_elemextrap_min-abs(this.fyy_elemextrap_min/10);
+                this.fyy_elemextrap_max = this.fyy_elemextrap_max+abs(this.fyy_elemextrap_max/10);
+            end
+            if (abs(this.fp_elemextrap_min - this.fp_elemextrap_max) < this.tol)
+                mean = (this.fp_elemextrap_min+this.fp_elemextrap_max)/2;
+                this.fxx_gp = mean*ones(mdl.elems(1).shape.nen,mdl.nel);
+                this.fp_elemextrap_min = this.fp_elemextrap_min-abs(this.fp_elemextrap_min/10);
+                this.fp_elemextrap_max = this.fp_elemextrap_max+abs(this.fp_elemextrap_max/10);
+            end
+            if (abs(this.fxx_nodeextrap_min - this.fxx_nodeextrap_max) < this.tol)
+                mean = (this.fxx_nodeextrap_min+this.fxx_nodeextrap_max)/2;
+                this.fxx_gp = mean*ones(mdl.nnp,1);
+                this.fxx_nodeextrap_min = this.fxx_nodeextrap_min-abs(this.fxx_nodeextrap_min/10);
+                this.fxx_nodeextrap_max = this.fxx_nodeextrap_max+abs(this.fxx_nodeextrap_max/10);
+            end
+            if (abs(this.fyy_nodeextrap_min - this.fyy_nodeextrap_max) < this.tol)
+                mean = (this.fyy_nodeextrap_min+this.fyy_nodeextrap_max)/2;
+                this.fxx_gp = mean*ones(mdl.nnp,1);
+                this.fyy_nodeextrap_min = this.fyy_nodeextrap_min-abs(this.fyy_nodeextrap_min/10);
+                this.fyy_nodeextrap_max = this.fyy_nodeextrap_max+abs(this.fyy_nodeextrap_max/10);
+            end
+            if (abs(this.fp_nodeextrap_min - this.fp_nodeextrap_max) < this.tol)
+                mean = (this.fp_nodeextrap_min+this.fp_nodeextrap_max)/2;
+                this.fxx_gp = mean*ones(mdl.nnp,1);
+                this.fp_nodeextrap_min = this.fp_nodeextrap_min-abs(this.fp_nodeextrap_min/10);
+                this.fp_nodeextrap_max = this.fp_nodeextrap_max+abs(this.fp_nodeextrap_max/10);
             end
         end
         
@@ -518,113 +591,113 @@ classdef Result < handle
             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
             hold on;
             
-             % Create figure for sigma x plot and get its handle.
-             % Locate figure at the second level left side of screen.
-             this.fig_sxx = figure;
-             fig_sxx_pos = get( this.fig_sxx, 'Position' );
-             fig_sxx_pos(1) = 0;
-             fig_sxx_pos(2) = (screen_sizes(4) - fig_sxx_pos(4))/2;
-             set( this.fig_sxx, 'Position', fig_sxx_pos );
-             title( 'Sigma XX stress component' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.sxx_nodeextrap_min this.sxx_nodeextrap_max]);
-             else
-                 caxis([this.sxx_elemextrap_min this.sxx_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
+            % Create figure for sigma x plot and get its handle.
+            % Locate figure at the second level left side of screen.
+            this.fig_sxx = figure;
+            fig_sxx_pos = get( this.fig_sxx, 'Position' );
+            fig_sxx_pos(1) = 0;
+            fig_sxx_pos(2) = (screen_sizes(4) - fig_sxx_pos(4))/2;
+            set( this.fig_sxx, 'Position', fig_sxx_pos );
+            title( 'Sigma XX stress component' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            if this.smooth
+                caxis([this.sxx_nodeextrap_min this.sxx_nodeextrap_max]);
+            else
+                caxis([this.sxx_elemextrap_min this.sxx_elemextrap_max]);
+            end
+            colorbar;
+            hold on;
             
-             % Create figure for sigma y plot and get its handle.
-             % Locate figure at the second level right side of screen.
-             this.fig_syy = figure;
-             fig_syy_pos = get( this.fig_syy, 'Position' );
-             fig_syy_pos(1) = screen_sizes(3) - fig_syy_pos(3);
-             fig_syy_pos(2) = (screen_sizes(4) - fig_syy_pos(4))/2;
-             set( this.fig_syy, 'Position', fig_syy_pos );
-             title( 'Sigma YY stress component' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.syy_nodeextrap_min this.syy_nodeextrap_max]);
-             else
-                 caxis([this.syy_elemextrap_min this.syy_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
-             
-             % Create figure for tau xy plot and get its handle.
-             % Locate figure at the third level left side of screen.
-             this.fig_txy = figure;
-             fig_txy_pos = get( this.fig_txy, 'Position' );
-             fig_txy_pos(1) = 0;
-             fig_txy_pos(2) = (screen_sizes(4) - fig_txy_pos(4))/4;
-             set( this.fig_txy, 'Position', fig_txy_pos );
-             title( 'Tau XY stress component' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.txy_nodeextrap_min this.txy_nodeextrap_max]);
-             else
-                 caxis([this.txy_elemextrap_min this.txy_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
-             
-             % Create figure for sigma 1 plot and get its handle.
-             % Locate figure at the third level right side of screen.
-             this.fig_s1 = figure;
-             fig_s1_pos = get( this.fig_s1, 'Position' );
-             fig_s1_pos(1) = screen_sizes(3) - fig_s1_pos(3);
-             fig_s1_pos(2) = (screen_sizes(4) - fig_s1_pos(4))/4;
-             set( this.fig_s1, 'Position', fig_s1_pos );
-             title( 'Maximum principal stress' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.s1_nodeextrap_min this.s1_nodeextrap_max]);
-             else
-                 caxis([this.s1_elemextrap_min this.s1_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
-             
-             % Create figure for sigma 2 plot and get its handle.
-             % Locate figure at the forth level left side of screen.
-             this.fig_s2 = figure;
-             fig_s2_pos = get( this.fig_s2, 'Position' );
-             fig_s2_pos(1) = 0;
-             fig_s2_pos(2) = 0;
-             set( this.fig_s2, 'Position', fig_s2_pos );
-             title( 'Minimum principal stress' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.s2_nodeextrap_min this.s2_nodeextrap_max]);
-             else
-                 caxis([this.s2_elemextrap_min this.s2_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
-             
-             % Create figure for tau max. plot and get its handle.
-             % Locate figure at the forth level right side of screen.
-             this.fig_tmax = figure;
-             fig_tmax_pos = get( this.fig_tmax, 'Position' );
-             fig_tmax_pos(1) = screen_sizes(3) - fig_tmax_pos(3);
-             fig_tmax_pos(2) = 0;
-             set( this.fig_tmax, 'Position', fig_tmax_pos );
-             title( 'Maximum shear stress' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.tmax_nodeextrap_min this.tmax_nodeextrap_max]);
-             else
-                 caxis([this.tmax_elemextrap_min this.tmax_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
+            % Create figure for sigma y plot and get its handle.
+            % Locate figure at the second level right side of screen.
+            this.fig_syy = figure;
+            fig_syy_pos = get( this.fig_syy, 'Position' );
+            fig_syy_pos(1) = screen_sizes(3) - fig_syy_pos(3);
+            fig_syy_pos(2) = (screen_sizes(4) - fig_syy_pos(4))/2;
+            set( this.fig_syy, 'Position', fig_syy_pos );
+            title( 'Sigma YY stress component' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            if this.smooth
+                caxis([this.syy_nodeextrap_min this.syy_nodeextrap_max]);
+            else
+                caxis([this.syy_elemextrap_min this.syy_elemextrap_max]);
+            end
+            colorbar;
+            hold on;
+            
+            % Create figure for tau xy plot and get its handle.
+            % Locate figure at the third level left side of screen.
+            this.fig_txy = figure;
+            fig_txy_pos = get( this.fig_txy, 'Position' );
+            fig_txy_pos(1) = 0;
+            fig_txy_pos(2) = (screen_sizes(4) - fig_txy_pos(4))/4;
+            set( this.fig_txy, 'Position', fig_txy_pos );
+            title( 'Tau XY stress component' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            if this.smooth
+                caxis([this.txy_nodeextrap_min this.txy_nodeextrap_max]);
+            else
+                caxis([this.txy_elemextrap_min this.txy_elemextrap_max]);
+            end
+            colorbar;
+            hold on;
+            
+            % Create figure for sigma 1 plot and get its handle.
+            % Locate figure at the third level right side of screen.
+            this.fig_s1 = figure;
+            fig_s1_pos = get( this.fig_s1, 'Position' );
+            fig_s1_pos(1) = screen_sizes(3) - fig_s1_pos(3);
+            fig_s1_pos(2) = (screen_sizes(4) - fig_s1_pos(4))/4;
+            set( this.fig_s1, 'Position', fig_s1_pos );
+            title( 'Maximum principal stress' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            if this.smooth
+                caxis([this.s1_nodeextrap_min this.s1_nodeextrap_max]);
+            else
+                caxis([this.s1_elemextrap_min this.s1_elemextrap_max]);
+            end
+            colorbar;
+            hold on;
+            
+            % Create figure for sigma 2 plot and get its handle.
+            % Locate figure at the forth level left side of screen.
+            this.fig_s2 = figure;
+            fig_s2_pos = get( this.fig_s2, 'Position' );
+            fig_s2_pos(1) = 0;
+            fig_s2_pos(2) = 0;
+            set( this.fig_s2, 'Position', fig_s2_pos );
+            title( 'Minimum principal stress' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            if this.smooth
+                caxis([this.s2_nodeextrap_min this.s2_nodeextrap_max]);
+            else
+                caxis([this.s2_elemextrap_min this.s2_elemextrap_max]);
+            end
+            colorbar;
+            hold on;
+            
+            % Create figure for tau max. plot and get its handle.
+            % Locate figure at the forth level right side of screen.
+            this.fig_tmax = figure;
+            fig_tmax_pos = get( this.fig_tmax, 'Position' );
+            fig_tmax_pos(1) = screen_sizes(3) - fig_tmax_pos(3);
+            fig_tmax_pos(2) = 0;
+            set( this.fig_tmax, 'Position', fig_tmax_pos );
+            title( 'Maximum shear stress' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            if this.smooth
+                caxis([this.tmax_nodeextrap_min this.tmax_nodeextrap_max]);
+            else
+                caxis([this.tmax_elemextrap_min this.tmax_elemextrap_max]);
+            end
+            colorbar;
+            hold on;
         end
         
         %------------------------------------------------------------------
@@ -642,11 +715,10 @@ classdef Result < handle
             temp_max = max(temperature);
             
             % Create figure for temperature plot and get its handle.
-            % Locate figure at the third level right side of screen.
+            % Locate figure at the up left corner.
             this.fig_temp = figure;
             fig_temp_pos = get( this.fig_temp, 'Position' );
-            fig_temp_pos(1) = screen_sizes(3) - fig_temp_pos(3);
-            fig_temp_pos(2) = (screen_sizes(4) - fig_temp_pos(4))/4;
+            fig_temp_pos(1) = 0;
             set( this.fig_temp, 'Position', fig_temp_pos );
             title( 'Temperature field' );
             set( gca,'DataAspectRatio',[1 1 1] );
@@ -656,66 +728,66 @@ classdef Result < handle
             hold on;
             
             % Create figure for sigma x plot and get its handle.
-             % Locate figure at the second level left side of screen.
-             this.fig_fxx = figure;
-             fig_fxx_pos = get( this.fig_fxx, 'Position' );
-             fig_fxx_pos(1) = 0;
-             fig_fxx_pos(2) = (screen_sizes(4) - fig_fxx_pos(4))/2;
-             set( this.fig_fxx, 'Position', fig_fxx_pos );
-             title( 'Flux X component' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.fxx_nodeextrap_min this.fxx_nodeextrap_max]);
-             else
-                 caxis([this.fxx_elemextrap_min this.fxx_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
+            % Locate figure at the second level left side of screen.
+            this.fig_fxx = figure;
+            fig_fxx_pos = get( this.fig_fxx, 'Position' );
+            fig_fxx_pos(1) = 0;
+            fig_fxx_pos(2) = (screen_sizes(4) - fig_fxx_pos(4))/2;
+            set( this.fig_fxx, 'Position', fig_fxx_pos );
+            title( 'Flux X component' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            if this.smooth
+                caxis([this.fxx_nodeextrap_min this.fxx_nodeextrap_max]);
+            else
+                caxis([this.fxx_elemextrap_min this.fxx_elemextrap_max]);
+            end
+            colorbar;
+            hold on;
             
-             % Create figure for sigma y plot and get its handle.
-             % Locate figure at the second level right side of screen.
-             this.fig_fyy = figure;
-             fig_fyy_pos = get( this.fig_fyy, 'Position' );
-             fig_fyy_pos(1) = screen_sizes(3) - fig_fyy_pos(3);
-             fig_fyy_pos(2) = (screen_sizes(4) - fig_fyy_pos(4))/2;
-             set( this.fig_fyy, 'Position', fig_fyy_pos );
-             title( 'Flux Y component' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.fyy_nodeextrap_min this.fyy_nodeextrap_max]);
-             else
-                 caxis([this.fyy_elemextrap_min this.fyy_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
-             
-             % Create figure for sigma 1 plot and get its handle.
-             % Locate figure at the third level right side of screen.
-             this.fig_fp = figure;
-             fig_fp_pos = get( this.fig_fp, 'Position' );
-             fig_fp_pos(1) = screen_sizes(3) - fig_fp_pos(3);
-             fig_fp_pos(2) = (screen_sizes(4) - fig_fp_pos(4))/4;
-             set( this.fig_fp, 'Position', fig_fp_pos );
-             title( 'Principal flux direction' );
-             set( gca,'DataAspectRatio',[1 1 1] );
-             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
-             if this.smooth
-                 caxis([this.fp_nodeextrap_min this.fp_nodeextrap_max]);
-             else
-                 caxis([this.fp_elemextrap_min this.fp_elemextrap_max]);
-             end
-             colorbar;
-             hold on;
-             
+            % Create figure for sigma y plot and get its handle.
+            % Locate figure at the third level left side of screen.
+            this.fig_fyy = figure;
+            fig_fyy_pos = get( this.fig_fyy, 'Position' );
+            fig_fyy_pos(1) = 0;
+            fig_fyy_pos(2) = (screen_sizes(4) - fig_fyy_pos(4))/4;
+            set( this.fig_fyy, 'Position', fig_fyy_pos );
+            title( 'Flux Y component' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            if this.smooth
+                caxis([this.fyy_nodeextrap_min this.fyy_nodeextrap_max]);
+            else
+                caxis([this.fyy_elemextrap_min this.fyy_elemextrap_max]);
+            end
+            colorbar;
+            hold on;
+            
+            % Create figure for sigma 1 plot and get its handle.
+            % Locate figure at the third level right side of screen.
+            this.fig_fp = figure;
+            fig_fp_pos = get( this.fig_fp, 'Position' );
+            fig_fp_pos(1) = screen_sizes(3) - fig_fp_pos(3);
+            fig_fp_pos(2) = (screen_sizes(4) - fig_fp_pos(4))/2;
+            set( this.fig_fp, 'Position', fig_fp_pos );
+            title( 'Flux in principal direction' );
+            set( gca,'DataAspectRatio',[1 1 1] );
+            axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
+            if this.smooth
+                caxis([this.fp_nodeextrap_min this.fp_nodeextrap_max]);
+            else
+                caxis([this.fp_elemextrap_min this.fp_elemextrap_max]);
+            end
+            colorbar;
+            hold on;
+            
             % Create figure for stress bar response plots and get handle to it.
             % Locate figure at the up right corner of screen.
             this.fig_strbar = figure;
             fig_strbar_pos = get( this.fig_strbar, 'Position' );
             fig_strbar_pos(1) = screen_sizes(3) - fig_strbar_pos(3);
             set( this.fig_strbar, 'Position', fig_strbar_pos );
-            title( 'Principal stress directions' );
+            title( 'Flux principal directions' );
             set( gca,'DataAspectRatio',[1 1 1] );
             axis([plot_xmin plot_xmax plot_ymin plot_ymax]);
             hold on;
@@ -893,6 +965,8 @@ classdef Result < handle
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
                mdl.anm.type == fem.Anm.AXISYMMETRIC
                 this.clearSmallValuesInplane(mdl);
+            elseif mdl.anm.type == fem.Anm.PLANE_CONDUCTION
+                this.clearSmallValuesInplaneConduction(mdl);
             end
         end
         

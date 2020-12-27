@@ -30,7 +30,7 @@ opt.temp   = true;   % Plot contour of temperature field
 
 % Smoothing:
 opt.smooth = true;   % Smooth element results at common nodes
-
+opt.tol    = 1e-5;   % Tolerance for cleaning small result values and differences
 % Element stress result:
 opt.sxx    = true;   % Plot contour of normal stresses in X direction
 opt.syy    = true;   % Plot contour of normal stresses in Y direction

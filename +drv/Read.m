@@ -107,6 +107,7 @@ classdef Read < handle
             mdl.res.rz     = opt.rz;
             mdl.res.temp   = opt.temp;
             mdl.res.smooth = opt.smooth;
+            mdl.res.tol    = opt.tol;
             mdl.res.sxx    = opt.sxx;
             mdl.res.syy    = opt.syy;
             mdl.res.szz    = opt.szz;
@@ -816,7 +817,7 @@ classdef Read < handle
                     return;
                 end
                 
-                % Prescribed displacements values
+                % Prescribed temperature values
                 [temp,count] = fscanf(fid,'%f',1);
                 if (count ~= 1)
                     fprintf('Invalid prescribed temperature of node %d\n',id);
@@ -1004,6 +1005,25 @@ classdef Read < handle
             if isempty(mdl.materials)
                 fprintf('Materials not provided!\n');
                 return;
+            else
+                for i = 1:mdl.nmat
+                    if (mdl.anm.type == fem.Anm.PLANE_STRESS ||...
+                        mdl.anm.type == fem.Anm.PLANE_STRAIN ||...
+                        mdl.anm.type == fem.Anm.AXISYMMETRIC)
+                        if (isempty(mdl.materials(i).E) ||...
+                            isempty(mdl.materials(i).v))
+                            fprintf('Missing material properties: E or v!\n');
+                            return;
+                        end
+                    elseif (mdl.anm.type == fem.Anm.PLANE_CONDUCTION)
+                        if (isempty(mdl.materials(i).rho) ||...
+                            isempty(mdl.materials(i).k)   ||...
+                            isempty(mdl.materials(i).cp))
+                            fprintf('Missing material properties: rho, k, or cp!\n');
+                            return;
+                        end
+                    end
+                end
             end
             status = 1;
         end
@@ -1012,10 +1032,12 @@ classdef Read < handle
         function status = chkInt(~,val,max,string)
             status = 1;
             if (~isnumeric(val)         ||...
+                length(floor(val)) ~= 1 ||...
+                length(ceil(val))  ~= 1 ||...
                 floor(val) ~= ceil(val) ||...
                 val <= 0                ||...
                 val > max)
-                string = strcat('Invalid: ',string,'!\n');
+                string = strcat('Invalid:',string,'!\n');
                 fprintf(string);
                 if (max == inf)
                     fprintf('It must be a positive integer!\n');
