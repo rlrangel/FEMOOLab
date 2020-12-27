@@ -18,7 +18,7 @@ classdef Node < handle
         id       int32  = int32.empty;     % identification number
         coord    double = double.empty;    % vector of coordinates in global system [X Y Z]
         
-        % Elasticity properties
+        % Structural properties
         fixDispl logical = logical.empty;  % vector of essential boundary conditions flags [DX DY DZ RX RY RZ]
         ebcDispl double  = double.empty;   % vector of prescribed displacement values [DX DY DZ RX RY RZ]
         load     double  = double.empty;   % vector of applied load components [FX FY FZ MX MY MZ]

@@ -4,7 +4,7 @@
 %
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <anm.html Anm: analysis model super-class> to deal
-% with plane stress models in an elasticity analysis.
+% with plane stress models in a structural analysis.
 %
 %% Class definition
 %

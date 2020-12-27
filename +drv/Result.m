@@ -963,9 +963,10 @@ classdef Result < handle
         function clearSmallValues(this,mdl)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
-               mdl.anm.type == fem.Anm.AXISYMMETRIC
+               mdl.anm.type == fem.Anm.AXISYM_STRESS
                 this.clearSmallValuesInplane(mdl);
-            elseif mdl.anm.type == fem.Anm.PLANE_CONDUCTION
+            elseif mdl.anm.type == fem.Anm.PLANE_CONDUCTION || ...
+                   mdl.anm.type == fem.Anm.AXISYM_CONDUCTION
                 this.clearSmallValuesInplaneConduction(mdl);
             end
         end
@@ -975,9 +976,10 @@ classdef Result < handle
         function plot(this,mdl)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
-               mdl.anm.type == fem.Anm.AXISYMMETRIC
+               mdl.anm.type == fem.Anm.AXISYM_STRESS
                 this.plotInplane(mdl);
-            elseif mdl.anm.type == fem.Anm.PLANE_CONDUCTION
+            elseif mdl.anm.type == fem.Anm.PLANE_CONDUCTION || ...
+                   mdl.anm.type == fem.Anm.AXISYM_CONDUCTION
                 this.plotInplaneConduction(mdl);
             end
         end
@@ -989,9 +991,10 @@ classdef Result < handle
         function deform_fac = createFigs(this,mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
-               mdl.anm.type == fem.Anm.AXISYMMETRIC
+               mdl.anm.type == fem.Anm.AXISYM_STRESS
                 deform_fac = this.createFigsInplane(mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax);
-            elseif mdl.anm.type == fem.Anm.PLANE_CONDUCTION
+            elseif mdl.anm.type == fem.Anm.PLANE_CONDUCTION || ...
+                   mdl.anm.type == fem.Anm.AXISYM_CONDUCTION
                 this.createFigsInplaneThermal(mdl,plot_xmin,plot_xmax,plot_ymin,plot_ymax);
             end
         end
@@ -999,10 +1002,11 @@ classdef Result < handle
         %------------------------------------------------------------------
         % Plot mesh in current active figure.
         function plotMesh(this,mdl,x,y,color)
-            if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
-               mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
-               mdl.anm.type == fem.Anm.AXISYMMETRIC || ...
-               mdl.anm.type == fem.Anm.PLANE_CONDUCTION
+            if mdl.anm.type == fem.Anm.PLANE_STRESS     || ...
+               mdl.anm.type == fem.Anm.PLANE_STRAIN     || ...
+               mdl.anm.type == fem.Anm.AXISYM_STRESS    || ...
+               mdl.anm.type == fem.Anm.PLANE_CONDUCTION || ...
+               mdl.anm.type == fem.Anm.AXISYM_CONDUCTION
                 this.plotMeshInplane(mdl,x,y,color);
             end
        end
@@ -1012,7 +1016,7 @@ classdef Result < handle
         function plotDeformMesh(this,mdl,x,y,fct,color)
             if mdl.anm.type == fem.Anm.PLANE_STRESS || ...
                mdl.anm.type == fem.Anm.PLANE_STRAIN || ...
-               mdl.anm.type == fem.Anm.AXISYMMETRIC
+               mdl.anm.type == fem.Anm.AXISYM_STRESS
                 this.plotDeformMeshInplane(mdl,x,y,fct,color);
             end
         end

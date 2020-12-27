@@ -14,8 +14,9 @@
 %
 % * <anm_planestress.html Anm_PlaneStress: plane stress analysis model subclass>
 % * <anm_planestrain.html Anm_PlaneStrain: plane strain analysis model subclass>
-% * <anm_planeconduction.html Anm_PlaneConduction: plane conduction analysis model subclass>
-% * <anm_axisymmetric.html Anm_Axisymmetric: axisymmetric analysis model subclass>
+% * <anm_planeconduction.html Anm_PlaneConduction: plane heat conduction analysis model subclass>
+% * <anm_axisymstress.html Anm_AxisymStress: axisymmetric stress analysis model subclass>
+% * <anm_axisymconduction.html Anm_AxisymConduction: axisymmetric heat conduction analysis model subclass>
 %
 %% Class definition
 %
@@ -23,16 +24,17 @@ classdef Anm < handle
     %% Constant values
     properties (Constant = true, Access = public)
         % Types of analysis model
-        GENERIC          = int32(0);
-        PLANE_STRESS     = int32(1);
-        PLANE_STRAIN     = int32(2);
-        PLANE_CONDUCTION = int32(3);
-        AXISYMMETRIC     = int32(4);
+        GENERIC           = int32(0);
+        PLANE_STRESS      = int32(1);
+        PLANE_STRAIN      = int32(2);
+        PLANE_CONDUCTION  = int32(3);
+        AXISYM_STRESS     = int32(4);
+        AXISYM_CONDUCTION = int32(5);
     end
     
     %% Flags for types of responses
     properties (SetAccess = protected, GetAccess = public)
-        % Elasticity properties
+        % Structural properties
         DISPL_X     = logical(false);    % Displacement X
         DISPL_Y     = logical(false);    % Displacement Y
         DISPL_Z     = logical(false);    % Displacement Z
@@ -60,6 +62,10 @@ classdef Anm < handle
         
         % Thermal properties
         TEMPERATURE = logical(false);    % Temperature
+        FLUX_XX     = logical(false);    % flux XX
+        FLUX_YY     = logical(false);    % flux YY
+        FLUX_ZZ     = logical(false);    % flux ZZ
+        FLUX_PRC    = logical(false);    % Principal flux
     end
     
     %% Public properties

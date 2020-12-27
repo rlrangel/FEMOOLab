@@ -151,8 +151,11 @@ classdef Read < handle
             elseif (strcmp(string,'''PLANE_CONDUCTION''') || strcmp(string,'''plane_conduction'''))
                 sim.mdl.anm = fem.Anm_PlaneConduction();
                 sim.anl = fem.Anl_LinearStatic();
-            elseif (strcmp(string,'''AXISYMMETRIC''') || strcmp(string,'''axisymmetric'''))
-                sim.mdl.anm = fem.Anm_Axisymmetric();
+            elseif (strcmp(string,'''AXISYM_STRESS''') || strcmp(string,'''axisym_stress'''))
+                sim.mdl.anm = fem.Anm_AxisymStress();
+                sim.anl = fem.Anl_LinearStatic();
+            elseif (strcmp(string,'''AXISYM_CONDUCTION''') || strcmp(string,'''axisym_conduction'''))
+                sim.mdl.anm = fem.Anm_AxisymConduction();
                 sim.anl = fem.Anl_LinearStatic();
             else
                 fprintf('Invalid input data: analysis model!\n');
@@ -1092,13 +1095,14 @@ classdef Read < handle
                 for i = 1:mdl.nmat
                     if (mdl.anm.type == fem.Anm.PLANE_STRESS ||...
                         mdl.anm.type == fem.Anm.PLANE_STRAIN ||...
-                        mdl.anm.type == fem.Anm.AXISYMMETRIC)
+                        mdl.anm.type == fem.Anm.AXISYM_STRESS)
                         if (isempty(mdl.materials(i).E) ||...
                             isempty(mdl.materials(i).v))
                             fprintf('Missing material properties: E or v!\n');
                             return;
                         end
-                    elseif (mdl.anm.type == fem.Anm.PLANE_CONDUCTION)
+                    elseif (mdl.anm.type == fem.Anm.PLANE_CONDUCTION ||...
+                            mdl.anm.type == fem.Anm.AXISYM_CONDUCTION)
                         if (isempty(mdl.materials(i).k))
                             fprintf('Missing material properties: conductivity!\n');
                             return;

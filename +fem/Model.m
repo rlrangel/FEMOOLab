@@ -415,9 +415,10 @@ classdef Model < handle
         function gaussStress(this,anl)
             if this.anm.type == fem.Anm.PLANE_STRESS || ...
                this.anm.type == fem.Anm.PLANE_STRAIN || ...
-               this.anm.type == fem.Anm.AXISYMMETRIC
+               this.anm.type == fem.Anm.AXISYM_STRESS
                 this.gaussStressInplane(anl);
-            elseif this.anm.type == fem.Anm.PLANE_CONDUCTION
+            elseif this.anm.type == fem.Anm.PLANE_CONDUCTION || ...
+                   this.anm.type == fem.Anm.AXISYM_CONDUCTION
                 this.gaussFluxInplane(anl);
             end
         end
@@ -430,9 +431,10 @@ classdef Model < handle
         function elemStressExtrap(this)
             if this.anm.type == fem.Anm.PLANE_STRESS || ...
                this.anm.type == fem.Anm.PLANE_STRAIN || ...
-               this.anm.type == fem.Anm.AXISYMMETRIC
+               this.anm.type == fem.Anm.AXISYM_STRESS
                 this.elemStressExtrapInplane();
-            elseif this.anm.type == fem.Anm.PLANE_CONDUCTION
+            elseif this.anm.type == fem.Anm.PLANE_CONDUCTION || ...
+                   this.anm.type == fem.Anm.AXISYM_CONDUCTION
                 this.elemFluxExtrapInplane();
             end
         end
@@ -446,9 +448,10 @@ classdef Model < handle
         function nodeStressExtrap(this)
             if this.anm.type == fem.Anm.PLANE_STRESS || ...
                this.anm.type == fem.Anm.PLANE_STRAIN || ...
-               this.anm.type == fem.Anm.AXISYMMETRIC
+               this.anm.type == fem.Anm.AXISYM_STRESS
                 this.nodeStressExtrapInplane();
-            elseif this.anm.type == fem.Anm.PLANE_CONDUCTION
+            elseif this.anm.type == fem.Anm.PLANE_CONDUCTION || ...
+                   this.anm.type == fem.Anm.AXISYM_CONDUCTION
                 this.nodeFluxExtrapInplane();
             end
         end

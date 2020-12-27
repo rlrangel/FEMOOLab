@@ -1,25 +1,36 @@
-%% Anm_PlaneConduction Class (Plane Heat Conduction Model)
+%% Anm_AxisymStress Class  (Axisymmetric Stress Model)
 %
 %% Description
 %
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <anm.html Anm: analysis model super-class> to deal
-% with plane heat conduction models in a thermal analysis.
+% with axisymmetric stress models in a structural analysis.
 %
 %% Class definition
 %
-classdef Anm_PlaneConduction < fem.Anm
+classdef Anm_AxisymStress < fem.Anm
+    %% Public properties
+    properties (SetAccess = public, GetAccess = public)
+        gla int32 = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
+    end
+    
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anm_PlaneConduction()
-            this = this@fem.Anm(fem.Anm.PLANE_CONDUCTION,1);
+        function this = Anm_AxisymStress()
+            this = this@fem.Anm(fem.Anm.AXISYM_STRESS,2);
+            this.gla = [1 2];
             
             % Types of response
-            this.TEMPERATURE = true;  % Temperature
-            this.FLUX_XX     = true;  % flux XX
-            this.FLUX_YY     = true;  % flux YY
-            this.FLUX_PRC    = true;  % Principal flux
+            this.DISPL_X  = true;  % Displacement X
+            this.DISPL_Y  = true;  % Displacement Y
+            this.SIGMA_XX = true;  % Normal stress XX
+            this.SIGMA_YY = true;  % Normal stress YY
+            this.SIGMA_ZZ = true;  % Normal stress ZZ
+            this.TAU_XY   = true;  % Shear stress XY
+            this.SIGMA_1  = true;  % Principal stress 1
+            this.SIGMA_2  = true;  % Principal stress 2
+            this.TAU_MAX  = true;  % Maximum shear stress
         end
     end
     
@@ -41,10 +52,15 @@ classdef Anm_PlaneConduction < fem.Anm
             
             % Count number of fixed d.o.f.'s and setup ID matrix
             for i = 1:mdl.nnp
-                % Check for fixed temperature
-                if (mdl.nodes(i).fixTemp)
-                    mdl.neqc = mdl.neqc + 1;
-                    mdl.ID(1,i) = 1;
+                for j = 1:this.ndof
+                    % Get d.o.f number
+                    dof = this.gla(j);
+                    
+                    % Check for fixed d.o.f
+                    if (mdl.nodes(i).fixDispl(dof))
+                        mdl.neqc = mdl.neqc + 1;
+                        mdl.ID(j,i) = 1;
+                    end
                 end
             end
             
@@ -55,10 +71,14 @@ classdef Anm_PlaneConduction < fem.Anm
         %------------------------------------------------------------------
         % Assemble material constitutive matrix for a given element.
         function C = Cmtx(~,elem)
-            k = elem.mat.k;
+            E = elem.mat.E;
+            v = elem.mat.v;
+            e = E/((1+v)*(1-(2*v)));
             
-            C = [ k   0;
-                  0   k ];
+            C = e * [ 1-v  v    v    0;
+                      v    1-v  v    0;
+                      v    v    1-v  0;
+                      0    0    0    (1-(2*v))/2 ];
         end
         
         %------------------------------------------------------------------
@@ -66,20 +86,38 @@ classdef Anm_PlaneConduction < fem.Anm
         % coordinates of an element.
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
-        function B = Bmtx(this,elem,GradNcar,~,~)
-            B = zeros(2,elem.shape.nen*this.ndof);
+        function B = Bmtx(this,elem,GradNcar,r,s)                
+            % Geometry and d.o.f. shape functions matrix evaluated at this point
+            M = elem.shape.Mmtx(r,s);
+            N = elem.shape.Nmtx(r,s);
+            
+            % Location of evaluation point (X coordinate is the radius in axisymm.)
+            p = M * elem.shape.carCoord;
+            radius = p(1);
+            
+            % Assemble strain matrix
+            B = zeros(4,elem.shape.nen*this.ndof);
             
             for i = 1:elem.shape.nen
-                B(1,i) = GradNcar(1,i);
-                B(2,i) = GradNcar(2,i);
+                B(1,2*i-1) = GradNcar(1,i);   B(1,2*i) = 0.0;
+                B(2,2*i-1) = N(i)/radius;     B(2,2*i) = 0.0;
+                B(3,2*i-1) = 0.0;             B(3,2*i) = GradNcar(2,i);
+                B(4,2*i-1) = GradNcar(2,i);   B(4,2*i) = GradNcar(1,i);
             end
         end
         
         %------------------------------------------------------------------
         % Returns the ridigity coefficient at a given position in
         % parametric coordinates of an element.
-        function coeff = rigidityCoeff(~,elem,~,~)
-            coeff = elem.thk;
+        function coeff = rigidityCoeff(~,elem,r,s)
+            % Geometry shape functions matrix evaluated at this point
+            M = elem.shape.Mmtx(r,s);
+            
+            % Location of evaluation point (X coordinate is the radius in axisymm.)
+            % For axisymmetric analysis, the rigidity coefficient is the
+            % radius at the given point.
+            p = M * elem.shape.carCoord;
+            coeff = p(1);
         end
         
         %------------------------------------------------------------------
@@ -91,15 +129,7 @@ classdef Anm_PlaneConduction < fem.Anm
             % Get element stiffness matrices and assemble global matrix
             for i = 1:mdl.nel
                 gle = mdl.elems(i).gle;
-                
-                % Convenctional stiffness matrix
                 ke = mdl.elems(i).stiffMtx();
-                
-                % Convection stiffness
-                if (~isempty(mdl.elems(i).lineConvec))
-                    ke = ke + mdl.elems(i).stiffConvecMtx();
-                end
-                
                 K(gle,gle) = K(gle,gle) + ke;
             end
         end
@@ -108,14 +138,14 @@ classdef Anm_PlaneConduction < fem.Anm
         % Add point force contributions to global forcing vector.
         function F = addPointForce(this,mdl,F)
             for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).flux))
+                if (~isempty(mdl.nodes(i).load))
                     for j = 1:this.ndof
                         % Get d.o.f numbers
                         id  = mdl.ID(j,i);
                         dof = this.gla(j);
                         
                         % Add load to reference load vector
-                        F(id) = F(id) + mdl.nodes(i).flux(dof);
+                        F(id) = F(id) + mdl.nodes(i).load(dof);
                     end
                 end
             end
@@ -127,25 +157,14 @@ classdef Anm_PlaneConduction < fem.Anm
             for i = 1:mdl.nel
                 gle = mdl.elems(i).gle;
                 
-                % Get element equivalent nodal flux vectors and assemble global vector
-                if (~isempty(mdl.elems(i).lineFlux))
-                    fline = mdl.elems(i).edgeEquivForceVct(mdl.elems(i).lineFlux);
+                % Get element equivalent nodal load vectors and assemble global vector
+                if (~isempty(mdl.elems(i).lineLoad))
+                    fline = mdl.elems(i).edgeEquivForceVct(mdl.elems(i).lineLoad);
                     F(gle) = F(gle) + fline;
                 end
                 
-                if (~isempty(mdl.elems(i).lineConvec))
-                    % New matrix whose last column is the product of
-                    % convection coeff. and ambient temperature
-                    % (columns 3 and 4 of property lineConvec)
-                    lineConvec = mdl.elems(i).lineConvec(:,1:3);
-                    lineConvec(:,3) = lineConvec(:,3) .* mdl.elems(i).lineConvec(:,4);
-                    
-                    fconv = mdl.elems(i).edgeEquivForceVct(lineConvec);
-                    F(gle) = F(gle) + fconv;
-                end
-                
-                if (~isempty(mdl.elems(i).domainFlux))
-                    fdom = mdl.elems(i).domainEquivForceVct(mdl.elems(i).domainFlux);
+                if (~isempty(mdl.elems(i).domainLoad))
+                    fdom = mdl.elems(i).domainEquivForceVct(mdl.elems(i).domainLoad);
                     F(gle) = F(gle) + fdom;
                 end
             end
@@ -158,11 +177,16 @@ classdef Anm_PlaneConduction < fem.Anm
         % of state variables that corresponds to a free d.o.f.
         function U = addEBC(~,mdl,U)
             for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).ebcTemp))
-                    % Add prescribed temperature to global vector
-                    id = mdl.ID(1,i);
-                    if (id > mdl.neqf)
-                        U(id) = mdl.nodes(i).ebcTemp;
+                if (~isempty(mdl.nodes(i).ebcDispl))
+                    for j = 1:this.ndof
+                        % Get d.o.f numbers
+                        id  = mdl.ID(j,i);
+                        dof = this.gla(j);
+                        
+                        % Add prescribed displacement to global vector
+                        if (id > mdl.neqf)
+                            U(id) = mdl.nodes(i).ebcDispl(dof);
+                        end
                     end
                 end
             end
@@ -175,8 +199,13 @@ classdef Anm_PlaneConduction < fem.Anm
         %  B:   strain-displacement matrix
         %  d:   generalized displacements for all d.o.f.'s of element
         function str = pointStress(~,C,B,d)
-            % In plane stress, raw stress vector is the target one
-            str = -C * B * d;
+            % Compute point stress components
+            str_raw = C * B * d;
+            
+            % Skip tangential stress component
+            str(1) = str_raw(1);
+            str(2) = str_raw(3);
+            str(3) = str_raw(4);
         end
     end
 end

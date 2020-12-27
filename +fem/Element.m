@@ -223,7 +223,7 @@ classdef Element < handle
                     detJ = sqrt(J(1)*J(1) + J(2)*J(2));
                     
                     % Accumulate Gauss point contributions
-                    kline = kline + w(i) * detJ * h * (N' * N);
+                    kline = kline + w(i) * h * detJ * (N' * N);
                 end
                 
                 % Edge gather vector (stores local d.o.f.'s numbers)
@@ -385,8 +385,9 @@ classdef Element < handle
             
             % Initialize stress component matrix and Gauss point coordinates
             str = zeros(3,ngp);
-            if (this.anm.type == fem.Anm.PLANE_CONDUCTION) % CLEAN IT !!!!
-                str = zeros(2,ngp);
+            if (this.anm.type == fem.Anm.PLANE_CONDUCTION ||...
+                this.anm.type == fem.Anm.AXISYM_CONDUCTION)
+                str = zeros(2,ngp);                                        % CLEAN IT !!!!
             end
             
             gpc = zeros(2,ngp);
