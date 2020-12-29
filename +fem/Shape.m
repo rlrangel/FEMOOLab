@@ -4,11 +4,10 @@
 %
 % This is an abstract super-class that generically specifies an
 % <element.html element> shape in the FEMOOLab program.
-%
 % Essentially, this super-class declares abstract methods that define the
-% particular behavior of an element. These abstract methods are the
-% functions that should be implemented in a derived sub-class that deals
-% with specific types of elements.
+% general behavior of elements. These abstract methods are the functions
+% that should be implemented in a derived sub-class that deals with
+% specific types of elements.
 %
 %% Subclasses
 %

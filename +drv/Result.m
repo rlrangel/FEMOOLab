@@ -71,7 +71,12 @@ classdef Result < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % Results from equilibrium system
-        U double = double.empty;                   % global displacement vector
+        U   double = double.empty;                 % global vector of state variable
+        Ut  double = double.empty;                 % 
+        Utt double = double.empty;                 % 
+        
+        steps int32  = int32.empty;
+        times double = double.empty;
         
         % Gauss point results
         ngp                 int32  = int32.empty;  % vector of number of element gauss pts

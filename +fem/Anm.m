@@ -4,9 +4,8 @@
 %
 % This is an abstract super-class that generically specifies an analysis 
 % model in the FEMOOLab program.
-%
 % Essentially, this super-class declares abstract methods that define
-% the particular behavior of an analysis model. These abstract methods
+% the general behavior of analysis models. These abstract methods
 % are the functions that should be implemented in a derived sub-class
 % that deals with specific types of analysis models.
 %
@@ -109,8 +108,26 @@ classdef Anm < handle
         coeff = rigidityCoeff(this,elem,r,s);
         
         %------------------------------------------------------------------
+        % Returns the mass coefficient.
+        coeff = massCoeff(this,elem);
+        
+        %------------------------------------------------------------------
         % Assemble global stiffness matrix.
         K = gblStiffMtx(this,mdl);
+        
+        %------------------------------------------------------------------
+        % Assemble global matrix related to first time derivative of state
+        % variables ("velocity" matrix).
+        C = gblVelMtx(this,mdl);
+        
+        %------------------------------------------------------------------
+        % Assemble global matrix related to second time derivative of state
+        % variables ("acceleration" matrix).
+        M = gblAccelMtx(this,mdl);
+        
+        %------------------------------------------------------------------
+        % Assemble global initial conditions matrix.
+        IC = gblInitCondMtx(this,mdl);
         
         %------------------------------------------------------------------
         % Add point force contributions to global forcing vector.

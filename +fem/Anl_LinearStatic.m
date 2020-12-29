@@ -32,7 +32,7 @@ classdef Anl_LinearStatic < fem.Anl
             fprintf('Assembling stiffness matrix...\n');
             K = mdl.anm.gblStiffMtx(mdl);
             
-            % Check model stability
+            % Check for singular matrix
             if (this.singularMtx(mdl,K))
                 fprintf(1,'Singular stiffness matrix!\n');
                 status = 0;

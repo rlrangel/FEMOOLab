@@ -40,8 +40,14 @@ classdef Read < handle
                 
                 % Look for tag strings
                 switch string
-                    case '%HEADER.ANALYSIS'
+                    case '%HEADER.ANALYSIS' % This is being used for both anl model and type
                         status = this.analysisModel(fid,sim);
+                    case '%HEADER.ANALYSIS.ALGORITHM' % This is being used for time integration scheme
+                        status = this.analysisAlgorithm(fid,sim);
+                    case '%HEADER.ANALYSIS.MAXIMUM.STEPS'
+                        status = this.analysisMaxSteps(fid,sim);
+                    case '%HEADER.ANALYSIS.TIME.STEPS'
+                        status = this.analysisStepIncrement(fid,sim);
                     case '%NODE.COORD'
                         status = this.nodeCoord(fid,sim.mdl);
                     case '%NODE.SUPPORT'
@@ -70,10 +76,14 @@ classdef Read < handle
                         status = this.elementQuad8(fid,sim.mdl,gauss_quad,thickness,intgrorder);
                     case '%LOAD.CASE.NODAL.DISPLACEMENT'
                         status = this.nodePrescDispl(fid,sim.mdl);
+                    case '%LOAD.CASE.NODAL.INITIAL.DISPLACEMENT'  % This is not on NF documentation
+                        status = this.nodeInitDispl(fid,sim.mdl);
                     case '%LOAD.CASE.NODAL.FORCES'
                         status = this.loadPoint(fid,sim.mdl);
                     case '%LOAD.CASE.NODAL.TEMPERATURE'
                         status = this.nodePrescTemp(fid,sim.mdl);
+                    case '%LOAD.CASE.NODAL.INITIAL.TEMPERATURE'
+                        status = this.nodeInitTemp(fid,sim.mdl);
                     case '%LOAD.CASE.NODAL.FLUX' % This is not on NF documentation
                         status = this.fluxPoint(fid,sim.mdl);
                     case '%LOAD.CASE.LINE.FORCE.UNIFORM'
@@ -82,9 +92,9 @@ classdef Read < handle
                         status = this.loadDomainUnif(fid,sim.mdl);
                     case '%LOAD.CASE.LINE.HEAT.FLUX.UNIFORM'
                         status = this.fluxLineUnif(fid,sim.mdl);
-                    case '%LOAD.CASE.LINE.CONVECTION.UNIFORM'
+                    case '%LOAD.CASE.LINE.CONVECTION.UNIFORM' % This is reading an adapted format of NF documentation
                         status = this.ConvecLineUnif(fid,sim.mdl);
-                    case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM' % This is actually DOMAIN heat flux!
+                    case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM' % This is being used as DOMAIN heat flux
                         status = this.fluxDomainUnif(fid,sim.mdl);
                 end
                 if (strcmp(string,'%END'))
@@ -145,22 +155,133 @@ classdef Read < handle
             if (strcmp(string,'''PLANE_STRESS''') || strcmp(string,'''plane_stress'''))
                 sim.mdl.anm = fem.Anm_PlaneStress();
                 sim.anl = fem.Anl_LinearStatic();
+            elseif (strcmp(string,'''PLANE_STRESS_TRANSIENT''') || strcmp(string,'''plane_stress_transient'''))
+                sim.mdl.anm = fem.Anm_PlaneStress();
+                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''PLANE_STRAIN''') || strcmp(string,'''plane_strain'''))
                 sim.mdl.anm = fem.Anm_PlaneStrain();
                 sim.anl = fem.Anl_LinearStatic();
+            elseif (strcmp(string,'''PLANE_STRAIN_TRANSIENT''') || strcmp(string,'''plane_strain_transient'''))
+                sim.mdl.anm = fem.Anm_PlaneStrain();
+                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''PLANE_CONDUCTION''') || strcmp(string,'''plane_conduction'''))
                 sim.mdl.anm = fem.Anm_PlaneConduction();
                 sim.anl = fem.Anl_LinearStatic();
+            elseif (strcmp(string,'''PLANE_CONDUCTION_TRANSIENT''') || strcmp(string,'''plane_conduction_transient'''))
+                sim.mdl.anm = fem.Anm_PlaneConduction();
+                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''AXISYM_STRESS''') || strcmp(string,'''axisym_stress'''))
                 sim.mdl.anm = fem.Anm_AxisymStress();
                 sim.anl = fem.Anl_LinearStatic();
+            elseif (strcmp(string,'''AXISYM_STRESS_TRANSIENT''') || strcmp(string,'''axisym_stress_transient'''))
+                sim.mdl.anm = fem.Anm_AxisymStress();
+                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''AXISYM_CONDUCTION''') || strcmp(string,'''axisym_conduction'''))
                 sim.mdl.anm = fem.Anm_AxisymConduction();
                 sim.anl = fem.Anl_LinearStatic();
+            elseif (strcmp(string,'''AXISYM_CONDUCTION_TRANSIENT''') || strcmp(string,'''axisym_conduction_transient'''))
+                sim.mdl.anm = fem.Anm_AxisymConduction();
+                sim.anl = fem.Anl_LinearTransient();
             else
                 fprintf('Invalid input data: analysis model!\n');
                 status = 0;
             end
+        end
+        
+        %------------------------------------------------------------------
+        function status = analysisAlgorithm(~,fid,mdl)
+            status = 1;
+            if (isempty(mdl.anl))
+                fprintf('Analysis type must be provided before solution algorithm!\n');
+                status = 0;
+                return;
+            elseif (mdl.anl.type == fem.Anl.LINEAR_STATIC)
+                return;
+            end
+            
+            string = deblank(fgetl(fid));
+            
+            if (strcmp(string,'''FOWARD_EULER''') || strcmp(string,'''foward_euler'''))
+                mdl.anl.scheme = fem.Scheme_FD1(1.0);
+            elseif (strcmp(string,'''BACKWARD_EULER''') || strcmp(string,'''backward_euler'''))
+                mdl.anl.scheme = fem.Scheme_FD1(0.0);
+            elseif (strcmp(string,'''CRANK_NICOLSON''') || strcmp(string,'''crank_nicolson'''))
+                mdl.anl.scheme = fem.Scheme_FD1(0.5);
+            elseif (strcmp(string,'''CENTRAL_DIFFERENCE''') || strcmp(string,'''central_difference'''))
+                mdl.anl.scheme = fem.Scheme_FD2();
+            elseif (strcmp(string,'''RUNGE_KUTTA_4''') || strcmp(string,'''runge_kutta_4'''))
+                mdl.anl.scheme = fem.Scheme_RungeKutta(4);
+            elseif (strcmp(string,'''NEWMARK''') || strcmp(string,'''newmark'''))
+                mdl.anl.scheme = fem.Scheme_Newmark();
+            else
+                fprintf('Invalid input data: solution algorithm!\n');
+                status = 0;
+                return;
+            end
+            
+            % Check if selected algorithm is valid for selected analysis model
+            if (mdl.anm.type == fem.Anm.PLANE_STRESS ||...
+                mdl.anm.type == fem.Anm.PLANE_STRAIN ||...
+                mdl.anm.type == fem.Anm.AXISYM_STRESS)
+                if (mdl.anl.scheme.type == fem.Scheme.FOWARD_EULER   ||...
+                    mdl.anl.scheme.type == fem.Scheme.BACKWARD_EULER ||...
+                    mdl.anl.scheme.type == fem.Scheme.CRANK_NICOLSON)
+                    fprintf('Invalid solution algorithm: first-order schemes are not valid for structural problem!\n');
+                    status = 0;
+                    return;
+                end
+            elseif (mdl.anm.type == fem.Anm.PLANE_CONDUCTION ||...
+                    mdl.anm.type == fem.Anm.AXISYM_CONDUCTION)
+                if (mdl.anl.scheme.type == fem.Scheme.CENTRAL_DIFFERENCE ||...
+                    mdl.anl.scheme.type == fem.Scheme.RUNGE_KUTTA_4      ||...
+                    mdl.anl.scheme.type == fem.Scheme.NEWMARK)
+                    fprintf('Invalid solution algorithm: second or higher order schemes are not valid for thermal problem!\n');
+                    status = 0;
+                    return;
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = analysisMaxSteps(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.anl))
+                fprintf('Analysis type must be provided before number of steps!\n');
+                status = 0;
+                return;
+            elseif (mdl.anl.type == fem.Anl.LINEAR_STATIC)
+                return;
+            end
+            
+            % Total number of steps
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,inf,'number of steps'))
+                status = 0;
+                return;
+            end
+            
+            mdl.anl.max_step = n;
+        end
+        
+        %------------------------------------------------------------------
+        function status = analysisStepIncrement(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.anl))
+                fprintf('Analysis type must be provided before step increment!\n');
+                status = 0;
+                return;
+            elseif (mdl.anl.type == fem.Anl.LINEAR_STATIC)
+                return;
+            end
+            
+            % Step increment
+            n = fscanf(fid,'%f',1);
+            if (~this.chkInt(n,inf,'step increment'))
+                status = 0;
+                return;
+            end
+            
+            mdl.anl.incr = n;
         end
         
         %------------------------------------------------------------------
@@ -763,6 +884,52 @@ classdef Read < handle
             end
         end
         
+        %------------------------------------------------------------------
+        function status = nodeInitDispl(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.nodes))
+                fprintf('Node coordinates must be provided before initial conditions!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of nodes with initial conditions
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,mdl.nnp,'number of nodes with initial conditions'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Node ID
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,mdl.nnp,'node ID for initial condition specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Initial conditions values: 6 displacements/rotations, 6 velocities
+                [ic,count] = fscanf(fid,'%f',12);
+                if (count ~= 12)
+                    fprintf('Invalid initial conditions of node %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.nodes(id).iniDispl = ic(1:6);
+                mdl.nodes(id).iniVeloc = ic(7:12);
+                
+                % Store data where displacement is not already fixed
+                for j = 1:6
+                    if (~mdl.nodes(id).fixDispl(j))
+                        mdl.nodes(id).iniDispl = ic(j);
+                        mdl.nodes(id).iniVeloc = ic(j+6);
+                    end
+                end
+            end
+        end
+        
         %--------------------------------------------------------------------------
         function status = loadPoint(this,fid,mdl)
             status = 1;
@@ -835,6 +1002,45 @@ classdef Read < handle
                 % Store data
                 mdl.nodes(id).fixTemp = true;
                 mdl.nodes(id).ebcTemp = temp;
+            end
+        end
+        
+        %--------------------------------------------------------------------------
+        function status = nodeInitTemp(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.nodes))
+                fprintf('Node coordinates must be provided before initial temperatures!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of nodes with initial temperature
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,mdl.nnp,'number of nodes with initial temperature'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Node ID
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,mdl.nnp,'node ID for initial temperature specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Initial temperature values
+                [temp,count] = fscanf(fid,'%f',1);
+                if (count ~= 1)
+                    fprintf('Invalid initial temperature of node %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data if temperature is not already fixed
+                if (~mdl.nodes(id).fixTemp)
+                    mdl.nodes(id).iniTemp = temp;
+                end
             end
         end
         
@@ -1079,6 +1285,17 @@ classdef Read < handle
             if isempty(mdl.anm)
                 fprintf('Analysis model type not provided!\n');
                 return;
+            end
+            if isempty(mdl.anl)
+                fprintf('Analysis type not provided!\n');
+                return;
+            elseif (mdl.anl.type == fem.Anl.LINEAR_TRANSIENT)
+                if (isempty(mdl.anl.scheme) ||...
+                    isempty(mdl.anl.incr)   ||...
+                    isempty(mdl.anl.max_step))
+                    fprintf('Missing analysis parameters: scheme, step number, or increment!\n');
+                    return;
+                end
             end
             if isempty(mdl.nodes)
                 fprintf('Nodes not provided!\n');

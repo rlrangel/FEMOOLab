@@ -4,9 +4,8 @@
 %
 % This is an abstract super-class that generically specifies an
 % <element.html element> Gauss integration point in the FEMOOLab program.
-%
 % Essentially, this super-class declares abstract methods that define the
-% particular behavior of a Gauss quadrature for integrating the stiffness
+% general behavior of Gauss quadrature for integrating the stiffness
 % matrix of a finite element or for integrating the equivalente nodal
 % load of a finite element. These abstract methods are the functions that
 % should be implemented in a derived sub-class that deals with specific

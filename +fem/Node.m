@@ -18,14 +18,17 @@ classdef Node < handle
         id       int32  = int32.empty;     % identification number
         coord    double = double.empty;    % vector of coordinates in global system [X Y Z]
         
-        % Structural properties
-        fixDispl logical = logical.empty;  % vector of essential boundary conditions flags [DX DY DZ RX RY RZ]
-        ebcDispl double  = double.empty;   % vector of prescribed displacement values [DX DY DZ RX RY RZ]
-        load     double  = double.empty;   % vector of applied load components [FX FY FZ MX MY MZ]
+        % Structural properties (6-row arrays accounting for all d.o.f.'s: [DX DY DZ RX RY RZ])
+        fixDispl logical = logical.empty;  % vector of essential boundary conditions flags 
+        ebcDispl double  = double.empty;   % vector of prescribed displacement values
+        iniDispl double  = double.empty;   % vector of initial displacement values
+        iniVeloc double  = double.empty;   % vector of initial velocity values
+        load     double  = double.empty;   % vector of applied load components
         
         % Thermal properties
         fixTemp  logical = logical.empty;  % thermal essential boundary condition flag
         ebcTemp  double  = double.empty;   % prescribed temperature
+        iniTemp  double  = double.empty;   % initial temperature
         flux     double  = double.empty;   % applied flux
     end
     

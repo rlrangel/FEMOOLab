@@ -242,6 +242,46 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
+        % Compute mass/capacity matrix.
+        function m = massMtx(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
+
+            % Initialize element matrix
+            m = zeros(nen*ndof,nen*ndof);
+            
+            % Get mass coefficient
+            massCoeff = this.anm.massCoeff(this);
+            
+            % Cartesian coordinates matrix
+            X = this.shape.carCoord;
+            
+            % Gauss points and weights
+            [ngp,w,gp] = this.gauss.quadrature(this.gstiff_order);
+            
+            % Loop over Gauss integration points
+            for i = 1:ngp
+                % Parametric coordinates
+                r = gp(1,i);
+                s = gp(2,i);
+                
+                % Shape functions matrix
+                N = this.shape.Nmtx(r,s);
+                
+                % Matrix of geometry shape functions derivatives
+                % w.r.t. parametric coordinates
+                GradMpar = this.shape.gradMmtx(r,s);
+                
+                % Jacobian matrix
+                J = GradMpar * X;
+                detJ = det(J);
+                                
+                % Accumulate Gauss point contributions
+                m = m + w(i) * massCoeff * detJ * (N' * N);
+            end
+        end
+        
+        %------------------------------------------------------------------
         % Compute equivalent nodal forcing vector for element line forces
         % (load or flux), distributed over edges of an element.
         % Loads are assumed in global direction (loc_gbl is not used)
@@ -384,12 +424,7 @@ classdef Element < handle
             [ngp,~,gp] = this.gauss.quadrature(this.gstress_order);
             
             % Initialize stress component matrix and Gauss point coordinates
-            str = zeros(3,ngp);
-            if (this.anm.type == fem.Anm.PLANE_CONDUCTION ||...
-                this.anm.type == fem.Anm.AXISYM_CONDUCTION)
-                str = zeros(2,ngp);                                        % CLEAN IT !!!!
-            end
-            
+            str = zeros(this.anm.ndof+1,ngp); 
             gpc = zeros(2,ngp);
             
             % Cartesian coordinates

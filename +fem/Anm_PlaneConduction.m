@@ -83,6 +83,12 @@ classdef Anm_PlaneConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
+        % Returns the mass coefficient.
+        function coeff = massCoeff(~,elem)
+            coeff = elem.rho * elem.cp;
+        end
+        
+        %------------------------------------------------------------------
         % Assemble global stiffness matrix.
         function K = gblStiffMtx(~,mdl)
             % Initialize global stiffness matrix
@@ -105,18 +111,57 @@ classdef Anm_PlaneConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
+        % Assemble global matrix related to first time derivative of state
+        % variables (capacity matrix in thermal analysis).
+        function C = gblVelMtx(~,mdl)
+            % Initialize global capacity matrix
+            C = zeros(mdl.neq,mdl.neq);
+            
+            % Get element capacity matrices and assemble global matrix
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                ce = mdl.elems(i).massMtx();
+                C(gle,gle) = C(gle,gle) + ce;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Assemble global matrix related to second time derivative of state
+        % variables ("acceleration" matrix).
+        function M = gblAccelMtx(~,~)
+            % NOT IMPLEMENTED
+            M = zeros(mdl.neq,mdl.neq);
+        end
+        
+        %------------------------------------------------------------------
+        % Assemble global initial conditions matrix.
+        function IC = gblInitCondMtx(~,mdl)
+            % Initialize initial conditions matrix
+            IC = zeros(mdl.neqf,1);
+            
+            for i = 1:mdl.nnp
+                id  = mdl.ID(1,i);
+                
+                % Apply initial temperature only to free d.o.f.'s
+                if (id <= mdl.neqf)
+                    % If initial temperature is not given, assume zero
+                    if (~isempty(mdl.nodes(i).iniTemp))
+                        IC(id,1) = mdl.nodes(i).iniTemp;
+                    else
+                        IC(id,1) = 0;
+                    end
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
         % Add point force contributions to global forcing vector.
-        function F = addPointForce(this,mdl,F)
+        function F = addPointForce(~,mdl,F)
             for i = 1:mdl.nnp
                 if (~isempty(mdl.nodes(i).flux))
-                    for j = 1:this.ndof
-                        % Get d.o.f numbers
-                        id  = mdl.ID(j,i);
-                        dof = this.gla(j);
-                        
-                        % Add load to reference load vector
-                        F(id) = F(id) + mdl.nodes(i).flux(dof);
-                    end
+                    % Add load to global load vector
+                    id  = mdl.ID(1,i);
+                    F(id) = F(id) + mdl.nodes(i).flux;
                 end
             end
         end

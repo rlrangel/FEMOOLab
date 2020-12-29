@@ -103,6 +103,12 @@ classdef Anm_PlaneStrain < fem.Anm
         end
         
         %------------------------------------------------------------------
+        % Returns the mass coefficient.
+        function coeff = massCoeff(~,elem)
+            coeff = elem.rho;
+        end
+        
+        %------------------------------------------------------------------
         % Assemble global stiffness matrix.
         function K = gblStiffMtx(~,mdl)
             % Initialize global stiffness matrix
@@ -113,6 +119,53 @@ classdef Anm_PlaneStrain < fem.Anm
                 gle = mdl.elems(i).gle;
                 ke = mdl.elems(i).stiffMtx();
                 K(gle,gle) = K(gle,gle) + ke;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Assemble global matrix related to first time derivative of state
+        % variables (damping matrix in structural analysis).
+        function C = gblVelMtx(~,~)
+            % NOT IMPLEMENTED
+            C = zeros(mdl.neq,mdl.neq);
+        end
+        
+        %------------------------------------------------------------------
+        % Assemble global matrix related to second time derivative of state
+        % variables (mass matrix in structural analysis).
+        function M = gblAccelMtx(~,mdl)
+            % Initialize global mass matrix
+            M = zeros(mdl.neq,mdl.neq);
+            
+            % Get element mass matrices and assemble global matrix
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                me = mdl.elems(i).massMtx();
+                M(gle,gle) = M(gle,gle) + me;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Assemble global initial conditions matrix.
+        function IC = gblInitCondMtx(~,mdl)
+            % Initialize initial conditions matrix
+            IC = zeros(mdl.neqf,2);
+            
+            for i = 1:mdl.nnp
+                for j = 1:mdl.anm.ndof
+                    % Get d.o.f numbers
+                    id  = mdl.ID(j,i);
+                    dof = mdl.anm.gla(j);
+                    
+                    % Apply initial conditions only to free d.o.f.'s
+                    if (id <= mdl.neqf)
+                        if (~isempty(mdl.nodes(i).iniDispl) ||...
+                            ~isempty(mdl.nodes(i).iniVeloc))
+                            IC(id,1) = mdl.nodes(i).iniDispl(dof);
+                            IC(id,2) = mdl.nodes(i).iniVeloc(dof);
+                        end
+                    end
+                end
             end
         end
         

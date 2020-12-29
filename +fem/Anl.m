@@ -4,16 +4,15 @@
 %
 % This is an abstract super-class that generically specifies an analysis 
 % type in the FEMOOLab program.
-%
-% Essentially, this super-class declares abstract methods that are the
-% functions that should be implemented in a derived sub-class that deals
-% with a specific type of analysis. These abstract methods
+% Essentially, this super-class declares abstract methods that define
+% the general behavior analysis types. These abstract methods
 % are the functions that should be implemented in a derived sub-class
 % that deals with specific types of analysis.
 %
 %% Subclasses
 %
 % * <anl_linearstatic.html Anl_LinearStatic: linear static analysis subclass>
+% * <anl_lineartransient.html Anl_LinearTransient: linear transient analysis subclass>
 %
 %% Class definition
 %
@@ -21,8 +20,9 @@ classdef Anl < handle
     %% Constant values
     properties (Constant = true, Access = public)
         % Types of analysis
-        GENERIC       = int32(0);
-        LINEAR_STATIC = int32(1);    
+        GENERIC          = int32(0);
+        LINEAR_STATIC    = int32(1);
+        LINEAR_TRANSIENT = int32(2);
     end
     
     %% Public properties
