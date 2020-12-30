@@ -21,8 +21,16 @@ classdef Scheme_RungeKutta < fem.Scheme
         %------------------------------------------------------------------
         function this = Scheme_RungeKutta(order)
             switch order
+                case 1
+                    type = fem.Scheme.RUNGE_KUTTA_1;
+                case 2
+                    type = fem.Scheme.RUNGE_KUTTA_2;
+                case 3
+                    type = fem.Scheme.RUNGE_KUTTA_3;
                 case 4
                     type = fem.Scheme.RUNGE_KUTTA_4;
+                case 5
+                    type = fem.Scheme.RUNGE_KUTTA_5;
             end
             this = this@fem.Scheme(type);
             this.order = order;
@@ -43,6 +51,7 @@ classdef Scheme_RungeKutta < fem.Scheme
         %  K:    global stiffness matrix (free d.o.f.'s only)
         %  C:    global "velocity" matrix (free d.o.f.'s only)
         %  M:    global "acceleration" matrix (free d.o.f.'s only)
+        %  F:    global forcing vector (free d.o.f.'s only) - currently assumed constant!
         % Output:
         %  U:     matrix of state variable vector for each time step (free d.o.f.'s only)
         %  Ut:    matrix of first time derivative of state variable vector for each time step (free d.o.f.'s only)
@@ -51,8 +60,17 @@ classdef Scheme_RungeKutta < fem.Scheme
         %  times: vector of time values
         function [U,Ut,Utt,steps,times] = execute(this,dt,endt,row,col,IC,K,C,M,F)
             % Call method for corresponding order
-            if (this.order == 4)
-                [U,Ut,Utt,steps,times] = this.RK4(dt,endt,row,col,IC,K,C,M,F);
+            switch this.order
+                case 1
+                    [U,Ut,Utt,steps,times] = this.RK1(dt,endt,row,col,IC,K,C,M,F);
+                case 2
+                    [U,Ut,Utt,steps,times] = this.RK2(dt,endt,row,col,IC,K,C,M,F);
+                case 3
+                    [U,Ut,Utt,steps,times] = this.RK3(dt,endt,row,col,IC,K,C,M,F);
+                case 4
+                    [U,Ut,Utt,steps,times] = this.RK4(dt,endt,row,col,IC,K,C,M,F);
+                case 5
+                    [U,Ut,Utt,steps,times] = this.RK5(dt,endt,row,col,IC,K,C,M,F);
             end
         end
     end
@@ -61,7 +79,71 @@ classdef Scheme_RungeKutta < fem.Scheme
     methods (Static)
         %------------------------------------------------------------------
         % Fourth-order Runge-Kutta scheme.
+        function [U,Ut,Utt,steps,times] = RK1(dt,endt,row,col,IC,K,C,M,F)
+            
+            % NOT IMPLEMENTED !!!
+            
+            % Initialize solution matrices
+            U   = zeros(row,col);
+            Ut  = zeros(row,col);
+            Utt = zeros(row,col);
+            
+            % Initialize step and time counting
+            steps = 0;
+            times = zeros(1,col);
+        end
+        
+        %------------------------------------------------------------------
+        % Fourth-order Runge-Kutta scheme.
+        function [U,Ut,Utt,steps,times] = RK2(dt,endt,row,col,IC,K,C,M,F)
+            
+            % NOT IMPLEMENTED !!!
+            
+            % Initialize solution matrices
+            U   = zeros(row,col);
+            Ut  = zeros(row,col);
+            Utt = zeros(row,col);
+            
+            % Initialize step and time counting
+            steps = 0;
+            times = zeros(1,col);
+        end
+        
+        %------------------------------------------------------------------
+        % Fourth-order Runge-Kutta scheme.
+        function [U,Ut,Utt,steps,times] = RK3(dt,endt,row,col,IC,K,C,M,F)
+            
+            % NOT IMPLEMENTED !!!
+            
+            % Initialize solution matrices
+            U   = zeros(row,col);
+            Ut  = zeros(row,col);
+            Utt = zeros(row,col);
+            
+            % Initialize step and time counting
+            steps = 0;
+            times = zeros(1,col);
+        end
+        
+        %------------------------------------------------------------------
+        % Fourth-order Runge-Kutta scheme.
         function [U,Ut,Utt,steps,times] = RK4(dt,endt,row,col,IC,K,C,M,F)
+            
+            % NOT IMPLEMENTED !!!
+            
+            % Initialize solution matrices
+            U   = zeros(row,col);
+            Ut  = zeros(row,col);
+            Utt = zeros(row,col);
+            
+            % Initialize step and time counting
+            steps = 0;
+            times = zeros(1,col);
+        end
+        
+        %------------------------------------------------------------------
+        % Fourth-order Runge-Kutta scheme.
+        function [U,Ut,Utt,steps,times] = RK5(dt,endt,row,col,IC,K,C,M,F)
             
             % NOT IMPLEMENTED !!!
             

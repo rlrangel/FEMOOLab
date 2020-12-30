@@ -19,7 +19,6 @@ classdef Element < handle
     properties (SetAccess = public, GetAccess = public)
         % General
         id    int32 = int32.empty;              % identification number
-        type  int32 = int32.empty;              % element shape type
         gle   int32 = int32.empty;              % gather vector (stores element global d.o.f. numbers)
         anm   = [];                             % object of Anm class
         shape = [];                             % object of Shape class
@@ -30,7 +29,7 @@ classdef Element < handle
         
         % Gauss integration quadrature
         gauss = [];                             % object of Gauss class
-        gstiff_order  int32  = int32.empty;     % order of Gauss quadrature for stiffness matrix computation
+        gsystem_order int32  = int32.empty;     % order of Gauss quadrature for computation of global system arrays
         gstress_order int32  = int32.empty;     % order of Gauss quadrature for stress computation
         gstress_npts  int32  = int32.empty;     % number of gauss points for stress computation
         TGN           double = double.empty;    % transformation matrix of Gauss points results to nodal results
@@ -41,7 +40,7 @@ classdef Element < handle
         
         % Fluxes
         lineFlux    double = double.empty;      % matrix of uniform line heat fluxes [corner1,corner2,q]
-        lineConvec  double = double.empty;      % matrix of uniform line heat convection [corner1,corner2,h,Tenv]
+        lineConvec  double = double.empty;      % matrix of line heat convection [corner1,corner2,h,Tenv]
         domainFlux  double = double.empty;      % uniform domain heat flux [G]
     end
     
@@ -49,7 +48,7 @@ classdef Element < handle
     methods
         %------------------------------------------------------------------
         function this = Element()
-            this.type = fem.Shape.GENERIC;
+            return;
         end
     end
     
@@ -57,9 +56,9 @@ classdef Element < handle
     methods
         %------------------------------------------------------------------
         % Set Gauss object and properties.
-        function setGauss(this,gauss,gstiff_order,gstress_order)
+        function setGauss(this,gauss,gsystem_order,gstress_order)
             this.gauss = gauss;
-            this.gstiff_order = gstiff_order;
+            this.gsystem_order = gsystem_order;
             this.gstress_order = gstress_order;
             [this.gstress_npts,this.TGN] = this.TGNmtx();
         end
@@ -114,7 +113,7 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
-        % Compute stiffness matrix.
+        % Compute conventional stiffness matrix.
         function k = stiffMtx(this)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
@@ -129,7 +128,7 @@ classdef Element < handle
             C = this.anm.Cmtx(this);
             
             % Gauss points and weights
-            [ngp,w,gp] = this.gauss.quadrature(this.gstiff_order);
+            [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
             
             % Loop over Gauss integration points
             for i = 1:ngp
@@ -160,7 +159,7 @@ classdef Element < handle
                 rigdtyCoeff = this.anm.rigidityCoeff(this,r,s);
                 
                 % Accumulate Gauss point contributions
-                k = k + w(i) * rigdtyCoeff * detJ * B' * C * B;
+                k = k + w(i) * detJ * rigdtyCoeff * B' * C * B;
             end
         end
         
@@ -173,7 +172,7 @@ classdef Element < handle
             % Initialize element matrix
             k = zeros(nen*ndof,nen*ndof);
             
-            % Loop over element line convection edges
+            % Loop over element convection edges
             for q = 1:size(this.lineConvec,1)
                 % Global IDs of edge initial and final nodes
                 corner1 = this.lineConvec(q,1);
@@ -181,21 +180,21 @@ classdef Element < handle
                 
                 % Get local IDs of edge nodes
                 [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
-                if ~valid
+                if (~valid)
                     continue;
                 end
-
+                
                 % Compute number of edge nodes and assemble vector of edge nodes ids
-                if mid == 0
+                if (mid == 0)
                     nedgen = 2;
                     edgLocIds = [n1,n2];
                 else
                     nedgen = 3;
                     edgLocIds = [n1,n2,mid];
                 end
-
+                
                 % Initialize edge matrix
-                kline = zeros(nedgen*ndof,nedgen*ndof);
+                kedge = zeros(nedgen*ndof,nedgen*ndof);
                 
                 % Edge nodes coordinates
                 X = this.shape.carCoord(edgLocIds,:);
@@ -204,26 +203,26 @@ classdef Element < handle
                 h = this.lineConvec(q,3);
                 
                 % Gauss points and weights for integration on edge
-                [ngp,w,gp] = this.gauss.lineQuadrature(this.gstiff_order);
+                [ngp,w,gp] = this.gauss.lineQuadrature(this.gsystem_order);
                 
                 % Loop over edge Gauss integration points
                 for i = 1:ngp
                     % Parametric coordinates
-                    r = gp(1,i);
+                    r = gp(i);
                     
                     % Edge d.o.f. shape functions matrix
-                    N = this.shape.NmtxEdge(n1,n2,r);
+                    N = this.shape.NmtxEdge(r);
                     
                     % Matrix of edge geometry shape functions derivatives
                     % w.r.t. parametric coordinates
-                    GradMpar = this.shape.gradMmtxEdge(n1,n2,r);
+                    GradMpar = this.shape.gradMmtxEdge(r);
                     
                     % Jacobian matrix
                     J = GradMpar * X;
                     detJ = sqrt(J(1)*J(1) + J(2)*J(2));
                     
                     % Accumulate Gauss point contributions
-                    kline = kline + w(i) * h * detJ * (N' * N);
+                    kedge = kedge + w(i) * detJ * h * (N' * N);
                 end
                 
                 % Edge gather vector (stores local d.o.f.'s numbers)
@@ -237,7 +236,7 @@ classdef Element < handle
                 end
                 
                 % Assemble edge matrix to element matrix
-                k(gledge,gledge) = k(gledge,gledge) + kline;
+                k(gledge,gledge) = k(gledge,gledge) + kedge;
             end
         end
         
@@ -257,7 +256,7 @@ classdef Element < handle
             X = this.shape.carCoord;
             
             % Gauss points and weights
-            [ngp,w,gp] = this.gauss.quadrature(this.gstiff_order);
+            [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
             
             % Loop over Gauss integration points
             for i = 1:ngp
@@ -277,7 +276,7 @@ classdef Element < handle
                 detJ = det(J);
                                 
                 % Accumulate Gauss point contributions
-                m = m + w(i) * massCoeff * detJ * (N' * N);
+                m = m + w(i) * detJ * massCoeff * (N' * N);
             end
         end
         
@@ -300,12 +299,12 @@ classdef Element < handle
                 
                 % Get local IDs of edge nodes
                 [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
-                if ~valid
+                if (~valid)
                     continue;
                 end
 
                 % Compute number of edge nodes and assemble vector of edge nodes ids
-                if mid == 0
+                if (mid == 0)
                     nedgen = 2;
                     edgLocIds = [n1,n2];
                 else
@@ -314,7 +313,7 @@ classdef Element < handle
                 end
 
                 % Initialize edge forcing vector
-                fline = zeros(nedgen*ndof,1);
+                fedge = zeros(nedgen*ndof,1);
                 
                 % Edge nodes coordinates
                 X = this.shape.carCoord(edgLocIds,:);
@@ -323,19 +322,19 @@ classdef Element < handle
                 p = lineForce(q,3:end);
                 
                 % Gauss points and weights for integration on edge
-                [ngp,w,gp] = this.gauss.lineQuadrature(this.gstiff_order);
+                [ngp,w,gp] = this.gauss.lineQuadrature(this.gsystem_order);
                 
                 % Loop over edge Gauss integration points
                 for i = 1:ngp
                     % Parametric coordinates
-                    r = gp(1,i);
+                    r = gp(i);
                     
                     % Edge d.o.f. shape functions matrix
-                    N = this.shape.NmtxEdge(n1,n2,r);
+                    N = this.shape.NmtxEdge(r);
                     
                     % Matrix of edge geometry shape functions derivatives
                     % w.r.t. parametric coordinates
-                    GradMpar = this.shape.gradMmtxEdge(n1,n2,r);
+                    GradMpar = this.shape.gradMmtxEdge(r);
                     
                     % Jacobian matrix
                     J = GradMpar * X;
@@ -346,7 +345,7 @@ classdef Element < handle
                     for j = 1:nedgen
                         for k = 1:ndof
                             m = m + 1;
-                            fline(m) = fline(m) + w(i) * detJ * N(j) * p(k);
+                            fedge(m) = fedge(m) + w(i) * detJ * N(j) * p(k);
                         end
                     end
                 end
@@ -362,7 +361,7 @@ classdef Element < handle
                 end
                 
                 % Assemble edge forcing vetor to element forcing vector
-                f(gledge) = f(gledge) + fline;
+                f(gledge) = f(gledge) + fedge;
             end
         end
         
@@ -380,7 +379,7 @@ classdef Element < handle
             X = this.shape.carCoord;
             
             % Gauss points and weights
-            [ngp,w,gp] = this.gauss.quadrature(this.gstiff_order);
+            [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
             
             % Loop over Gauss integration points
             for i = 1:ngp

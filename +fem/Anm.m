@@ -23,7 +23,6 @@ classdef Anm < handle
     %% Constant values
     properties (Constant = true, Access = public)
         % Types of analysis model
-        GENERIC           = int32(0);
         PLANE_STRESS      = int32(1);
         PLANE_STRAIN      = int32(2);
         PLANE_CONDUCTION  = int32(3);
@@ -61,10 +60,10 @@ classdef Anm < handle
         
         % Thermal properties
         TEMPERATURE = logical(false);    % Temperature
-        FLUX_XX     = logical(false);    % flux XX
-        FLUX_YY     = logical(false);    % flux YY
-        FLUX_ZZ     = logical(false);    % flux ZZ
-        FLUX_PRC    = logical(false);    % Principal flux
+        FLUX_XX     = logical(false);    % Heat flux XX
+        FLUX_YY     = logical(false);    % Heat flux YY
+        FLUX_ZZ     = logical(false);    % Heat flux ZZ
+        FLUX_PRC    = logical(false);    % Heat principal flux
     end
     
     %% Public properties

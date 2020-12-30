@@ -26,8 +26,12 @@ classdef Scheme < handle
         BACKWARD_EULER     = int32(2);
         CRANK_NICOLSON     = int32(3);
         CENTRAL_DIFFERENCE = int32(4);
-        RUNGE_KUTTA_4      = int32(5);
-        NEWMARK            = int32(6);
+        RUNGE_KUTTA_1      = int32(5);
+        RUNGE_KUTTA_2      = int32(6);
+        RUNGE_KUTTA_3      = int32(7);
+        RUNGE_KUTTA_4      = int32(8);
+        RUNGE_KUTTA_5      = int32(9);
+        NEWMARK            = int32(10);
     end
     
     %% Public properties
@@ -57,6 +61,7 @@ classdef Scheme < handle
         %  K:    global stiffness matrix (free d.o.f.'s only)
         %  C:    global "velocity" matrix (free d.o.f.'s only)
         %  M:    global "acceleration" matrix (free d.o.f.'s only)
+        %  F:    global forcing vector (free d.o.f.'s only) - currently assumed constant!
         % Output:
         %  U:     matrix of state variable vector for each time step (free d.o.f.'s only)
         %  Ut:    matrix of first time derivative of state variable vector for each time step (free d.o.f.'s only)

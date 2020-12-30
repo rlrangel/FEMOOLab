@@ -98,7 +98,7 @@ classdef Anm_PlaneConduction < fem.Anm
             for i = 1:mdl.nel
                 gle = mdl.elems(i).gle;
                 
-                % Convenctional stiffness matrix
+                % Conventional stiffness
                 ke = mdl.elems(i).stiffMtx();
                 
                 % Convection stiffness

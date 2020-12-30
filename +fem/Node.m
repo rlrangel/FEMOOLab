@@ -25,7 +25,7 @@ classdef Node < handle
         iniVeloc double  = double.empty;   % vector of initial velocity values
         load     double  = double.empty;   % vector of applied load components
         
-        % Thermal properties
+        % Thermal properties (scalars)
         fixTemp  logical = logical.empty;  % thermal essential boundary condition flag
         ebcTemp  double  = double.empty;   % prescribed temperature
         iniTemp  double  = double.empty;   % initial temperature
@@ -36,6 +36,7 @@ classdef Node < handle
     methods
         %------------------------------------------------------------------
         function this = Node()
+            % By default, all d.o.f.'s are free
             this.fixDispl = false(6,1);
             this.fixTemp  = false;
         end

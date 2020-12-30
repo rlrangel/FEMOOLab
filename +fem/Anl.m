@@ -5,7 +5,7 @@
 % This is an abstract super-class that generically specifies an analysis 
 % type in the FEMOOLab program.
 % Essentially, this super-class declares abstract methods that define
-% the general behavior analysis types. These abstract methods
+% the general behavior of analysis types. These abstract methods
 % are the functions that should be implemented in a derived sub-class
 % that deals with specific types of analysis.
 %
@@ -20,7 +20,6 @@ classdef Anl < handle
     %% Constant values
     properties (Constant = true, Access = public)
         % Types of analysis
-        GENERIC          = int32(0);
         LINEAR_STATIC    = int32(1);
         LINEAR_TRANSIENT = int32(2);
     end
@@ -83,14 +82,6 @@ classdef Anl < handle
     
     %% Static methods
     methods (Static)
-        %------------------------------------------------------------------
-        % Check matrix singularity by checking its reciprocal condition number.
-        % A very low reciprocal condition number indicates that the matrix
-        % is badly conditioned and may be singular.
-        function singular = singularMtx(mdl,K)
-            singular = (rcond(K(1:mdl.neqf,1:mdl.neqf)) < 10e-15);
-        end
-        
         %------------------------------------------------------------------
         % Partition and solve a linear system of equations.
         %  f --> free d.o.f. (natural B.C. - unknown) 

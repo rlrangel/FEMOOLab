@@ -33,6 +33,7 @@ classdef Scheme_Newmark < fem.Scheme
         %  K:    global stiffness matrix (free d.o.f.'s only)
         %  C:    global "velocity" matrix (free d.o.f.'s only)
         %  M:    global "acceleration" matrix (free d.o.f.'s only)
+        %  F:    global forcing vector (free d.o.f.'s only) - currently assumed constant!
         % Output:
         %  U:     matrix of state variable vector for each time step (free d.o.f.'s only)
         %  Ut:    matrix of first time derivative of state variable vector for each time step (free d.o.f.'s only)

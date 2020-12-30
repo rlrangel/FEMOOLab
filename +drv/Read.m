@@ -7,6 +7,9 @@
 % <https://web.tecgraf.puc-rio.br/neutralfile neutral file> with model and
 % analysis information and store it in the simulation data structure.
 %
+% Attention: Some of the neutral file tags are not being read in the
+% exactly same format of the online documentation.
+%
 %% Class definition
 %
 classdef Read < handle
@@ -26,13 +29,18 @@ classdef Read < handle
         %------------------------------------------------------------------
         function status = execute(this,fid,sim,opt)
             status = 1;
+            mdl = sim.mdl;
             
             % Set result plotting options (they will be read from file in the future)
-            this.setResultPlottingOpt(sim.mdl,opt);
+            this.setResultPlottingOpt(mdl,opt);
             
             % Create Gauss quadrature for triangular and quadrilateral shapes
             gauss_tria = fem.Gauss_Tria();
             gauss_quad = fem.Gauss_Quad();
+            
+            % Initialize arrays of element thicknesses and integration orders
+            thickness  = [];
+            intgrorder = [];
             
             while status == 1 && ~feof(fid)
                 % Get file line without blank spaces
@@ -49,60 +57,60 @@ classdef Read < handle
                     case '%HEADER.ANALYSIS.TIME.STEPS'
                         status = this.analysisStepIncrement(fid,sim);
                     case '%NODE.COORD'
-                        status = this.nodeCoord(fid,sim.mdl);
+                        status = this.nodeCoord(fid,mdl);
                     case '%NODE.SUPPORT'
-                        status = this.nodeSupport(fid,sim.mdl);
+                        status = this.nodeSupport(fid,mdl);
                     case '%MATERIAL'
-                        status = this.materialTotal(fid,sim.mdl);
+                        status = this.materialTotal(fid,mdl);
                     case '%MATERIAL.ISOTROPIC'
-                        status = this.materialIsotropic(fid,sim.mdl);
+                        status = this.materialIsotropic(fid,mdl);
                     case '%MATERIAL.PROPERTY.DENSITY'
-                        status = this.materialDensity(fid,sim.mdl);
+                        status = this.materialDensity(fid,mdl);
                     case '%MATERIAL.PROPERTY.THERMAL'
-                        status = this.materialThermal(fid,sim.mdl);
+                        status = this.materialThermal(fid,mdl);
                     case '%THICKNESS'
                         [status,thickness] = this.Thickness(fid);
                     case '%INTEGRATION.ORDER'
                         [status,intgrorder] = this.IntgrOrder(fid);
                     case '%ELEMENT'
-                        status = this.elementTotal(fid,sim.mdl);
+                        status = this.elementTotal(fid,mdl);
                     case '%ELEMENT.T3'
-                        status = this.elementTria3(fid,sim.mdl,gauss_tria,thickness,intgrorder);
+                        status = this.elementTria3(fid,mdl,gauss_tria,thickness,intgrorder);
                     case '%ELEMENT.Q4'
-                        status = this.elementQuad4(fid,sim.mdl,gauss_quad,thickness,intgrorder);
+                        status = this.elementQuad4(fid,mdl,gauss_quad,thickness,intgrorder);
                     case '%ELEMENT.T6'
-                        status = this.elementTria6(fid,sim.mdl,gauss_tria,thickness,intgrorder);
+                        status = this.elementTria6(fid,mdl,gauss_tria,thickness,intgrorder);
                     case '%ELEMENT.Q8'
-                        status = this.elementQuad8(fid,sim.mdl,gauss_quad,thickness,intgrorder);
+                        status = this.elementQuad8(fid,mdl,gauss_quad,thickness,intgrorder);
                     case '%LOAD.CASE.NODAL.DISPLACEMENT'
-                        status = this.nodePrescDispl(fid,sim.mdl);
+                        status = this.nodePrescDispl(fid,mdl);
                     case '%LOAD.CASE.NODAL.INITIAL.DISPLACEMENT'  % This is not on NF documentation
-                        status = this.nodeInitDispl(fid,sim.mdl);
+                        status = this.nodeInitDispl(fid,mdl);
                     case '%LOAD.CASE.NODAL.FORCES'
-                        status = this.loadPoint(fid,sim.mdl);
+                        status = this.loadPoint(fid,mdl);
                     case '%LOAD.CASE.NODAL.TEMPERATURE'
-                        status = this.nodePrescTemp(fid,sim.mdl);
+                        status = this.nodePrescTemp(fid,mdl);
                     case '%LOAD.CASE.NODAL.INITIAL.TEMPERATURE'
-                        status = this.nodeInitTemp(fid,sim.mdl);
+                        status = this.nodeInitTemp(fid,mdl);
                     case '%LOAD.CASE.NODAL.FLUX' % This is not on NF documentation
-                        status = this.fluxPoint(fid,sim.mdl);
+                        status = this.fluxPoint(fid,mdl);
                     case '%LOAD.CASE.LINE.FORCE.UNIFORM'
-                        status = this.loadLineUnif(fid,sim.mdl);
+                        status = this.loadLineUnif(fid,mdl);
                     case '%LOAD.CASE.DOMAIN.FORCE.UNIFORM'
-                        status = this.loadDomainUnif(fid,sim.mdl);
+                        status = this.loadDomainUnif(fid,mdl);
                     case '%LOAD.CASE.LINE.HEAT.FLUX.UNIFORM'
-                        status = this.fluxLineUnif(fid,sim.mdl);
+                        status = this.fluxLineUnif(fid,mdl);
                     case '%LOAD.CASE.LINE.CONVECTION.UNIFORM' % This is reading an adapted format of NF documentation
-                        status = this.ConvecLineUnif(fid,sim.mdl);
+                        status = this.ConvecLineUnif(fid,mdl);
                     case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM' % This is being used as DOMAIN heat flux
-                        status = this.fluxDomainUnif(fid,sim.mdl);
+                        status = this.fluxDomainUnif(fid,mdl);
                 end
                 if (strcmp(string,'%END'))
                     break;
                 end
             end
             if (status == 1)
-                status = this.checkInput(sim.mdl);
+                status = this.checkInput(mdl);
             end
             fclose(fid);
         end
@@ -226,7 +234,7 @@ classdef Read < handle
                 if (mdl.anl.scheme.type == fem.Scheme.FOWARD_EULER   ||...
                     mdl.anl.scheme.type == fem.Scheme.BACKWARD_EULER ||...
                     mdl.anl.scheme.type == fem.Scheme.CRANK_NICOLSON)
-                    fprintf('Invalid solution algorithm: first-order schemes are not valid for structural problem!\n');
+                    fprintf('Invalid solution algorithm: first-order integration schemes are not valid for structural problems!\n');
                     status = 0;
                     return;
                 end
@@ -235,7 +243,7 @@ classdef Read < handle
                 if (mdl.anl.scheme.type == fem.Scheme.CENTRAL_DIFFERENCE ||...
                     mdl.anl.scheme.type == fem.Scheme.RUNGE_KUTTA_4      ||...
                     mdl.anl.scheme.type == fem.Scheme.NEWMARK)
-                    fprintf('Invalid solution algorithm: second or higher order schemes are not valid for thermal problem!\n');
+                    fprintf('Invalid solution algorithm: second or higher order integration schemes are not valid for thermal problems!\n');
                     status = 0;
                     return;
                 end
@@ -264,7 +272,7 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = analysisStepIncrement(this,fid,mdl)
+        function status = analysisStepIncrement(~,fid,mdl)
             status = 1;
             if (isempty(mdl.anl))
                 fprintf('Analysis type must be provided before step increment!\n');
@@ -275,13 +283,19 @@ classdef Read < handle
             end
             
             % Step increment
-            n = fscanf(fid,'%f',1);
-            if (~this.chkInt(n,inf,'step increment'))
+            [incr,count] = fscanf(fid,'%f',1);
+            if (count ~= 1)
+                fprintf('Invalid time step increment!\n');
+                status = 0;
+                return;
+            elseif (incr <= 0)
+                fprintf('Invalid Invalid time step increment!\n');
+                fprintf('It must be must be positive!');
                 status = 0;
                 return;
             end
             
-            mdl.anl.incr = n;
+            mdl.anl.incr = incr;
         end
         
         %------------------------------------------------------------------
@@ -628,6 +642,10 @@ classdef Read < handle
                 fprintf('Node coordinates and materials must be provided before elements!\n');
                 status = 0;
                 return;
+            elseif (isempty(thickness) || isempty(intgrorder))
+                fprintf('Thicknesses and integration orders must be provided before elements!\n');
+                status = 0;
+                return;
             end
             
             % Number of elements T3
@@ -681,6 +699,10 @@ classdef Read < handle
             status = 1;
             if (isempty(mdl.nodes) || isempty(mdl.materials))
                 fprintf('Node coordinates and materials must be provided before elements!\n');
+                status = 0;
+                return;
+            elseif (isempty(thickness) || isempty(intgrorder))
+                fprintf('Thicknesses and integration orders must be provided before elements!\n');
                 status = 0;
                 return;
             end
@@ -738,6 +760,10 @@ classdef Read < handle
             status = 1;
             if (isempty(mdl.nodes) || isempty(mdl.materials))
                 fprintf('Node coordinates and materials must be provided before elements!\n');
+                status = 0;
+                return;
+            elseif (isempty(thickness) || isempty(intgrorder))
+                fprintf('Thicknesses and integration orders must be provided before elements!\n');
                 status = 0;
                 return;
             end
@@ -799,6 +825,10 @@ classdef Read < handle
             status = 1;
             if (isempty(mdl.nodes) || isempty(mdl.materials))
                 fprintf('Node coordinates and materials must be provided before elements!\n');
+                status = 0;
+                return;
+            elseif (isempty(thickness) || isempty(intgrorder))
+                fprintf('Thicknesses and integration orders must be provided before elements!\n');
                 status = 0;
                 return;
             end
@@ -881,6 +911,13 @@ classdef Read < handle
                 
                 % Store data
                 mdl.nodes(id).ebcDispl = disp;
+                
+                % Store data where displacement/rotation is already fixed
+                for j = 1:6
+                    if (mdl.nodes(id).fixDispl(j))
+                        mdl.nodes(id).ebcDispl = disp(j);
+                    end
+                end
             end
         end
         
@@ -915,10 +952,6 @@ classdef Read < handle
                     status = 0;
                     return;
                 end
-                
-                % Store data
-                mdl.nodes(id).iniDispl = ic(1:6);
-                mdl.nodes(id).iniVeloc = ic(7:12);
                 
                 % Store data where displacement is not already fixed
                 for j = 1:6
@@ -1037,7 +1070,7 @@ classdef Read < handle
                     return;
                 end
                 
-                % Store data if temperature is not already fixed
+                % Store data where temperature is not already fixed
                 if (~mdl.nodes(id).fixTemp)
                     mdl.nodes(id).iniTemp = temp;
                 end
@@ -1106,9 +1139,19 @@ classdef Read < handle
                     return;
                 end
                 
-                % Line load information (node1,node2,loc_gbl,qx,qy,qz)
-                [load,count] = fscanf(fid,'%f',6);
-                if (count ~= 6)
+                % Line load nodes (node1,node2)
+                nodes = fscanf(fid,'%d',2);
+                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line load specification of element %d\n',id))
+                    status = 0;
+                    return;
+                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line load specification of element %d\n',id))
+                    status = 0;
+                    return;
+                end
+                
+                % Line load information (loc_gbl,qx,qy,qz)
+                [load,count] = fscanf(fid,'%f',4);
+                if (count ~= 4)
                     fprintf('Invalid line load specification of element %d\n',id);
                     status = 0;
                     return;
@@ -1118,7 +1161,7 @@ classdef Read < handle
                 % All loads are considered in global directions, so loc_gbl is ignored
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineLoad(j,:) = [load(1),load(2),load(4),load(5),load(6)];
+                mdl.elems(id).lineLoad(j,:) = [nodes(1),nodes(2),load(2),load(3),load(4)];
             end
         end
         
@@ -1184,10 +1227,20 @@ classdef Read < handle
                     return;
                 end
                 
-                % Line flux information (node1,node2,q)
-                [flux,count] = fscanf(fid,'%f',3);
-                if (count ~= 3)
-                    fprintf('Invalid line flux specification of element %d\n',id);
+                % Line flux nodes (node1,node2)
+                nodes = fscanf(fid,'%d',2);
+                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line flux specification of element %d\n',id))
+                    status = 0;
+                    return;
+                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line flux specification of element %d\n',id))
+                    status = 0;
+                    return;
+                end
+                
+                % Line flux value
+                [flux,count] = fscanf(fid,'%f',1);
+                if (count ~= 1)
+                    fprintf('Invalid line flux value of element %d\n',id);
                     status = 0;
                     return;
                 end
@@ -1195,7 +1248,7 @@ classdef Read < handle
                 % Store data
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineFlux(j,:) = flux;
+                mdl.elems(id).lineFlux(j,:) = [nodes(1),nodes(2),flux];
             end
         end
         
@@ -1224,11 +1277,19 @@ classdef Read < handle
                     return;
                 end
                 
-                % Line convection information (node1,node2,h,Tenv)
-                % h    -> convection coefficient
-                % Tenv -> environment temperature
-                [convec,count] = fscanf(fid,'%f',4);
-                if (count ~= 4)
+                % Line convection nodes (node1,node2)
+                nodes = fscanf(fid,'%d',2);
+                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line convection specification of element %d\n',id))
+                    status = 0;
+                    return;
+                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line convection specification of element %d\n',id))
+                    status = 0;
+                    return;
+                end
+                
+                % Line convection properties (convection coefficient, environment temperature)
+                [convec,count] = fscanf(fid,'%f',2);
+                if (count ~= 2)
                     fprintf('Invalid line convection specification of element %d\n',id);
                     status = 0;
                     return;
@@ -1237,7 +1298,7 @@ classdef Read < handle
                 % Store data
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineConvec(j,:) = convec;
+                mdl.elems(id).lineConvec(j,:) = [nodes(1),nodes(2),convec(1),convec(2)];
             end
         end
         
@@ -1293,7 +1354,7 @@ classdef Read < handle
                 if (isempty(mdl.anl.scheme) ||...
                     isempty(mdl.anl.incr)   ||...
                     isempty(mdl.anl.max_step))
-                    fprintf('Missing analysis parameters: scheme, step number, or increment!\n');
+                    fprintf('Missing analysis parameters: time integration scheme, step number, or increment!\n');
                     return;
                 end
             end
@@ -1315,14 +1376,27 @@ classdef Read < handle
                         mdl.anm.type == fem.Anm.AXISYM_STRESS)
                         if (isempty(mdl.materials(i).E) ||...
                             isempty(mdl.materials(i).v))
-                            fprintf('Missing material properties: E or v!\n');
+                            fprintf('Missing material properties: Young or Poisson!\n');
                             return;
+                        end
+                        if (mdl.anl.type == fem.Anl.LINEAR_TRANSIENT)
+                            if (isempty(mdl.materials(i).rho))
+                                fprintf('Missing material properties: density!\n');
+                                return;
+                            end
                         end
                     elseif (mdl.anm.type == fem.Anm.PLANE_CONDUCTION ||...
                             mdl.anm.type == fem.Anm.AXISYM_CONDUCTION)
                         if (isempty(mdl.materials(i).k))
                             fprintf('Missing material properties: conductivity!\n');
                             return;
+                        end
+                        if (mdl.anl.type == fem.Anl.LINEAR_TRANSIENT)
+                            if (isempty(mdl.materials(i).rho) ||...
+                                isempty(mdl.materials(i).cp))
+                                fprintf('Missing material properties: density or heat capacity!\n');
+                                return;
+                            end
                         end
                     end
                 end

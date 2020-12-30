@@ -22,7 +22,6 @@ classdef Shape < handle
     %% Constant values
     properties (Constant = true, Access = public)
         % Types of shape
-        GENERIC = int32(0);
         TRIA3   = int32(1);
         QUAD4   = int32(2);
         TRIA6   = int32(3);
@@ -69,8 +68,7 @@ classdef Shape < handle
         %------------------------------------------------------------------
         % Evaluate matrix of edge d.o.f. shape functions at a given
         % position in parametric coordinates.
-        % The edge is defined by two corner nodes local ids (n1,n2).
-        N = NmtxEdge(this,n1,n2,r);
+        N = NmtxEdge(this,r);
         
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions derivatives
@@ -85,8 +83,7 @@ classdef Shape < handle
         %------------------------------------------------------------------
         % Evaluate matrix of edge geometry shape functions derivatives
         % w.r.t. parametric coordinates at a given position.
-        % The edge is defined by two corner nodes local ids (n1,n2).
-        GradMpar = gradMmtxEdge(this,n1,n2,r);
+        GradMpar = gradMmtxEdge(this,r);
         
         %------------------------------------------------------------------
         % Returns the local ids of the nodes of a shape edge for a given

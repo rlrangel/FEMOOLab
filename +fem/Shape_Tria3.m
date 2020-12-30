@@ -75,7 +75,7 @@ classdef Shape_Tria3 < fem.Shape
         %------------------------------------------------------------------
         % Evaluate matrix of edge d.o.f. shape functions at a given
         % position in parametric coordinates.
-        function N = NmtxEdge(~,~,~,r)
+        function N = NmtxEdge(~,r)
             N = zeros(1,2);
             
             N(1) = 0.5*(1-r);
@@ -108,8 +108,7 @@ classdef Shape_Tria3 < fem.Shape
         %------------------------------------------------------------------
         % Evaluate matrix of edge geometry shape functions derivatives
         % w.r.t. parametric coordinates at a given position.
-        % The edge is defined by two corner nodes local ids (n1,n2).
-        function GradMpar = gradMmtxEdge(~,~,~,~)
+        function GradMpar = gradMmtxEdge(~,~)
             GradMpar = zeros(1,2);
             
             GradMpar(1,1) = -0.5;

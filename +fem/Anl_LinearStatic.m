@@ -33,7 +33,7 @@ classdef Anl_LinearStatic < fem.Anl
             K = mdl.anm.gblStiffMtx(mdl);
             
             % Check for singular matrix
-            if (this.singularMtx(mdl,K))
+            if ((rcond(K(1:mdl.neqf,1:mdl.neqf)) < 10e-15))
                 fprintf(1,'Singular stiffness matrix!\n');
                 status = 0;
                 return;

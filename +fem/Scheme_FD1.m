@@ -70,7 +70,7 @@ classdef Scheme_FD1 < fem.Scheme
         %  IC:   matrix of initial conditions (values of state variable only)
         %  K:    global stiffness matrix (free d.o.f.'s only)
         %  C:    global "velocity" matrix (free d.o.f.'s only)
-        %  M:    global "acceleration" matrix (free d.o.f.'s only) - not used
+        %  F:    global forcing vector (free d.o.f.'s only) - currently assumed constant!
         % Output:
         %  U:     matrix of state variable vector for each time step (free d.o.f.'s only)
         %  Ut:    matrix of first time derivative of state variable vector for each time step (free d.o.f.'s only)

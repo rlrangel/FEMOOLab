@@ -12,8 +12,8 @@
 classdef Simulation < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        mdl  = [];  % object of Model class
-        anl  = [];  % object of Anl (Analysis) class
+        mdl = [];  % object of Model class
+        anl = [];  % object of Anl (Analysis) class
     end
     
     %% Constructor method
@@ -40,7 +40,7 @@ classdef Simulation < handle
             
             % Open and read input files to run each simulation
             for i = 1:length(file_names)
-                % Get file parts name
+                % Get name of file parts
                 full_name = strcat(file_path,string(file_names(i)));
                 [~,name,~] = fileparts(full_name);
                 

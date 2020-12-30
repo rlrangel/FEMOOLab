@@ -8,7 +8,7 @@
 %
 %% Class definition
 %
-classdef Anl_LinearTransient < Anl
+classdef Anl_LinearTransient < fem.Anl
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         scheme = [];                     % object of Scheme class
@@ -20,7 +20,7 @@ classdef Anl_LinearTransient < Anl
     methods
         %------------------------------------------------------------------
         function this = Anl_LinearTransient()
-            this = this@Anl(fem.Anl.LINEAR_TRANSIENT);
+            this = this@fem.Anl(fem.Anl.LINEAR_TRANSIENT);
         end
     end
     
@@ -28,8 +28,8 @@ classdef Anl_LinearTransient < Anl
     % Implementation of the abstract methods declared in super-class Anl
     methods
         %------------------------------------------------------------------
-        % Process linear-transient analysis by assembling global semi
-        % discretized system of ODEs on time and calculate state variables
+        % Process linear-transient analysis by assembling global semi-
+        % discretized system of ODEs on time and calculating state variables
         % and their time derivatives.
         function status = process(this,sim)
             status = 1;
@@ -38,15 +38,16 @@ classdef Anl_LinearTransient < Anl
             
             % Check for any free d.o.f
             if (mdl.neqf == 0)
-                status = 0;
                 fprintf('Model with no free degree-of-freedom!\n');
+                status = 0;
                 return;
             end
             
             % Assemble global matrices
+            fprintf('Assembling global arrays...\n');
             K = mdl.anm.gblStiffMtx(mdl); % stiffness matrix
-            C = mdl.anm.gblVelMtx(mdl);   % matrix related to first time derivative
-            M = mdl.anm.gblAccelMtx(mdl); % matrix related to second time derivative
+            C = mdl.anm.gblVelMtx(mdl);   % matrix related to 1st time derivative ("velocity" matrix)
+            M = mdl.anm.gblAccelMtx(mdl); % matrix related to 2nd time derivative ("acceleration" matrix)
             
             % Assemble global forcing vector (currently assumed constant on time)
             F = zeros(mdl.neq,1);
@@ -85,8 +86,12 @@ classdef Anl_LinearTransient < Anl
             res.Ut(1:row,:)  = Ut;
             res.Utt(1:row,:) = Utt;
             
-            % Add fixed d.o.f.'s values
-            mdl.anm.addEBC(mdl,res.U);
+            % Add prescribed values of fixed d.o.f.'s
+            Uc = zeros(mdl.neq,1);
+            mdl.anm.addEBC(mdl,Uc);
+            res.U(row+1:end,:) = repmat(Uc(row+1:end),1,steps+1);
+            
+            % Zero out time derivatives of fixed d.o.f.'s
             res.Ut(row+1:end,:)  = zeros(mdl.neqc,steps+1);
             res.Utt(row+1:end,:) = zeros(mdl.neqc,steps+1);
         end

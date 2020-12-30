@@ -7,7 +7,7 @@
 % with second-order finite difference time integration schemes.
 %
 % The second-order central difference explicit scheme is implemented for
-% solving a systems of ODEs of second-order.
+% solving a system of ODEs of second-order.
 %
 % Ref.: A survey of direct time-integration methods in computational
 %       structural dynamics - I: Explicit methods,
@@ -56,6 +56,7 @@ classdef Scheme_FD2 < fem.Scheme
         %  K:    global stiffness matrix (free d.o.f.'s only)
         %  C:    global "velocity" matrix (free d.o.f.'s only)
         %  M:    global "acceleration" matrix (free d.o.f.'s only)
+        %  F:    global forcing vector (free d.o.f.'s only) - currently assumed constant!
         % Output:
         %  U:     matrix of state variable vector for each time step (free d.o.f.'s only)
         %  Ut:    matrix of first time derivative of state variable vector for each time step (free d.o.f.'s only)
