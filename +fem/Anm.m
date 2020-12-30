@@ -69,7 +69,7 @@ classdef Anm < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         type int32 = int32.empty;  % flag for type of analysis model
-        ndof int32 = int32.empty;  % number of degrees-of-freedom per node
+        ndof int32 = int32.empty;  % number of d.o.f.'s per node
     end
     
     %% Constructor method

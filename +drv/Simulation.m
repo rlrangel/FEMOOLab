@@ -87,8 +87,6 @@ classdef Simulation < handle
                 fprintf('Plotting results...\n');
                 this.mdl.res.plot(this.mdl);
                 fprintf('Finished!\n');
-                
-                % Print results... (TO DO)
             end
         end
     end

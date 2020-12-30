@@ -314,6 +314,9 @@ classdef Read < handle
                 return;
             end
             
+            % Get total number of d.o.f.'s per node
+            
+            
             % Create vector of Node objects
             mdl.nnp = n;
             nodes(n,1) = fem.Node();
