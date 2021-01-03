@@ -31,9 +31,6 @@ classdef Read < handle
             status = 1;
             mdl = sim.mdl;
             
-            % Set result plotting options (they will be read from file in the future)
-            this.setResultPlottingOpt(mdl,opt);
-            
             % Create Gauss quadrature for triangular and quadrilateral shapes
             gauss_tria = fem.Gauss_Tria();
             gauss_quad = fem.Gauss_Quad();
@@ -110,48 +107,13 @@ classdef Read < handle
                 end
             end
             if (status == 1)
-                status = this.checkInput(mdl);
+                % Set result plotting options (they will be read from file in the future)
+                this.setResultPlottingOpt(mdl,opt);
+                
+                % General check of input data
+                status = this.checkInput(sim);
             end
             fclose(fid);
-        end
-        
-        %% Method for reading plotting options (temporary)
-        %------------------------------------------------------------------
-        function setResultPlottingOpt(~,mdl,opt)
-            mdl.res.eid    = opt.eid;
-            mdl.res.nid    = opt.nid;
-            mdl.res.scl    = opt.scl;
-            mdl.res.dx     = opt.dx;
-            mdl.res.dy     = opt.dy;
-            mdl.res.dz     = opt.dz;
-            mdl.res.rx     = opt.rx;
-            mdl.res.ry     = opt.ry;
-            mdl.res.rz     = opt.rz;
-            mdl.res.temp   = opt.temp;
-            mdl.res.smooth = opt.smooth;
-            mdl.res.tol    = opt.tol;
-            mdl.res.sxx    = opt.sxx;
-            mdl.res.syy    = opt.syy;
-            mdl.res.szz    = opt.szz;
-            mdl.res.txy    = opt.txy;
-            mdl.res.txz    = opt.txz;
-            mdl.res.tyz    = opt.tyz;
-            mdl.res.s1     = opt.s1;
-            mdl.res.s2     = opt.s2;
-            mdl.res.s3     = opt.s3;
-            mdl.res.taumax = opt.taumax;
-            mdl.res.mxx    = opt.mxx;
-            mdl.res.myy    = opt.myy;
-            mdl.res.mxy    = opt.mxy;
-            mdl.res.qxz    = opt.qxz;
-            mdl.res.qyz    = opt.qyz;
-            mdl.res.m1     = opt.m1;
-            mdl.res.m2     = opt.m2;
-            mdl.res.tormax = opt.tormax;
-            mdl.res.fxx    = opt.fxx;
-            mdl.res.fyy    = opt.fyy;
-            mdl.res.fzz    = opt.fzz;
-            mdl.res.fp     = opt.fp;
         end
         
         %% Methods for reading neutral file TAGS
@@ -228,21 +190,14 @@ classdef Read < handle
             end
             
             % Check if selected algorithm is valid for selected analysis model
-            if (mdl.anm.type == fem.Anm.PLANE_STRESS ||...
-                mdl.anm.type == fem.Anm.PLANE_STRAIN ||...
-                mdl.anm.type == fem.Anm.AXISYM_STRESS)
-                if (mdl.anl.scheme.type == fem.Scheme.FOWARD_EULER   ||...
-                    mdl.anl.scheme.type == fem.Scheme.BACKWARD_EULER ||...
-                    mdl.anl.scheme.type == fem.Scheme.CRANK_NICOLSON)
+            if (mdl.anm.phys == fem.Anm.STRUCTURAL)
+                if (mdl.anl.scheme.order == 1)
                     fprintf('Invalid solution algorithm: first-order integration schemes are not valid for structural problems!\n');
                     status = 0;
                     return;
                 end
-            elseif (mdl.anm.type == fem.Anm.PLANE_CONDUCTION ||...
-                    mdl.anm.type == fem.Anm.AXISYM_CONDUCTION)
-                if (mdl.anl.scheme.type == fem.Scheme.CENTRAL_DIFFERENCE ||...
-                    mdl.anl.scheme.type == fem.Scheme.RUNGE_KUTTA_4      ||...
-                    mdl.anl.scheme.type == fem.Scheme.NEWMARK)
+            elseif (mdl.anm.phys == fem.Anm.THERMAL)
+                if (mdl.anl.scheme.order > 1)
                     fprintf('Invalid solution algorithm: second or higher order integration schemes are not valid for thermal problems!\n');
                     status = 0;
                     return;
@@ -315,7 +270,11 @@ classdef Read < handle
             end
             
             % Get total number of d.o.f.'s per node
-            
+            if (mdl.anm.phys == fem.Anm.STRUCTURAL)
+                ndof = 6;
+            elseif (mdl.anm.phys == fem.Anm.THERMAL)
+                ndof = 1;    
+            end
             
             % Create vector of Node objects
             mdl.nnp = n;
@@ -339,8 +298,9 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.nodes(id).id = id;
-                mdl.nodes(id).coord = coord';
+                mdl.nodes(id).id      = id;
+                mdl.nodes(id).coord   = coord';
+                mdl.nodes(id).fixdDOF = false(ndof,1); % By default, all d.o.f.'s are free
             end
         end
         
@@ -350,6 +310,8 @@ classdef Read < handle
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before node supports!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.THERMAL)
                 return;
             end
             
@@ -377,7 +339,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.nodes(id).fixDispl = logical(supp);
+                mdl.nodes(id).fixdDOF = logical(supp);
             end
         end
         
@@ -682,11 +644,14 @@ classdef Read < handle
                 mdl.elems(id).mat   = mdl.materials(p(1));
                 mdl.elems(id).thk   = thickness(p(2));
                 mdl.elems(id).shape = shape;
+                mdl.elems(id).gauss = gauss;
+                mdl.elems(id).gsystem_order = intgrorder(p(3),1);
+                mdl.elems(id).gderive_order = intgrorder(p(3),2);
                 
-                % Always setup Gauss quadrature after setting shape because
-                % element needs shape to define matrix for extrapolating
-                % stresses from integration points to nodes
-                mdl.elems(id).setGauss(gauss,intgrorder(p(3),1),intgrorder(p(3),2));
+                % Set nodes incidence
+                for j = 4:6
+                    mdl.nodes(p(j)).elems(end+1) = mdl.elems(id);
+                end
             end
         end
         
@@ -742,11 +707,14 @@ classdef Read < handle
                 mdl.elems(id).mat   = mdl.materials(p(1));
                 mdl.elems(id).thk   = thickness(p(2));
                 mdl.elems(id).shape = shape;
+                mdl.elems(id).gauss = gauss;
+                mdl.elems(id).gsystem_order = intgrorder(p(3),1);
+                mdl.elems(id).gderive_order = intgrorder(p(3),2);
                 
-                % Always setup Gauss quadrature after setting shape because
-                % element needs shape to define matrix for extrapolating
-                % stresses from integration points to nodes
-                mdl.elems(id).setGauss(gauss,intgrorder(p(3),1),intgrorder(p(3),2));
+                % Set nodes incidence
+                for j = 4:7
+                    mdl.nodes(p(j)).elems(end+1) = mdl.elems(id);
+                end
             end
         end
         
@@ -806,11 +774,14 @@ classdef Read < handle
                 mdl.elems(id).mat   = mdl.materials(p(1));
                 mdl.elems(id).thk   = thickness(p(2));
                 mdl.elems(id).shape = shape;
+                mdl.elems(id).gauss = gauss;
+                mdl.elems(id).gsystem_order = intgrorder(p(3),1);
+                mdl.elems(id).gderive_order = intgrorder(p(3),2);
                 
-                % Always setup Gauss quadrature after setting shape because
-                % element needs shape to define matrix for extrapolating
-                % stresses from integration points to nodes
-                mdl.elems(id).setGauss(gauss,intgrorder(p(3),1),intgrorder(p(3),2));
+                % Set nodes incidence
+                for j = 4:9
+                    mdl.nodes(p(j)).elems(end+1) = mdl.elems(id);
+                end
             end
         end
         
@@ -872,11 +843,14 @@ classdef Read < handle
                 mdl.elems(id).mat   = mdl.materials(p(1));
                 mdl.elems(id).thk   = thickness(p(2));
                 mdl.elems(id).shape = shape;
+                mdl.elems(id).gauss = gauss;
+                mdl.elems(id).gsystem_order = intgrorder(p(3),1);
+                mdl.elems(id).gderive_order = intgrorder(p(3),2);
                 
-                % Always setup Gauss quadrature after setting shape because
-                % element needs shape to define matrix for extrapolating
-                % stresses from integration points to nodes
-                mdl.elems(id).setGauss(gauss,intgrorder(p(3),1),intgrorder(p(3),2));
+                % Set nodes incidence
+                for j = 4:11
+                    mdl.nodes(p(j)).elems(end+1) = mdl.elems(id);
+                end
             end
         end
         
@@ -886,6 +860,8 @@ classdef Read < handle
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before prescribed displacements!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.THERMAL)
                 return;
             end
             
@@ -912,13 +888,10 @@ classdef Read < handle
                     return;
                 end
                 
-                % Store data
-                mdl.nodes(id).ebcDispl = disp;
-                
                 % Store data where displacement/rotation is already fixed
                 for j = 1:6
-                    if (mdl.nodes(id).fixDispl(j))
-                        mdl.nodes(id).ebcDispl = disp(j);
+                    if (mdl.nodes(id).fixdDOF(j))
+                        mdl.nodes(id).prscDOF(j) = disp(j);
                     end
                 end
             end
@@ -930,6 +903,8 @@ classdef Read < handle
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before initial conditions!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.THERMAL)
                 return;
             end
             
@@ -958,9 +933,9 @@ classdef Read < handle
                 
                 % Store data where displacement is not already fixed
                 for j = 1:6
-                    if (~mdl.nodes(id).fixDispl(j))
-                        mdl.nodes(id).iniDispl = ic(j);
-                        mdl.nodes(id).iniVeloc = ic(j+6);
+                    if (~mdl.nodes(id).fixdDOF(j))
+                        mdl.nodes(id).initDOF(j)  = ic(j);
+                        mdl.nodes(id).initDOFt(j) = ic(j+6);
                     end
                 end
             end
@@ -972,6 +947,8 @@ classdef Read < handle
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before point loads!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.THERMAL)
                 return;
             end
             
@@ -999,7 +976,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.nodes(id).load = load;
+                mdl.nodes(id).prscNBC = load;
             end
         end
         
@@ -1009,6 +986,8 @@ classdef Read < handle
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before prescribed temperatures!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.STRUCTURAL)
                 return;
             end
             
@@ -1036,8 +1015,8 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.nodes(id).fixTemp = true;
-                mdl.nodes(id).ebcTemp = temp;
+                mdl.nodes(id).fixdDOF = true;
+                mdl.nodes(id).prscDOF = temp;
             end
         end
         
@@ -1047,6 +1026,8 @@ classdef Read < handle
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before initial temperatures!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.STRUCTURAL)
                 return;
             end
             
@@ -1074,8 +1055,8 @@ classdef Read < handle
                 end
                 
                 % Store data where temperature is not already fixed
-                if (~mdl.nodes(id).fixTemp)
-                    mdl.nodes(id).iniTemp = temp;
+                if (~mdl.nodes(id).fixdDOF)
+                    mdl.nodes(id).initDOF = temp;
                 end
             end
         end
@@ -1086,6 +1067,8 @@ classdef Read < handle
             if (isempty(mdl.nodes))
                 fprintf('Node coordinates must be provided before point fluxes!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.STRUCTURAL)
                 return;
             end
             
@@ -1113,7 +1096,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.nodes(id).flux = flux;
+                mdl.nodes(id).prscNBC = flux;
             end
         end
         
@@ -1123,6 +1106,8 @@ classdef Read < handle
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before line loads!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.THERMAL)
                 return;
             end
             
@@ -1144,15 +1129,16 @@ classdef Read < handle
                 
                 % Line load nodes (node1,node2)
                 nodes = fscanf(fid,'%d',2);
-                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line load specification of element %d\n',id))
+                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line load specification'))
                     status = 0;
                     return;
-                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line load specification of element %d\n',id))
+                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line load specification'))
                     status = 0;
                     return;
                 end
                 
                 % Line load information (loc_gbl,qx,qy,qz)
+                % All loads are considered in global directions, so loc_gbl is ignored
                 [load,count] = fscanf(fid,'%f',4);
                 if (count ~= 4)
                     fprintf('Invalid line load specification of element %d\n',id);
@@ -1160,11 +1146,10 @@ classdef Read < handle
                     return;
                 end
                 
-                % Store data
-                % All loads are considered in global directions, so loc_gbl is ignored
+                % Store data: add new edge load or accumulate loads on same
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineLoad(j,:) = [nodes(1),nodes(2),load(2),load(3),load(4)];
+                mdl.elems(id).lineNBC1(j,:) = [nodes(1),nodes(2),load(2),load(3),load(4)];
             end
         end
         
@@ -1174,6 +1159,8 @@ classdef Read < handle
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before domain loads!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.THERMAL)
                 return;
             end
             
@@ -1201,7 +1188,7 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.elems(id).domainLoad = load;
+                mdl.elems(id).src = load;
             end
         end
         
@@ -1211,6 +1198,8 @@ classdef Read < handle
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before line fluxes!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.STRUCTURAL)
                 return;
             end
             
@@ -1232,10 +1221,10 @@ classdef Read < handle
                 
                 % Line flux nodes (node1,node2)
                 nodes = fscanf(fid,'%d',2);
-                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line flux specification of element %d\n',id))
+                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line flux specification'))
                     status = 0;
                     return;
-                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line flux specification of element %d\n',id))
+                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line flux specification'))
                     status = 0;
                     return;
                 end
@@ -1251,7 +1240,7 @@ classdef Read < handle
                 % Store data
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineFlux(j,:) = [nodes(1),nodes(2),flux];
+                mdl.elems(id).lineNBC1(j,:) = [nodes(1),nodes(2),flux];
             end
         end
         
@@ -1261,6 +1250,8 @@ classdef Read < handle
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before line convection!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.STRUCTURAL)
                 return;
             end
             
@@ -1282,26 +1273,32 @@ classdef Read < handle
                 
                 % Line convection nodes (node1,node2)
                 nodes = fscanf(fid,'%d',2);
-                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line convection specification of element %d\n',id))
+                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line convection specification'))
                     status = 0;
                     return;
-                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line convection specification of element %d\n',id))
+                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line convection specification'))
                     status = 0;
                     return;
                 end
                 
                 % Line convection properties (convection coefficient, environment temperature)
                 [convec,count] = fscanf(fid,'%f',2);
+                h = convec(1);
+                Tenv = convec(2);
                 if (count ~= 2)
                     fprintf('Invalid line convection specification of element %d\n',id);
                     status = 0;
                     return;
                 end
                 
-                % Store data
+                % Newton law of cooling:
+                % q = h(T - Tenv)  ->  q = -h*Tenv + h*T 
+                % NBC1: q1 = -h*Tenv (constant value)
+                % NBC2: q2 = h*T     (depends on temperature - adds a new term to stiff. mtx)
                 a(i) = id;
                 j = sum(a(:)==id);
-                mdl.elems(id).lineConvec(j,:) = [nodes(1),nodes(2),convec(1),convec(2)];
+                mdl.elems(id).lineNBC1(j,:) = [nodes(1),nodes(2),h*Tenv];
+                mdl.elems(id).lineNBC2(j,:) = [nodes(1),nodes(2),h];
             end
         end
         
@@ -1311,6 +1308,8 @@ classdef Read < handle
             if (isempty(mdl.elems))
                 fprintf('Elements must be provided before domain heat fluxes!\n');
                 status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.STRUCTURAL)
                 return;
             end
             
@@ -1338,25 +1337,67 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.elems(id).domainFlux = flux;
+                mdl.elems(id).src = flux;
+            end
+        end
+        
+        %% Method for reading plotting options (temporary)
+        %------------------------------------------------------------------
+        function setResultPlottingOpt(~,mdl,opt)
+            % General
+            mdl.res.eid    = opt.eid;
+            mdl.res.nid    = opt.nid;
+            mdl.res.gid    = opt.gid;
+            mdl.res.smooth = opt.smooth;
+            mdl.res.tol    = opt.tol;
+            
+            % Structural analysis
+            if (mdl.anm.phys == fem.Anm.STRUCTURAL)
+                mdl.res.deform = opt.deform;
+                mdl.res.scl    = opt.scl;
+                
+                if (mdl.anm.type == fem.Anm.PLANE_STRESS  || ...
+                    mdl.anm.type == fem.Anm.PLANE_STRAIN  || ...
+                    mdl.anm.type == fem.Anm.AXISYM_STRESS)
+                    mdl.res.dx     = opt.dx;
+                    mdl.res.dy     = opt.dy;
+                    mdl.res.sxx    = opt.sxx;
+                    mdl.res.syy    = opt.syy;
+                    mdl.res.txy    = opt.txy;
+                    mdl.res.s1     = opt.s1;
+                    mdl.res.s2     = opt.s2;
+                    mdl.res.taumax = opt.taumax;
+                end
+            
+            % Thermal analysis
+            elseif (mdl.anm.phys == fem.Anm.THERMAL)
+                mdl.res.temp = opt.temp;
+                mdl.res.fm   = opt.fm;
+                
+                if (mdl.anm.type == fem.Anm.PLANE_CONDUCTION || ...
+                    mdl.anm.type == fem.Anm.AXISYM_CONDUCTION)
+                    mdl.res.fxx = opt.fxx;
+                    mdl.res.fyy = opt.fyy;
+                end
             end
         end
         
         %% Functions for checking input data
         %------------------------------------------------------------------
-        function status = checkInput(~,mdl)
+        function status = checkInput(~,sim)
             status = 0;
+            mdl = sim.mdl;
             if isempty(mdl.anm)
                 fprintf('Analysis model type not provided!\n');
                 return;
             end
-            if isempty(mdl.anl)
+            if isempty(sim.anl)
                 fprintf('Analysis type not provided!\n');
                 return;
-            elseif (mdl.anl.type == fem.Anl.LINEAR_TRANSIENT)
-                if (isempty(mdl.anl.scheme) ||...
-                    isempty(mdl.anl.incr)   ||...
-                    isempty(mdl.anl.max_step))
+            elseif (sim.anl.type == fem.Anl.LINEAR_TRANSIENT)
+                if (isempty(sim.anl.scheme) ||...
+                    isempty(sim.anl.incr)   ||...
+                    isempty(sim.anl.max_step))
                     fprintf('Missing analysis parameters: time integration scheme, step number, or increment!\n');
                     return;
                 end
@@ -1374,27 +1415,24 @@ classdef Read < handle
                 return;
             else
                 for i = 1:mdl.nmat
-                    if (mdl.anm.type == fem.Anm.PLANE_STRESS ||...
-                        mdl.anm.type == fem.Anm.PLANE_STRAIN ||...
-                        mdl.anm.type == fem.Anm.AXISYM_STRESS)
+                    if (mdl.anm.phys == fem.Anm.STRUCTURAL)
                         if (isempty(mdl.materials(i).E) ||...
                             isempty(mdl.materials(i).v))
                             fprintf('Missing material properties: Young or Poisson!\n');
                             return;
                         end
-                        if (mdl.anl.type == fem.Anl.LINEAR_TRANSIENT)
+                        if (sim.anl.type == fem.Anl.LINEAR_TRANSIENT)
                             if (isempty(mdl.materials(i).rho))
                                 fprintf('Missing material properties: density!\n');
                                 return;
                             end
                         end
-                    elseif (mdl.anm.type == fem.Anm.PLANE_CONDUCTION ||...
-                            mdl.anm.type == fem.Anm.AXISYM_CONDUCTION)
+                    elseif (mdl.anm.phys == fem.Anm.THERMAL)
                         if (isempty(mdl.materials(i).k))
                             fprintf('Missing material properties: conductivity!\n');
                             return;
                         end
-                        if (mdl.anl.type == fem.Anl.LINEAR_TRANSIENT)
+                        if (sim.anl.type == fem.Anl.LINEAR_TRANSIENT)
                             if (isempty(mdl.materials(i).rho) ||...
                                 isempty(mdl.materials(i).cp))
                                 fprintf('Missing material properties: density or heat capacity!\n');

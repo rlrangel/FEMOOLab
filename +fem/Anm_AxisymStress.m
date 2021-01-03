@@ -9,17 +9,11 @@
 %% Class definition
 %
 classdef Anm_AxisymStress < fem.Anm
-    %% Public properties
-    properties (SetAccess = public, GetAccess = public)
-        gla int32 = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
-    end
-    
     %% Constructor method
     methods
         %------------------------------------------------------------------
         function this = Anm_AxisymStress()
-            this = this@fem.Anm(fem.Anm.AXISYM_STRESS,2);
-            this.gla = [1 2];
+            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.AXISYM_STRESS,2,4,[1 2]);
             
             % Types of response
             this.DISPL_X  = true;  % Displacement X
@@ -38,38 +32,7 @@ classdef Anm_AxisymStress < fem.Anm
     % Implementation of the abstract methods declared in super-class Anm
     methods
         %------------------------------------------------------------------
-        % Initialize global d.o.f. numbering matrix with ones and zeros,
-        % and count total number of equations of free and fixed  d.o.f.'s.
-        %  ID matrix initialization:
-        %  if ID(j,i) = 0, d.o.f. j of node i is free.
-        %  if ID(j,i) = 1, d.o.f. j of node i is fixed.
-        function setupDOFNum(this,mdl)
-            % Dimension global d.o.f. numbering matrix
-            mdl.ID = zeros(this.ndof,mdl.nnp);
-            
-            % Initialize number of fixed d.o.f.'s
-            mdl.neqc = 0;
-            
-            % Count number of fixed d.o.f.'s and setup ID matrix
-            for i = 1:mdl.nnp
-                for j = 1:this.ndof
-                    % Get d.o.f number
-                    dof = this.gla(j);
-                    
-                    % Check for fixed d.o.f
-                    if (mdl.nodes(i).fixDispl(dof))
-                        mdl.neqc = mdl.neqc + 1;
-                        mdl.ID(j,i) = 1;
-                    end
-                end
-            end
-            
-            % Compute total number of free d.o.f.
-            mdl.neqf = mdl.neq - mdl.neqc;
-        end
-        
-        %------------------------------------------------------------------
-        % Assemble material constitutive matrix for a given element.
+        % Assemble material constitutive matrix of a given element.
         function C = Cmtx(~,elem)
             E = elem.mat.E;
             v = elem.mat.v;
@@ -96,7 +59,7 @@ classdef Anm_AxisymStress < fem.Anm
             radius = p(1);
             
             % Assemble strain matrix
-            B = zeros(4,elem.shape.nen*this.ndof);
+            B = zeros(this.ndvc,elem.shape.nen*this.ndof);
             
             for i = 1:elem.shape.nen
                 B(1,2*i-1) = GradNcar(1,i);   B(1,2*i) = 0.0;
@@ -107,7 +70,7 @@ classdef Anm_AxisymStress < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Returns the ridigity coefficient at a given position in
+        % Return the ridigity coefficient at a given position in
         % parametric coordinates of an element.
         function coeff = rigidityCoeff(~,elem,r,s)
             % Geometry shape functions matrix evaluated at this point
@@ -121,144 +84,188 @@ classdef Anm_AxisymStress < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Returns the mass coefficient.
+        % Return the mass coefficient.
         function coeff = massCoeff(~,elem)
             coeff = elem.rho;
         end
         
         %------------------------------------------------------------------
-        % Assemble global stiffness matrix.
-        function K = gblStiffMtx(~,mdl)
-            % Initialize global stiffness matrix
-            K = zeros(mdl.neq,mdl.neq);
-            
-            % Get element stiffness matrices and assemble global matrix
-            for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
-                ke = mdl.elems(i).stiffMtx();
-                K(gle,gle) = K(gle,gle) + ke;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Assemble global matrix related to first time derivative of state
-        % variables (damping matrix in structural analysis).
-        function C = gblVelMtx(~,~)
+        % Assemble global matrix related to 1st time derivative of d.o.f.'s.
+        % Damping matrix in structural analysis.
+        function C = gblRate1Mtx(~,~)
             % NOT IMPLEMENTED
             C = zeros(mdl.neq,mdl.neq);
         end
         
         %------------------------------------------------------------------
-        % Assemble global matrix related to second time derivative of state
-        % variables (mass matrix in structural analysis).
-        function M = gblAccelMtx(~,mdl)
+        % Assemble global matrix related to 2nd time derivative of d.o.f.'s.
+        % Mass matrix in structural analysis.
+        function M = gblRate2Mtx(~,mdl)
             % Initialize global mass matrix
             M = zeros(mdl.neq,mdl.neq);
             
-            % Get element mass matrices and assemble global matrix
+            % Get element matrices and assemble global matrix
             for i = 1:mdl.nel
                 gle = mdl.elems(i).gle;
-                me = mdl.elems(i).massMtx();
-                M(gle,gle) = M(gle,gle) + me;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Assemble global initial conditions matrix.
-        function IC = gblInitCondMtx(~,mdl)
-            % Initialize initial conditions matrix
-            IC = zeros(mdl.neqf,2);
-            
-            for i = 1:mdl.nnp
-                for j = 1:mdl.anm.ndof
-                    % Get d.o.f numbers
-                    id  = mdl.ID(j,i);
-                    dof = mdl.anm.gla(j);
-                    
-                    % Apply initial conditions only to free d.o.f.'s
-                    if (id <= mdl.neqf)
-                        if (~isempty(mdl.nodes(i).iniDispl) ||...
-                            ~isempty(mdl.nodes(i).iniVeloc))
-                            IC(id,1) = mdl.nodes(i).iniDispl(dof);
-                            IC(id,2) = mdl.nodes(i).iniVeloc(dof);
-                        end
-                    end
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Add point force contributions to global forcing vector.
-        function F = addPointForce(this,mdl,F)
-            for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).load))
-                    for j = 1:this.ndof
-                        % Get d.o.f numbers
-                        id  = mdl.ID(j,i);
-                        dof = this.gla(j);
-                        
-                        % Add load to reference load vector
-                        F(id) = F(id) + mdl.nodes(i).load(dof);
-                    end
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Add equivalent nodal force contributions to global forcing vector.
-        function F = addEquivForce(~,mdl,F)
-            for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
-                
-                % Get element equivalent nodal load vectors and assemble global vector
-                if (~isempty(mdl.elems(i).lineLoad))
-                    fline = mdl.elems(i).edgeEquivForceVct(mdl.elems(i).lineLoad);
-                    F(gle) = F(gle) + fline;
-                end
-                
-                if (~isempty(mdl.elems(i).domainLoad))
-                    fdom = mdl.elems(i).domainEquivForceVct(mdl.elems(i).domainLoad);
-                    F(gle) = F(gle) + fdom;
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Add essencial boundary conditions (prescribed values of state
-        % variables) to global vector of state variables.
-        % Avoid storing a prescribed value in a position of global vector
-        % of state variables that corresponds to a free d.o.f.
-        function U = addEBC(~,mdl,U)
-            for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).ebcDispl))
-                    for j = 1:this.ndof
-                        % Get d.o.f numbers
-                        id  = mdl.ID(j,i);
-                        dof = this.gla(j);
-                        
-                        % Add prescribed displacement to global vector
-                        if (id > mdl.neqf)
-                            U(id) = mdl.nodes(i).ebcDispl(dof);
-                        end
-                    end
-                end
+                Me = mdl.elems(i).massMtx();
+                M(gle,gle) = M(gle,gle) + Me;
             end
         end
         
         %------------------------------------------------------------------
         % Compute stress components (sx, sy, txy) at a given point of an element.
         % Input:
-        %  C:   constituive matrix
-        %  B:   strain-displacement matrix
-        %  d:   generalized displacements for all d.o.f.'s of element
-        function str = pointStress(~,C,B,d)
+        %  C: constituive matrix
+        %  B: strain matrix
+        %  u: displacements results
+        function str = pointDerivedVar(~,C,B,u)
             % Compute point stress components
-            str_raw = C * B * d;
+            str_raw = C * B * u;
             
             % Skip tangential stress component
             str(1) = str_raw(1);
             str(2) = str_raw(3);
             str(3) = str_raw(4);
+        end
+        
+        %------------------------------------------------------------------
+        % Compute derived variables and the principal values and directions
+        % at Gauss points of all elements.
+        % In structural analysis, derived variables are stresses.
+        function gaussDerivedVar(this,mdl)
+            r = mdl.res;
+            
+            npts = 0;
+            for i = 1:mdl.nel
+                % Compute stress components and cartesian coord at Gauss points
+                U = r.U(mdl.elems(i).gle);
+                [ngp,str,gpc] = mdl.elems(i).derivedVar(U);
+                
+                r.ngp(i) = ngp;
+                r.sxx_gp(1:ngp,i) = str(1,1:ngp);
+                r.syy_gp(1:ngp,i) = str(2,1:ngp);
+                r.txy_gp(1:ngp,i) = str(3,1:ngp);
+                
+                for j = 1:ngp
+                    npts = npts + 1;
+                    
+                    % Store cartesian coordinates
+                    r.x_gp(npts) = gpc(1,j);
+                    r.y_gp(npts) = gpc(2,j);
+                    
+                    % Compute principal stresses
+                    [prc,thetap]   = this.princStress(str(:,j));
+                    r.s1_gp(j,i)   = prc(1);
+                    r.s2_gp(j,i)   = prc(2);
+                    r.tmax_gp(j,i) = prc(3);
+                    
+                    % Components of principal stresses in X-Y directions
+                    r.s1x_gp(npts) = r.s1_gp(j,i)*cos(thetap);
+                    r.s1y_gp(npts) = r.s1_gp(j,i)*sin(thetap);
+                    r.s2x_gp(npts) = r.s2_gp(j,i)*cos(thetap+(pi/2.0));
+                    r.s2y_gp(npts) = r.s2_gp(j,i)*sin(thetap+(pi/2.0));
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Extrapolate Gauss point results of derived variables to element
+        % node results.
+        % The nodal results are computed by extrapolation of Gauss point
+        % results using the TGN matrix.
+        % In structural analysis, derived variables are stresses.
+        function elemDerivedVarExtrap(~,mdl)
+            r = mdl.res;
+            
+            for i = 1:mdl.nel
+                TGN = mdl.elems(i).TGN;
+                nen = mdl.elems(i).shape.nen;
+                ngp = r.ngp(i);
+                
+                r.sxx_elemextrap(1:nen,i)  = TGN * r.sxx_gp(1:ngp,i);
+                r.syy_elemextrap(1:nen,i)  = TGN * r.syy_gp(1:ngp,i);
+                r.txy_elemextrap(1:nen,i)  = TGN * r.txy_gp(1:ngp,i);
+                r.s1_elemextrap(1:nen,i)   = TGN * r.s1_gp(1:ngp,i);
+                r.s2_elemextrap(1:nen,i)   = TGN * r.s2_gp(1:ngp,i);
+                r.tmax_elemextrap(1:nen,i) = TGN * r.tmax_gp(1:ngp,i);
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Smooth element node results of derived variables to global
+        % node results.
+        % The nodal global nodal results are computed by averaging values
+        % of element extrapolated nodal results of all elements adjacent
+        % to each node.
+        % In structural analysis, derived variables are stresses.
+        function nodeDerivedVarExtrap(~,mdl)
+            r = mdl.res;
+            
+            % Sum contributions of extrapolated node results from connected elements
+            for i = 1:mdl.nel
+                for j = 1:mdl.elems(i).shape.nen
+                    n = mdl.elems(i).shape.nodes(j).id;
+                    r.sxx_nodeextrap(n)  = r.sxx_nodeextrap(n)  + r.sxx_elemextrap(j,i);
+                    r.syy_nodeextrap(n)  = r.syy_nodeextrap(n)  + r.syy_elemextrap(j,i);
+                    r.txy_nodeextrap(n)  = r.txy_nodeextrap(n)  + r.txy_elemextrap(j,i);
+                    r.s1_nodeextrap(n)   = r.s1_nodeextrap(n)   + r.s1_elemextrap(j,i);
+                    r.s2_nodeextrap(n)   = r.s2_nodeextrap(n)   + r.s2_elemextrap(j,i);
+                    r.tmax_nodeextrap(n) = r.tmax_nodeextrap(n) + r.tmax_elemextrap(j,i);
+                end
+            end
+            
+            % Average nodal values by the number of connected elements
+            for i = 1:mdl.nnp
+                nadjelems = length(mdl.nodes(i).elems);
+                r.sxx_nodeextrap(i)  = r.sxx_nodeextrap(i)  / nadjelems;
+                r.syy_nodeextrap(i)  = r.syy_nodeextrap(i)  / nadjelems;
+                r.txy_nodeextrap(i)  = r.txy_nodeextrap(i)  / nadjelems;
+                r.s1_nodeextrap(i)   = r.s1_nodeextrap(i)   / nadjelems;
+                r.s2_nodeextrap(i)   = r.s2_nodeextrap(i)   / nadjelems;
+                r.tmax_nodeextrap(i) = r.tmax_nodeextrap(i) / nadjelems;
+            end
+        end
+    end
+    
+    %% Static methods
+    methods (Static)
+        %------------------------------------------------------------------
+        % Compute principal stress components and orientation for a given
+        % stress tensor.
+        % Input:
+        %  str:  stress tensor (sx, sy, txy) stored in a column vector.
+        % Output:
+        %  prc:    principal stress components (s1, s2, taumax) stored in
+        %          a column vector.
+        %  thetap: angle of normal of principal stress plane w.r.t x axis
+        %          (angle is returned in radians from 0 to 180 degrees).
+        function [prc,thetap] = princStress(str)
+            sx  = str(1);
+            sy  = str(2);
+            txy = str(3);
+            
+            center = (sx+sy)/2;
+            deltas = (sx-sy)/2;
+            radius = sqrt((deltas^2) + (txy*txy));
+            
+            prc = zeros(3,1);
+            prc(1) = center + radius;   % s1
+            prc(2) = center - radius;   % s2
+            prc(3) = radius;            % taumax
+            
+            if (abs(deltas) > 0.0)
+                thetap = 0.5 * atan2(txy,deltas);
+            elseif (txy > 0.0)
+                thetap = pi / 4.0;
+            elseif (txy < 0.0)
+                thetap = -pi / 4.0;
+            else
+                thetap = 0.0;
+            end
+            
+            if( thetap < 0.0 )
+                thetap = pi + thetap;
+            end
         end
     end
 end

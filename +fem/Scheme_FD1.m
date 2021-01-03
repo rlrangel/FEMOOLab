@@ -20,7 +20,7 @@
 %
 % Where:
 % {U},{Ut} -> Vector of state variables and their first time derivatives
-% [K],[C]  -> Stiffness and "velocity" matrices (constants)
+% [K],[C]  -> corresponding matrices (constants)
 % {F}      -> Forcing vector (currently assumed constant on time)
 %
 % Fully discretized system using first-order finite difference
@@ -52,7 +52,7 @@ classdef Scheme_FD1 < fem.Scheme
                 case 0.5
                     type = fem.Scheme.CRANK_NICOLSON;
             end
-            this = this@fem.Scheme(type);
+            this = this@fem.Scheme(type,1);
             this.theta = theta;
         end
     end
@@ -69,7 +69,7 @@ classdef Scheme_FD1 < fem.Scheme
         %  col:  number of columns for computed arrays (number of time steps)
         %  IC:   matrix of initial conditions (values of state variable only)
         %  K:    global stiffness matrix (free d.o.f.'s only)
-        %  C:    global "velocity" matrix (free d.o.f.'s only)
+        %  C:    global matrix related to 1st time derivative (free d.o.f.'s only)
         %  F:    global forcing vector (free d.o.f.'s only) - currently assumed constant!
         % Output:
         %  U:     matrix of state variable vector for each time step (free d.o.f.'s only)

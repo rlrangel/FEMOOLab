@@ -22,12 +22,16 @@
 classdef Anm < handle
     %% Constant values
     properties (Constant = true, Access = public)
+        % Types of physics
+        STRUCTURAL = int32(1);
+        THERMAL    = int32(2);
+        
         % Types of analysis model
-        PLANE_STRESS      = int32(1);
-        PLANE_STRAIN      = int32(2);
-        PLANE_CONDUCTION  = int32(3);
-        AXISYM_STRESS     = int32(4);
-        AXISYM_CONDUCTION = int32(5);
+        PLANE_STRESS      = int32(3);
+        PLANE_STRAIN      = int32(4);
+        PLANE_CONDUCTION  = int32(5);
+        AXISYM_STRESS     = int32(6);
+        AXISYM_CONDUCTION = int32(7);
     end
     
     %% Flags for types of responses
@@ -68,30 +72,28 @@ classdef Anm < handle
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
+        phys int32 = int32.empty;  % flag for type of physics
         type int32 = int32.empty;  % flag for type of analysis model
         ndof int32 = int32.empty;  % number of d.o.f.'s per node
+        ndvc int32 = int32.empty;  % number of derived variable components
+        gla int32  = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anm(type,ndof)
+        function this = Anm(phys,type,ndof,ndvc,gla)
+            this.phys = phys;
             this.type = type;
             this.ndof = ndof;
+            this.ndvc = ndvc;
+            this.gla  = gla;
         end
     end
     
     %% Abstract methods
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
-        %------------------------------------------------------------------
-        % Initialize global d.o.f. numbering matrix with ones and zeros,
-        % and count total number of equations of free and fixed  d.o.f.'s.
-        %  ID matrix initialization:
-        %  if ID(j,i) = 0, d.o.f. j of node i is free.
-        %  if ID(j,i) = 1, d.o.f. j of node i is fixed.
-        setupDOFNum(this,mdl);
-        
         %------------------------------------------------------------------
         % Assemble material constitutive matrix of a given element.
         C = Cmtx(this,elem);
@@ -102,47 +104,44 @@ classdef Anm < handle
         B = Bmtx(this,elem,GradNcar,r,s);
         
         %------------------------------------------------------------------
-        % Returns the ridigity coefficient at a given position in
+        % Return the ridigity coefficient at a given position in
         % parametric coordinates of an element.
         coeff = rigidityCoeff(this,elem,r,s);
         
         %------------------------------------------------------------------
-        % Returns the mass coefficient.
+        % Return the mass coefficient.
         coeff = massCoeff(this,elem);
         
         %------------------------------------------------------------------
-        % Assemble global stiffness matrix.
-        K = gblStiffMtx(this,mdl);
+        % Assemble global matrix related to 1st time derivative of d.o.f.'s.
+        C = gblRate1Mtx(this,mdl);
         
         %------------------------------------------------------------------
-        % Assemble global matrix related to first time derivative of state
-        % variables ("velocity" matrix).
-        C = gblVelMtx(this,mdl);
+        % Assemble global matrix related to 2nd time derivative of d.o.f.'s.
+        M = gblRate2Mtx(this,mdl);
         
         %------------------------------------------------------------------
-        % Assemble global matrix related to second time derivative of state
-        % variables ("acceleration" matrix).
-        M = gblAccelMtx(this,mdl);
+        % Compute derived variable components at a given point of an element.
+        dvar = pointDerivedVar(this,C,B,d);
         
         %------------------------------------------------------------------
-        % Assemble global initial conditions matrix.
-        IC = gblInitCondMtx(this,mdl);
+        % Compute derived variables and the principal values and directions
+        % at Gauss points of all elements.
+        gaussDerivedVar(this,mdl);
         
         %------------------------------------------------------------------
-        % Add point force contributions to global forcing vector.
-        F = addPointForce(this,mdl,F);
+        % Extrapolate Gauss point results of derived variables to element
+        % node results.
+        % The nodal results are computed by extrapolation of Gauss point
+        % results using the TGN matrix.
+        elemDerivedVarExtrap(this,mdl);
         
         %------------------------------------------------------------------
-        % Add equivalent nodal force contributions to global forcing vector.
-        F = addEquivForce(this,mdl,F);
-        
-        %------------------------------------------------------------------
-        % Add essencial boundary conditions (prescribed values of state
-        % variables) to global vector of state variables.
-        U = addEBC(this,mdl,U);
-        
-        %------------------------------------------------------------------
-        % Compute stress components (sx, sy, txy) at a given point of an element.
-        str = pointStress(this,C,B,d);
+        % Smooth element node results of derived variables to global
+        % node results.
+        % The nodal global nodal results are computed by averaging values
+        % of element extrapolated nodal results of all elements adjacent
+        % to each node.
+        nodeDerivedVarExtrap(this,mdl);
     end
 end

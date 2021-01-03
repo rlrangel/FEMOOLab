@@ -19,7 +19,7 @@
 %
 % Where:
 % {U},{Ut},{Utt} -> Vector of state variables and their 1st and 2nd time derivatives
-% [K],[C],[M]    -> Stiffness, "velocity", and "acceleration" matrices (constants)
+% [K],[C],[M]    -> corresponding matrices (constants)
 % {F}            -> Forcing vector (currently assumed constant on time)
 %
 % Fully discretized system using second-order central finite difference
@@ -38,7 +38,7 @@ classdef Scheme_FD2 < fem.Scheme
     methods
         %------------------------------------------------------------------
         function this = Scheme_FD2()
-            this = this@fem.Scheme(fem.Scheme.CENTRAL_DIFFERENCE);
+            this = this@fem.Scheme(fem.Scheme.CENTRAL_DIFFERENCE,2);
         end
     end
     
@@ -54,8 +54,8 @@ classdef Scheme_FD2 < fem.Scheme
         %  col:  number of columns for computed arrays (number of time steps + init. cond.)
         %  IC:   matrix of initial conditions
         %  K:    global stiffness matrix (free d.o.f.'s only)
-        %  C:    global "velocity" matrix (free d.o.f.'s only)
-        %  M:    global "acceleration" matrix (free d.o.f.'s only)
+        %  C:    global matrix related to 1st time derivative (free d.o.f.'s only)
+        %  M:    global matrix related to 2nd time derivative (free d.o.f.'s only)
         %  F:    global forcing vector (free d.o.f.'s only) - currently assumed constant!
         % Output:
         %  U:     matrix of state variable vector for each time step (free d.o.f.'s only)

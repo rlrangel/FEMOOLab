@@ -13,7 +13,7 @@ classdef Anm_PlaneConduction < fem.Anm
     methods
         %------------------------------------------------------------------
         function this = Anm_PlaneConduction()
-            this = this@fem.Anm(fem.Anm.PLANE_CONDUCTION,1);
+            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.PLANE_CONDUCTION,1,2,1);
             
             % Types of response
             this.TEMPERATURE = true;  % Temperature
@@ -27,33 +27,7 @@ classdef Anm_PlaneConduction < fem.Anm
     % Implementation of the abstract methods declared in super-class Anm
     methods
         %------------------------------------------------------------------
-        % Initialize global d.o.f. numbering matrix with ones and zeros,
-        % and count total number of equations of free and fixed  d.o.f.'s.
-        %  ID matrix initialization:
-        %  if ID(j,i) = 0, d.o.f. j of node i is free.
-        %  if ID(j,i) = 1, d.o.f. j of node i is fixed.
-        function setupDOFNum(this,mdl)
-            % Dimension global d.o.f. numbering matrix
-            mdl.ID = zeros(this.ndof,mdl.nnp);
-            
-            % Initialize number of fixed d.o.f.'s
-            mdl.neqc = 0;
-            
-            % Count number of fixed d.o.f.'s and setup ID matrix
-            for i = 1:mdl.nnp
-                % Check for fixed temperature
-                if (mdl.nodes(i).fixTemp)
-                    mdl.neqc = mdl.neqc + 1;
-                    mdl.ID(1,i) = 1;
-                end
-            end
-            
-            % Compute total number of free d.o.f.
-            mdl.neqf = mdl.neq - mdl.neqc;
-        end
-        
-        %------------------------------------------------------------------
-        % Assemble material constitutive matrix for a given element.
+        % Assemble material constitutive matrix of a given element.
         function C = Cmtx(~,elem)
             k = elem.mat.k;
             
@@ -67,7 +41,7 @@ classdef Anm_PlaneConduction < fem.Anm
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
         function B = Bmtx(this,elem,GradNcar,~,~)
-            B = zeros(2,elem.shape.nen*this.ndof);
+            B = zeros(this.ndvc,elem.shape.nen*this.ndof);
             
             for i = 1:elem.shape.nen
                 B(1,i) = GradNcar(1,i);
@@ -76,48 +50,26 @@ classdef Anm_PlaneConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Returns the ridigity coefficient at a given position in
+        % Return the ridigity coefficient at a given position in
         % parametric coordinates of an element.
         function coeff = rigidityCoeff(~,elem,~,~)
             coeff = elem.thk;
         end
         
         %------------------------------------------------------------------
-        % Returns the mass coefficient.
+        % Return the mass coefficient.
         function coeff = massCoeff(~,elem)
             coeff = elem.rho * elem.cp;
         end
         
         %------------------------------------------------------------------
-        % Assemble global stiffness matrix.
-        function K = gblStiffMtx(~,mdl)
-            % Initialize global stiffness matrix
-            K = zeros(mdl.neq,mdl.neq);
-            
-            % Get element stiffness matrices and assemble global matrix
-            for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
-                
-                % Conventional stiffness
-                ke = mdl.elems(i).stiffMtx();
-                
-                % Convection stiffness
-                if (~isempty(mdl.elems(i).lineConvec))
-                    ke = ke + mdl.elems(i).stiffConvecMtx();
-                end
-                
-                K(gle,gle) = K(gle,gle) + ke;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Assemble global matrix related to first time derivative of state
-        % variables (capacity matrix in thermal analysis).
-        function C = gblVelMtx(~,mdl)
+        % Assemble global matrix related to 1st time derivative of d.o.f.'s.
+        % Capacity matrix in thermal analysis.
+        function C = gblRate1Mtx(~,mdl)
             % Initialize global capacity matrix
             C = zeros(mdl.neq,mdl.neq);
             
-            % Get element capacity matrices and assemble global matrix
+            % Get element matrices and assemble global matrix
             for i = 1:mdl.nel
                 gle = mdl.elems(i).gle;
                 ce = mdl.elems(i).massMtx();
@@ -126,102 +78,103 @@ classdef Anm_PlaneConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Assemble global matrix related to second time derivative of state
-        % variables ("acceleration" matrix).
-        function M = gblAccelMtx(~,~)
+        % Assemble global matrix related to 2nd time derivative of d.o.f.'s.
+        function M = gblRate2Mtx(~,~)
             % NOT IMPLEMENTED
             M = zeros(mdl.neq,mdl.neq);
         end
         
         %------------------------------------------------------------------
-        % Assemble global initial conditions matrix.
-        function IC = gblInitCondMtx(~,mdl)
-            % Initialize initial conditions matrix
-            IC = zeros(mdl.neqf,1);
-            
-            for i = 1:mdl.nnp
-                id  = mdl.ID(1,i);
-                
-                % Apply initial temperature only to free d.o.f.'s
-                if (id <= mdl.neqf)
-                    % If initial temperature is not given, assume zero
-                    if (~isempty(mdl.nodes(i).iniTemp))
-                        IC(id,1) = mdl.nodes(i).iniTemp;
-                    else
-                        IC(id,1) = 0;
-                    end
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Add point force contributions to global forcing vector.
-        function F = addPointForce(~,mdl,F)
-            for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).flux))
-                    % Add load to global load vector
-                    id  = mdl.ID(1,i);
-                    F(id) = F(id) + mdl.nodes(i).flux;
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Add equivalent nodal force contributions to global forcing vector.
-        function F = addEquivForce(~,mdl,F)
-            for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
-                
-                % Get element equivalent nodal flux vectors and assemble global vector
-                if (~isempty(mdl.elems(i).lineFlux))
-                    fline = mdl.elems(i).edgeEquivForceVct(mdl.elems(i).lineFlux);
-                    F(gle) = F(gle) + fline;
-                end
-                
-                if (~isempty(mdl.elems(i).lineConvec))
-                    % New matrix whose last column is the product of
-                    % convection coeff. and ambient temperature
-                    % (columns 3 and 4 of property lineConvec)
-                    lineConvec = mdl.elems(i).lineConvec(:,1:3);
-                    lineConvec(:,3) = lineConvec(:,3) .* mdl.elems(i).lineConvec(:,4);
-                    
-                    fconv = mdl.elems(i).edgeEquivForceVct(lineConvec);
-                    F(gle) = F(gle) + fconv;
-                end
-                
-                if (~isempty(mdl.elems(i).domainFlux))
-                    fdom = mdl.elems(i).domainEquivForceVct(mdl.elems(i).domainFlux);
-                    F(gle) = F(gle) + fdom;
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Add essencial boundary conditions (prescribed values of state
-        % variables) to global vector of state variables.
-        % Avoid storing a prescribed value in a position of global vector
-        % of state variables that corresponds to a free d.o.f.
-        function U = addEBC(~,mdl,U)
-            for i = 1:mdl.nnp
-                if (~isempty(mdl.nodes(i).ebcTemp))
-                    % Add prescribed temperature to global vector
-                    id = mdl.ID(1,i);
-                    if (id > mdl.neqf)
-                        U(id) = mdl.nodes(i).ebcTemp;
-                    end
-                end
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Compute stress components (sx, sy, txy) at a given point of an element.
+        % Compute flux components (fx, fy) at a given point of an element.
         % Input:
-        %  C:   constituive matrix
-        %  B:   strain-displacement matrix
-        %  d:   generalized displacements for all d.o.f.'s of element
-        function str = pointStress(~,C,B,d)
-            % In plane stress, raw stress vector is the target one
-            str = -C * B * d;
+        %  C: constituive matrix
+        %  B: strain matrix
+        %  u: temperature results
+        function flx = pointDerivedVar(~,C,B,u)
+            flx = -C * B * u;
+        end
+        
+        %------------------------------------------------------------------
+        % Compute derived variables and the principal values and directions
+        % at Gauss points of all elements.
+        % In thermal analysis, derived variables are heat fluxes.
+        function gaussDerivedVar(~,mdl)
+            r = mdl.res;
+            
+            npts = 0;
+            for i = 1:mdl.nel
+                % Compute flux components and cartesian coord at Gauss points
+                U = r.U(mdl.elems(i).gle);
+                [ngp,flx,gpc] = mdl.elems(i).derivedVar(U);
+                
+                r.ngp(i) = ngp;
+                r.fxx_gp(1:ngp,i) = flx(1,1:ngp);
+                r.fyy_gp(1:ngp,i) = flx(2,1:ngp);
+                
+                for j = 1:ngp
+                    npts = npts + 1;
+                    
+                    % Store cartesian coordinates
+                    r.x_gp(npts) = gpc(1,j);
+                    r.y_gp(npts) = gpc(2,j);
+                    
+                    % Compute flux module
+                    r.fm_gp(j,i) = sqrt(flx(1,j)^2 + flx(2,j)^2);
+                    
+                    % Components of principal fluxes in X-Y directions
+                    r.fmx_gp(npts) = r.fxx_gp(j,i);
+                    r.fmy_gp(npts) = r.fyy_gp(j,i);
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Extrapolate Gauss point results of derived variables to element
+        % node results.
+        % The nodal results are computed by extrapolation of Gauss point
+        % results using the TGN matrix.
+        % In thermal analysis, derived variables are heat fluxes.
+        function elemDerivedVarExtrap(~,mdl)
+            r = mdl.res;
+            
+            for i = 1:mdl.nel
+                TGN = mdl.elems(i).TGN;
+                nen = mdl.elems(i).shape.nen;
+                ngp = r.ngp(i);
+                
+                r.fxx_elemextrap(1:nen,i) = TGN * r.fxx_gp(1:ngp,i);
+                r.fyy_elemextrap(1:nen,i) = TGN * r.fyy_gp(1:ngp,i);
+                r.fm_elemextrap(1:nen,i)  = TGN * r.fm_gp(1:ngp,i);
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Smooth element node results of derived variables to global
+        % node results.
+        % The nodal global nodal results are computed by averaging values
+        % of element extrapolated nodal results of all elements adjacent
+        % to each node.
+        % In thermal analysis, derived variables are heat fluxes.
+        function nodeDerivedVarExtrap(~,mdl)
+            r = mdl.res;
+            
+            % Sum contributions of extrapolated node results from connected elements
+            for i = 1:mdl.nel
+                for j = 1:mdl.elems(i).shape.nen
+                    n = mdl.elems(i).shape.nodes(j).id;
+                    r.fxx_nodeextrap(n) = r.fxx_nodeextrap(n) + r.fxx_elemextrap(j,i);
+                    r.fyy_nodeextrap(n) = r.fyy_nodeextrap(n) + r.fyy_elemextrap(j,i);
+                    r.fm_nodeextrap(n)  = r.fm_nodeextrap(n)  + r.fm_elemextrap(j,i);
+                end
+            end
+            
+            % Average nodal values by the number of connected elements
+            for i = 1:mdl.nnp
+                nadjelems = length(mdl.nodes(i).elems);
+                r.fxx_nodeextrap(i) = r.fxx_nodeextrap(i) / nadjelems;
+                r.fyy_nodeextrap(i) = r.fyy_nodeextrap(i) / nadjelems;
+                r.fm_nodeextrap(i)  = r.fm_nodeextrap(i)  / nadjelems;
+            end
         end
     end
 end

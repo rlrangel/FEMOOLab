@@ -78,14 +78,14 @@ classdef Simulation < handle
             this.anl.preProcess(this.mdl);
             
             % Perform analysis
-            if (this.anl.process(this))
+            if (this.anl.process(this.mdl))
                 % Pos-process
-                fprintf('Computing derived quantities...\n');
+                fprintf('Computing derived variables...\n');
                 this.anl.posProcess(this.mdl);
                 
                 % Plot results
                 fprintf('Plotting results...\n');
-                this.mdl.res.plot(this.mdl);
+                drv.Plot(this);
                 fprintf('Finished!\n');
             end
         end

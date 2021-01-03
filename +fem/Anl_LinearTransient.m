@@ -31,9 +31,8 @@ classdef Anl_LinearTransient < fem.Anl
         % Process linear-transient analysis by assembling global semi-
         % discretized system of ODEs on time and calculating state variables
         % and their time derivatives.
-        function status = process(this,sim)
+        function status = process(this,mdl)
             status = 1;
-            mdl = sim.mdl;
             res = mdl.res;
             
             % Check for any free d.o.f
@@ -45,14 +44,14 @@ classdef Anl_LinearTransient < fem.Anl
             
             % Assemble global matrices
             fprintf('Assembling global arrays...\n');
-            K = mdl.anm.gblStiffMtx(mdl); % stiffness matrix
-            C = mdl.anm.gblVelMtx(mdl);   % matrix related to 1st time derivative ("velocity" matrix)
-            M = mdl.anm.gblAccelMtx(mdl); % matrix related to 2nd time derivative ("acceleration" matrix)
+            K = mdl.gblStiffMtx();        % stiffness matrix
+            C = mdl.anm.gblRate1Mtx(mdl); % matrix related to 1st time derivatives
+            M = mdl.anm.gblRate2Mtx(mdl); % matrix related to 2nd time derivatives
             
             % Assemble global forcing vector (currently assumed constant on time)
             F = zeros(mdl.neq,1);
-            F = mdl.anm.addPointForce(mdl,F);
-            F = mdl.anm.addEquivForce(mdl,F);
+            F = mdl.addPointForce(F);
+            F = mdl.addEquivForce(F);
             
             % Extract free-free terms of global arrays
             K = K(1:mdl.neqf,1:mdl.neqf);
@@ -61,7 +60,7 @@ classdef Anl_LinearTransient < fem.Anl
             F = F(1:mdl.neqf,1);
             
             % Assemble global initial conditions matrix
-            IC = mdl.anm.gblInitCondMtx(mdl);
+            IC = mdl.gblInitCondMtx();
             
             % Prepare input of scheme method
             dt   = this.incr;
@@ -88,12 +87,20 @@ classdef Anl_LinearTransient < fem.Anl
             
             % Add prescribed values of fixed d.o.f.'s
             Uc = zeros(mdl.neq,1);
-            mdl.anm.addEBC(mdl,Uc);
+            mdl.addPrescDOF(Uc);
             res.U(row+1:end,:) = repmat(Uc(row+1:end),1,steps+1);
             
             % Zero out time derivatives of fixed d.o.f.'s
             res.Ut(row+1:end,:)  = zeros(mdl.neqc,steps+1);
             res.Utt(row+1:end,:) = zeros(mdl.neqc,steps+1);
+        end
+        
+        %------------------------------------------------------------------
+        % Pos-process results to compute derived variables.
+        function posProcess(~,~)
+            % Currently, no derived variables are calculated for
+            % transient analysis, only state variables results are provided
+            return;
         end
     end
 end

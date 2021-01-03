@@ -15,7 +15,7 @@ classdef Scheme_Newmark < fem.Scheme
     methods
         %------------------------------------------------------------------
         function this = Scheme_Newmark()
-            this = this@fem.Scheme(fem.Scheme.NEWMARK);
+            this = this@fem.Scheme(fem.Scheme.NEWMARK,2);
         end
     end
     
@@ -31,8 +31,8 @@ classdef Scheme_Newmark < fem.Scheme
         %  col:  number of columns for computed arrays (number of time steps + init. cond.)
         %  IC:   matrix of initial conditions
         %  K:    global stiffness matrix (free d.o.f.'s only)
-        %  C:    global "velocity" matrix (free d.o.f.'s only)
-        %  M:    global "acceleration" matrix (free d.o.f.'s only)
+        %  C:    global matrix related to 1st time derivative (free d.o.f.'s only)
+        %  M:    global matrix related to 2nd time derivative (free d.o.f.'s only)
         %  F:    global forcing vector (free d.o.f.'s only) - currently assumed constant!
         % Output:
         %  U:     matrix of state variable vector for each time step (free d.o.f.'s only)

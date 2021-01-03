@@ -11,11 +11,6 @@
 %% Class definition
 %
 classdef Scheme_RungeKutta < fem.Scheme
-    %% Public properties
-    properties (SetAccess = public, GetAccess = public)
-        order int32 = int32.empty;  % order of Runge-Kutta scheme
-    end
-    
     %% Constructor method
     methods
         %------------------------------------------------------------------
@@ -32,8 +27,7 @@ classdef Scheme_RungeKutta < fem.Scheme
                 case 5
                     type = fem.Scheme.RUNGE_KUTTA_5;
             end
-            this = this@fem.Scheme(type);
-            this.order = order;
+            this = this@fem.Scheme(type,order);
         end
     end
     
@@ -49,8 +43,8 @@ classdef Scheme_RungeKutta < fem.Scheme
         %  col:  number of columns for computed arrays (number of time steps + init. cond.)
         %  IC:   matrix of initial conditions
         %  K:    global stiffness matrix (free d.o.f.'s only)
-        %  C:    global "velocity" matrix (free d.o.f.'s only)
-        %  M:    global "acceleration" matrix (free d.o.f.'s only)
+        %  C:    global matrix related to 1st time derivative (free d.o.f.'s only)
+        %  M:    global matrix related to 2nd time derivative (free d.o.f.'s only)
         %  F:    global forcing vector (free d.o.f.'s only) - currently assumed constant!
         % Output:
         %  U:     matrix of state variable vector for each time step (free d.o.f.'s only)

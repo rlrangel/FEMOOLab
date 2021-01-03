@@ -41,8 +41,12 @@ classdef Anl < handle
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
         %------------------------------------------------------------------
-        % Process model data to compute results.
-        status = process(this,sim);
+        % Process model data to compute state variables results.
+        status = process(this,mdl);
+        
+        %------------------------------------------------------------------
+        % Pos-process results to compute derived variables.
+        posProcess(this,mdl);
     end
     
     %% Public methods
@@ -54,29 +58,13 @@ classdef Anl < handle
             mdl.neq = mdl.nnp * mdl.anm.ndof;
             
             % Initialize global d.o.f. numbering matrix
-            mdl.anm.setupDOFNum(mdl);
+            mdl.setupDOFNum();
             
             % Assemble global d.o.f. numbering matrix
             mdl.assembleDOFNum();
             
             % Assemble element gather vectors
             mdl.assembleGle();
-        end
-        
-        %------------------------------------------------------------------
-        % Pos-process results to compute derived quantitites.
-        function posProcess(this,mdl)
-            % Compute stresses at Gauss points and principal stresses
-            mdl.gaussStress(this);
-            
-            % Extrapolate Gauss point results to element node results
-            mdl.elemStressExtrap();
-            
-            % Smooth element node result to global node results
-            mdl.nodeStressExtrap();
-            
-            % Clear numerical garbage
-            mdl.res.clearSmallValues(mdl);
         end
     end
     
@@ -106,45 +94,6 @@ classdef Anl < handle
             
             % Reconstruct unknown vector U
             U = [ Uf; Uc ];
-        end
-        
-        %------------------------------------------------------------------
-        % Compute principal stress components and orientation for a given
-        % stress tensor.
-        % Input:
-        %  str:  stress tensor (sx, sy, txy) stored in a column vector.
-        % Output:
-        %  prc:    principal stress components (s1, s2, taumax) stored in
-        %          a column vector.
-        %  thetap: angle of normal of principal stress plane w.r.t x axis
-        %          (angle is returned in radians from 0 to 180 degrees).
-        function [prc,thetap] = princStress(str)
-            sx  = str(1);
-            sy  = str(2);
-            txy = str(3);
-            
-            center = (sx+sy)/2;
-            deltas = (sx-sy)/2;
-            radius = sqrt((deltas^2) + (txy*txy));
-            
-            prc = zeros(3,1);
-            prc(1) = center + radius;   % s1
-            prc(2) = center - radius;   % s2
-            prc(3) = radius;            % taumax
-            
-            if (abs(deltas) > 0.0)
-                thetap = 0.5 * atan2(txy,deltas);
-            elseif (txy > 0.0)
-                thetap = pi / 4.0;
-            elseif (txy < 0.0)
-                thetap = -pi / 4.0;
-            else
-                thetap = 0.0;
-            end
-            
-            if( thetap < 0.0 )
-                thetap = pi + thetap;
-            end
         end
     end
 end
