@@ -13,8 +13,9 @@
 %
 % * <anm_planestress.html Anm_PlaneStress: plane stress analysis model subclass>
 % * <anm_planestrain.html Anm_PlaneStrain: plane strain analysis model subclass>
-% * <anm_planeconduction.html Anm_PlaneConduction: plane heat conduction analysis model subclass>
 % * <anm_axisymstress.html Anm_AxisymStress: axisymmetric stress analysis model subclass>
+% * <anm_thickplate.html Anm_ThickPlate: thick plate analysis model subclass>
+% * <anm_planeconduction.html Anm_PlaneConduction: plane heat conduction analysis model subclass>
 % * <anm_axisymconduction.html Anm_AxisymConduction: axisymmetric heat conduction analysis model subclass>
 %
 %% Class definition
@@ -27,11 +28,12 @@ classdef Anm < handle
         THERMAL    = int32(2);
         
         % Types of analysis model
-        PLANE_STRESS      = int32(3);
-        PLANE_STRAIN      = int32(4);
+        PLANE_STRESS      = int32(1);
+        PLANE_STRAIN      = int32(2);
+        AXISYM_STRESS     = int32(3);
+        THICK_PLATE       = int32(4);
         PLANE_CONDUCTION  = int32(5);
-        AXISYM_STRESS     = int32(6);
-        AXISYM_CONDUCTION = int32(7);
+        AXISYM_CONDUCTION = int32(6);
     end
     
     %% Flags for types of responses
@@ -53,14 +55,14 @@ classdef Anm < handle
         SIGMA_2     = logical(false);    % Principal stress 2
         SIGMA_3     = logical(false);    % Principal stress 3
         TAU_MAX     = logical(false);    % Maximum shear stress
+        SHEAR_XZ    = logical(false);    % Shear force XZ
+        SHEAR_YZ    = logical(false);    % Shear force YZ
         MOMENT_XX   = logical(false);    % Moment XX
         MOMENT_YY   = logical(false);    % Moment YY
         MOMENT_XY   = logical(false);    % Torsion moment XY
-        SHEAR_XZ    = logical(false);    % Shear force XZ
-        SHEAR_YZ    = logical(false);    % Shear force YZ
         MOMENT_1    = logical(false);    % Principal moment 1
         MOMENT_2    = logical(false);    % Principal moment 2
-        TORSION_MAX = logical(false);    % Maximum torsion
+        TORSION_MAX = logical(false);    % Maximum torsion moment
         
         % Thermal properties
         TEMPERATURE = logical(false);    % Temperature

@@ -48,14 +48,14 @@ opt.s3     = true;   % Plot contour of principal stresses 3
 opt.taumax = true;   % Plot contour of maximum shear stresses
 
 % Element internal forces result:
-opt.mxx    = true;   % Plot contour of moment about X direction (NOT IMPLEMENTED)
-opt.myy    = true;   % Plot contour of moment about Y direction (NOT IMPLEMENTED)
-opt.mxy    = true;   % Plot contour of torsion moment (NOT IMPLEMENTED)
-opt.qxz    = true;   % Plot contour of XZ shear force (NOT IMPLEMENTED)
-opt.qyz    = true;   % Plot contour of YZ shear force (NOT IMPLEMENTED)
-opt.m1     = true;   % Plot contour of principal moment 1 (NOT IMPLEMENTED)
-opt.m2     = true;   % Plot contour of principal moment 2 (NOT IMPLEMENTED)
-opt.tormax = true;   % Plot contour of maximum torsion (NOT IMPLEMENTED)
+opt.qxz    = true;   % Plot contour of XZ shear force
+opt.qyz    = true;   % Plot contour of YZ shear force 
+opt.mxx    = true;   % Plot contour of moment about X direction
+opt.myy    = true;   % Plot contour of moment about Y direction
+opt.mxy    = true;   % Plot contour of torsion moment
+opt.m1     = true;   % Plot contour of principal moment 1
+opt.m2     = true;   % Plot contour of principal moment 2
+opt.tormax = true;   % Plot contour of maximum torsion
 
 % Element heat flux result:
 opt.fxx    = true;   % Plot contour of heat fluxes in X direction

@@ -134,17 +134,23 @@ classdef Read < handle
             elseif (strcmp(string,'''PLANE_STRAIN_TRANSIENT''') || strcmp(string,'''plane_strain_transient'''))
                 sim.mdl.anm = fem.Anm_PlaneStrain();
                 sim.anl = fem.Anl_LinearTransient();
-            elseif (strcmp(string,'''PLANE_CONDUCTION''') || strcmp(string,'''plane_conduction'''))
-                sim.mdl.anm = fem.Anm_PlaneConduction();
-                sim.anl = fem.Anl_LinearStatic();
-            elseif (strcmp(string,'''PLANE_CONDUCTION_TRANSIENT''') || strcmp(string,'''plane_conduction_transient'''))
-                sim.mdl.anm = fem.Anm_PlaneConduction();
-                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''AXISYM_STRESS''') || strcmp(string,'''axisym_stress'''))
                 sim.mdl.anm = fem.Anm_AxisymStress();
                 sim.anl = fem.Anl_LinearStatic();
             elseif (strcmp(string,'''AXISYM_STRESS_TRANSIENT''') || strcmp(string,'''axisym_stress_transient'''))
                 sim.mdl.anm = fem.Anm_AxisymStress();
+                sim.anl = fem.Anl_LinearTransient();
+            elseif (strcmp(string,'''THICK_PLATE''') || strcmp(string,'''thick_plate'''))
+                sim.mdl.anm = fem.Anm_ThickPlate();
+                sim.anl = fem.Anl_LinearStatic();
+            elseif (strcmp(string,'''THICK_PLATE_TRANSIENT''') || strcmp(string,'''thick_plate_transient'''))
+                sim.mdl.anm = fem.Anm_ThickPlate();
+                sim.anl = fem.Anl_LinearTransient();
+            elseif (strcmp(string,'''PLANE_CONDUCTION''') || strcmp(string,'''plane_conduction'''))
+                sim.mdl.anm = fem.Anm_PlaneConduction();
+                sim.anl = fem.Anl_LinearStatic();
+            elseif (strcmp(string,'''PLANE_CONDUCTION_TRANSIENT''') || strcmp(string,'''plane_conduction_transient'''))
+                sim.mdl.anm = fem.Anm_PlaneConduction();
                 sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''AXISYM_CONDUCTION''') || strcmp(string,'''axisym_conduction'''))
                 sim.mdl.anm = fem.Anm_AxisymConduction();
@@ -1367,6 +1373,18 @@ classdef Read < handle
                     mdl.res.s1     = opt.s1;
                     mdl.res.s2     = opt.s2;
                     mdl.res.taumax = opt.taumax;
+                elseif (mdl.anm.type == fem.Anm.THICK_PLATE)
+                    mdl.res.dz     = opt.dz;
+                    mdl.res.rx     = opt.rx;
+                    mdl.res.ry     = opt.ry;
+                    mdl.res.qxz    = opt.qxz;
+                    mdl.res.qyz    = opt.qyz;
+                    mdl.res.mxx    = opt.mxx;
+                    mdl.res.myy    = opt.myy;
+                    mdl.res.mxy    = opt.mxy;
+                    mdl.res.m1     = opt.m1;
+                    mdl.res.m2     = opt.m2;
+                    mdl.res.tormax = opt.tormax;
                 end
             
             % Thermal analysis
