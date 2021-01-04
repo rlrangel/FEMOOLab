@@ -87,7 +87,7 @@ classdef Anl_LinearTransient < fem.Anl
             
             % Add prescribed values of fixed d.o.f.'s
             Uc = zeros(mdl.neq,1);
-            mdl.addPrescDOF(Uc);
+            Uc = mdl.addPrescDOF(Uc);
             res.U(row+1:end,:) = repmat(Uc(row+1:end),1,steps+1);
             
             % Zero out time derivatives of fixed d.o.f.'s

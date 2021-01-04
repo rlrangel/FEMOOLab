@@ -130,7 +130,7 @@ classdef Plot < handle
                 if (sim.anl.type == fem.Anl.LINEAR_STATIC)
                     this.plotStatic(sim.mdl);
                 elseif (sim.anl.type == fem.Anl.LINEAR_TRANSIENT)
-                    
+                    this.plotTransient(sim.mdl);
                 end
             end
         end
@@ -475,6 +475,79 @@ classdef Plot < handle
         end
         
         %------------------------------------------------------------------
+        % Plot transient analysis results.
+        function plotTransient(this,mdl)
+            % Display mesh labels
+            if (mdl.res.eid || mdl.res.nid || mdl.res.gid)
+                this.fig_lbl = figure;
+                ax = gca;
+                movegui(ax,'center')
+                set(ax,'DataAspectRatio',[1 1 1]);
+                title('Mesh labels');
+                axis([this.plot_xmin this.plot_xmax this.plot_ymin this.plot_ymax]);
+                hold on;
+                this.plotMesh(mdl);
+                this.plotMeshLabels(mdl);
+            end
+            
+            % PLOT TEMPERATURE ANIMATION (NEED TO FINISH IT - IT IS VERY SLOW !!!)
+            if (mdl.res.temp)
+                if (isempty(mdl.res.maxNen))
+                    maxNen = mdl.maxNumElemNodes();
+                else
+                    maxNen = mdl.res.maxNen;
+                end
+                XX = zeros(1,maxNen+1);
+                YY = zeros(1,maxNen+1);
+                ZZ = zeros(1,maxNen+1);
+                
+                % Get max and min temperature values
+                temp_min = min(min(mdl.res.U));
+                temp_max = max(max(mdl.res.U));
+                
+                % Create figure object for temperature plot movie
+                this.fig_temp = figure;
+                ax = gca;
+                movegui(ax,'center')
+                set(ax,'DataAspectRatio',[1 1 1],'Colormap',jet);
+                axis([this.plot_xmin this.plot_xmax this.plot_ymin this.plot_ymax]);
+                caxis([temp_min temp_max]);
+                colorbar;
+                ax.NextPlot = 'replaceChildren';
+                
+                % Create frames
+                loops = size(mdl.res.U,2);
+                M(loops) = struct('cdata',[],'colormap',[]);
+                
+                %this.fig_temp.Visible = 'off';
+                for i = 1:loops
+                    title_text = sprintf('Temperature field, time: %f',mdl.res.times(i));
+                    title(title_text);
+                    contour = mdl.res.U(mdl.ID(1,:),i);
+                    for j = 1:mdl.nel
+                        nen = mdl.elems(j).shape.nen;
+                        for k = 1:nen
+                            node  = mdl.elems(j).shape.ccwNodeIds(k);
+                            XX(k) = this.x_coord(node);
+                            YY(k) = this.y_coord(node);
+                            ZZ(k) = contour(node);
+                        end
+                        node = mdl.elems(j).shape.ccwNodeIds(1);
+                        XX(nen+1) = this.x_coord(node);
+                        YY(nen+1) = this.y_coord(node);
+                        ZZ(nen+1) = contour(node);
+                        patch(XX,YY,ZZ);
+                    end
+                    drawnow;
+                    M(i) = getframe;
+                end
+                %this.fig_temp.Visible = 'on';
+                
+                movie(M,10);
+            end
+        end
+        
+        %------------------------------------------------------------------
         % Create figures for plotting 2D inplane static analysis results.
         function createStaticFigsInplane(this,mdl)
             % Mesh labels
@@ -507,7 +580,7 @@ classdef Plot < handle
                     this.deform_fac = mdl.res.scl;
                 end
                 
-                % Create figure for mesh and deformed mesh plot and get its handle
+                % Create figure for mesh and deformed mesh plot
                 this.fig_deform = figure;
                 movegui(gca,'center')
                 set(gca,'DataAspectRatio',[1 1 1]);
@@ -659,7 +732,7 @@ classdef Plot < handle
                 temp_min = min(temperature);
                 temp_max = max(temperature);
                 
-                % Create figure for temperature plot and get its handle.
+                % Create figure for temperature plot
                 this.fig_temp = figure;
                 movegui(gca,'center')
                 set(gca,'DataAspectRatio',[1 1 1],'Colormap',jet);
@@ -759,7 +832,7 @@ classdef Plot < handle
                     this.deform_fac = mdl.res.scl;
                 end
                 
-                % Create figure for mesh and deformed mesh plot and get its handle
+                % Create figure for mesh and deformed mesh plot
                 this.fig_deform = figure;
                 movegui(gca,'center')
                 set(gca,'DataAspectRatio',[1 1 1]);

@@ -100,7 +100,7 @@ classdef Scheme_FD1 < fem.Scheme
             times = zeros(1,col);
             
             % Loop through all steps
-            for i = dt:dt:endt
+            for i = dt:dt:double(endt)
                 steps = steps + 1;
                 times(steps+1) = i;
                 
@@ -108,7 +108,7 @@ classdef Scheme_FD1 < fem.Scheme
                 U(:,steps+1) = X * (Y * U(:,steps) + dt * Z);
                 
                 % Compute rate of change at new time step
-                Ut(:,steps+1) = Z \ (F - K * U(:,steps+1));
+                Ut(:,steps+1) = C \ (F - K * U(:,steps+1));
             end
             
             % Clean unused steps

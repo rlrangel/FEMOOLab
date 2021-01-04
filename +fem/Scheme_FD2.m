@@ -87,7 +87,7 @@ classdef Scheme_FD2 < fem.Scheme
             times = zeros(1,col);
             
             % Loop through all steps
-            for i = dt:dt:endt
+            for i = dt:dt:double(endt)
                 steps = steps + 1;
                 times(steps+1) = i;
                 

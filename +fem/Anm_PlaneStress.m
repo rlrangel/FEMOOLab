@@ -67,13 +67,13 @@ classdef Anm_PlaneStress < fem.Anm
         %------------------------------------------------------------------
         % Return the mass coefficient.
         function coeff = massCoeff(~,elem)
-            coeff = elem.rho;
+            coeff = elem.mat.rho;
         end
         
         %------------------------------------------------------------------
         % Assemble global matrix related to 1st time derivative of d.o.f.'s.
         % Damping matrix in structural analysis.
-        function C = gblRate1Mtx(~,~)
+        function C = gblRate1Mtx(~,mdl)
             % NOT IMPLEMENTED
             C = zeros(mdl.neq,mdl.neq);
         end

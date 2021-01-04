@@ -165,30 +165,30 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = analysisAlgorithm(~,fid,mdl)
+        function status = analysisAlgorithm(~,fid,sim)
             status = 1;
-            if (isempty(mdl.anl))
+            if (isempty(sim.anl))
                 fprintf('Analysis type must be provided before solution algorithm!\n');
                 status = 0;
                 return;
-            elseif (mdl.anl.type == fem.Anl.LINEAR_STATIC)
+            elseif (sim.anl.type == fem.Anl.LINEAR_STATIC)
                 return;
             end
             
             string = deblank(fgetl(fid));
             
             if (strcmp(string,'''FOWARD_EULER''') || strcmp(string,'''foward_euler'''))
-                mdl.anl.scheme = fem.Scheme_FD1(1.0);
+                sim.anl.scheme = fem.Scheme_FD1(1.0);
             elseif (strcmp(string,'''BACKWARD_EULER''') || strcmp(string,'''backward_euler'''))
-                mdl.anl.scheme = fem.Scheme_FD1(0.0);
+                sim.anl.scheme = fem.Scheme_FD1(0.0);
             elseif (strcmp(string,'''CRANK_NICOLSON''') || strcmp(string,'''crank_nicolson'''))
-                mdl.anl.scheme = fem.Scheme_FD1(0.5);
+                sim.anl.scheme = fem.Scheme_FD1(0.5);
             elseif (strcmp(string,'''CENTRAL_DIFFERENCE''') || strcmp(string,'''central_difference'''))
-                mdl.anl.scheme = fem.Scheme_FD2();
+                sim.anl.scheme = fem.Scheme_FD2();
             elseif (strcmp(string,'''RUNGE_KUTTA_4''') || strcmp(string,'''runge_kutta_4'''))
-                mdl.anl.scheme = fem.Scheme_RungeKutta(4);
+                sim.anl.scheme = fem.Scheme_RungeKutta(4);
             elseif (strcmp(string,'''NEWMARK''') || strcmp(string,'''newmark'''))
-                mdl.anl.scheme = fem.Scheme_Newmark();
+                sim.anl.scheme = fem.Scheme_Newmark();
             else
                 fprintf('Invalid input data: solution algorithm!\n');
                 status = 0;
@@ -196,14 +196,14 @@ classdef Read < handle
             end
             
             % Check if selected algorithm is valid for selected analysis model
-            if (mdl.anm.phys == fem.Anm.STRUCTURAL)
-                if (mdl.anl.scheme.order == 1)
+            if (sim.mdl.anm.phys == fem.Anm.STRUCTURAL)
+                if (sim.anl.scheme.order == 1)
                     fprintf('Invalid solution algorithm: first-order integration schemes are not valid for structural problems!\n');
                     status = 0;
                     return;
                 end
-            elseif (mdl.anm.phys == fem.Anm.THERMAL)
-                if (mdl.anl.scheme.order > 1)
+            elseif (sim.mdl.anm.phys == fem.Anm.THERMAL)
+                if (sim.anl.scheme.order > 1)
                     fprintf('Invalid solution algorithm: second or higher order integration schemes are not valid for thermal problems!\n');
                     status = 0;
                     return;
@@ -212,13 +212,13 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = analysisMaxSteps(this,fid,mdl)
+        function status = analysisMaxSteps(this,fid,sim)
             status = 1;
-            if (isempty(mdl.anl))
+            if (isempty(sim.anl))
                 fprintf('Analysis type must be provided before number of steps!\n');
                 status = 0;
                 return;
-            elseif (mdl.anl.type == fem.Anl.LINEAR_STATIC)
+            elseif (sim.anl.type == fem.Anl.LINEAR_STATIC)
                 return;
             end
             
@@ -229,17 +229,17 @@ classdef Read < handle
                 return;
             end
             
-            mdl.anl.max_step = n;
+            sim.anl.max_step = n;
         end
         
         %------------------------------------------------------------------
-        function status = analysisStepIncrement(~,fid,mdl)
+        function status = analysisStepIncrement(~,fid,sim)
             status = 1;
-            if (isempty(mdl.anl))
+            if (isempty(sim.anl))
                 fprintf('Analysis type must be provided before step increment!\n');
                 status = 0;
                 return;
-            elseif (mdl.anl.type == fem.Anl.LINEAR_STATIC)
+            elseif (sim.anl.type == fem.Anl.LINEAR_STATIC)
                 return;
             end
             
@@ -256,7 +256,7 @@ classdef Read < handle
                 return;
             end
             
-            mdl.anl.incr = incr;
+            sim.anl.incr = incr;
         end
         
         %------------------------------------------------------------------

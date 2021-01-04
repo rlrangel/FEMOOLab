@@ -59,7 +59,7 @@ classdef Anm_PlaneConduction < fem.Anm
         %------------------------------------------------------------------
         % Return the mass coefficient.
         function coeff = massCoeff(~,elem)
-            coeff = elem.rho * elem.cp;
+            coeff = elem.mat.rho * elem.mat.cp;
         end
         
         %------------------------------------------------------------------
@@ -79,7 +79,7 @@ classdef Anm_PlaneConduction < fem.Anm
         
         %------------------------------------------------------------------
         % Assemble global matrix related to 2nd time derivative of d.o.f.'s.
-        function M = gblRate2Mtx(~,~)
+        function M = gblRate2Mtx(~,mdl)
             % NOT IMPLEMENTED
             M = zeros(mdl.neq,mdl.neq);
         end
