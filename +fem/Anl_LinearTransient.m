@@ -12,8 +12,8 @@ classdef Anl_LinearTransient < fem.Anl
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         scheme = [];                     % object of Scheme class
-        incr     double = double.empty;  % increment of time in each step
         max_step int32  = int32.empty;   % maximum number of steps
+        incr     double = double.empty;  % increment of time in each step
     end
     
     %% Constructor method
@@ -53,24 +53,31 @@ classdef Anl_LinearTransient < fem.Anl
             F = mdl.addPointForce(F);
             F = mdl.addEquivForce(F);
             
-            % Extract free-free terms of global arrays
-            K = K(1:mdl.neqf,1:mdl.neqf);
-            C = C(1:mdl.neqf,1:mdl.neqf);
-            M = M(1:mdl.neqf,1:mdl.neqf);
-            F = F(1:mdl.neqf,1);
+            % Assemble vector of fixed d.o.f.'s
+            Uc  = zeros(mdl.neq,1);
+            Uc  = mdl.addPrescDOF(Uc);
+            Uc  = Uc(mdl.neqf+1:end);
+            
+            % Extract free d.o.f.'s terms of global arrays
+            Kff = K(1:mdl.neqf,1:mdl.neqf);
+            Cff = C(1:mdl.neqf,1:mdl.neqf);
+            Mff = M(1:mdl.neqf,1:mdl.neqf);
+            Ff  = F(1:mdl.neqf,1);
+            
+            % Static condensation of forcing vector
+            Kfc = K(1:mdl.neqf,mdl.neqf+1:end);
+            Ff  = Ff - Kfc * Uc;
             
             % Assemble global initial conditions matrix
             IC = mdl.gblInitCondMtx();
             
-            % Prepare input of scheme method
+            % Solve transient problem
+            fprintf('Solving system of differential equations...\n');
             dt   = this.incr;
             endt = this.incr * this.max_step;
             row  = mdl.neqf;
             col  = this.max_step+1;
-            
-            % Solve transient problem
-            fprintf('Solving system of differential equations...\n');
-            [U,Ut,Utt,steps,times] = this.scheme.execute(dt,endt,row,col,IC,K,C,M,F);
+            [U,Ut,Utt,steps,times] = this.scheme.execute(dt,endt,row,col,IC,Kff,Cff,Mff,Ff);
             fprintf('Analysis completed!\n');
             
             % Initialize results vectors of state variables and time derivatives
@@ -86,9 +93,7 @@ classdef Anl_LinearTransient < fem.Anl
             res.Utt(1:row,:) = Utt;
             
             % Add prescribed values of fixed d.o.f.'s
-            Uc = zeros(mdl.neq,1);
-            Uc = mdl.addPrescDOF(Uc);
-            res.U(row+1:end,:) = repmat(Uc(row+1:end),1,steps+1);
+            res.U(row+1:end,:) = repmat(Uc,1,steps+1);
             
             % Zero out time derivatives of fixed d.o.f.'s
             res.Ut(row+1:end,:)  = zeros(mdl.neqc,steps+1);

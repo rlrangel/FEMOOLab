@@ -54,21 +54,26 @@ classdef Result < handle
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        maxGPts int32  = int32.empty;  % max. number of Gauss points in all elements
-        maxNen  int32  = int32.empty;  % max. number of nodal points in all elements
+        % Curve results options
+        curve_temp  int32 = int32.empty; % vector of node IDs to plot transient temperature response
+        output_freq = 1;                 % output frequency for plotting transient response
         
         % Results from equilibrium system
-        U     double = double.empty;   % global vector of state variables
-        Ut    double = double.empty;   % global vector of state variable 1st time derivatives
-        Utt   double = double.empty;   % global vector of state variable 2nd time derivatives
-        steps int32  = int32.empty;    % number of performed steps
-        times double = double.empty;   % vector of time values of each step
+        U     double = double.empty;  % global vector of state variables
+        Ut    double = double.empty;  % global vector of state variable 1st time derivatives
+        Utt   double = double.empty;  % global vector of state variable 2nd time derivatives
+        steps int32  = int32.empty;   % number of performed steps
+        times double = double.empty;  % vector of time values of each step
         
-        % General Gauss point results
-        ngp                   int32  = int32.empty;  % vector of number of element gauss pts
-        x_gp                  double = double.empty; % vector of gauss point x coordinates
-        y_gp                  double = double.empty; % vector of gauss point y coordinates
-        z_gp                  double = double.empty; % vector of gauss point Z coordinates
+        % Reference values to dimension pos-process arrays
+        maxGPts int32 = int32.empty;  % max. number of Gauss points in all elements
+        maxNen  int32 = int32.empty;  % max. number of nodal points in all elements
+        
+        % General Gauss point data
+        ngp  int32  = int32.empty;  % vector of number of element gauss pts
+        x_gp double = double.empty; % vector of gauss point x coordinates
+        y_gp double = double.empty; % vector of gauss point y coordinates
+        z_gp double = double.empty; % vector of gauss point Z coordinates
         
         % Structural analysis stresses at Gauss points
         sxx_gp                double = double.empty; % sigma x gauss points stress array

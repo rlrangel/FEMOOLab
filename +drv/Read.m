@@ -49,10 +49,12 @@ classdef Read < handle
                         status = this.analysisModel(fid,sim);
                     case '%HEADER.ANALYSIS.ALGORITHM' % This is being used for time integration scheme
                         status = this.analysisAlgorithm(fid,sim);
-                    case '%HEADER.ANALYSIS.MAXIMUM.STEPS'
-                        status = this.analysisMaxSteps(fid,sim);
                     case '%HEADER.ANALYSIS.TIME.STEPS'
                         status = this.analysisStepIncrement(fid,sim);
+                    case '%HEADER.ANALYSIS.MAXIMUM.STEPS'
+                        status = this.analysisMaxSteps(fid,sim);
+                    case '%HEADER.ANALYSIS.PRINT.STEPS' % This is working for any output
+                        status = this.analysisOutputSteps(fid,mdl);
                     case '%NODE.COORD'
                         status = this.nodeCoord(fid,mdl);
                     case '%NODE.SUPPORT'
@@ -101,6 +103,8 @@ classdef Read < handle
                         status = this.ConvecLineUnif(fid,mdl);
                     case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM' % This is being used as DOMAIN heat flux
                         status = this.fluxDomainUnif(fid,mdl);
+                    case '%RESULT.CASE.STEP.NODAL.TEMPERATURE' % This is not on NF documentation
+                        status = this.resultCurveNodalTemperature(fid,mdl);
                 end
                 if (strcmp(string,'%END'))
                     break;
@@ -212,27 +216,6 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
-        function status = analysisMaxSteps(this,fid,sim)
-            status = 1;
-            if (isempty(sim.anl))
-                fprintf('Analysis type must be provided before number of steps!\n');
-                status = 0;
-                return;
-            elseif (sim.anl.type == fem.Anl.LINEAR_STATIC)
-                return;
-            end
-            
-            % Total number of steps
-            n = fscanf(fid,'%d',1);
-            if (~this.chkInt(n,inf,'number of steps'))
-                status = 0;
-                return;
-            end
-            
-            sim.anl.max_step = n;
-        end
-        
-        %------------------------------------------------------------------
         function status = analysisStepIncrement(~,fid,sim)
             status = 1;
             if (isempty(sim.anl))
@@ -257,6 +240,40 @@ classdef Read < handle
             end
             
             sim.anl.incr = incr;
+        end
+        
+        %------------------------------------------------------------------
+        function status = analysisMaxSteps(this,fid,sim)
+            status = 1;
+            if (isempty(sim.anl))
+                fprintf('Analysis type must be provided before number of steps!\n');
+                status = 0;
+                return;
+            elseif (sim.anl.type == fem.Anl.LINEAR_STATIC)
+                return;
+            end
+            
+            % Total number of steps
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,inf,'number of steps'))
+                status = 0;
+                return;
+            end
+            
+            sim.anl.max_step = n;
+        end
+        
+        %------------------------------------------------------------------
+        function status = analysisOutputSteps(this,fid,mdl)
+            status = 1;
+            
+            % Number of steps for output
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,inf,'output steps number'))
+                status = 0;
+                return;
+            end
+            mdl.res.output_freq = n;
         end
         
         %------------------------------------------------------------------
@@ -1347,6 +1364,36 @@ classdef Read < handle
             end
         end
         
+        %--------------------------------------------------------------------------
+        function status = resultCurveNodalTemperature(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.nodes))
+                fprintf('Node coordinates must be provided before nodal curve results!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of nodal temperature results
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,mdl.nnp,'number of nodal temperature curve results'))
+                status = 0;
+                return;
+            end
+            mdl.res.curve_temp = zeros(n,1);
+            
+            for i = 1:n
+                % Node ID
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,mdl.nnp,'node ID for nodal temperature curve results'))
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.res.curve_temp(i) = id;
+            end
+        end
+        
         %% Method for reading plotting options (temporary)
         %------------------------------------------------------------------
         function setResultPlottingOpt(~,mdl,opt)
@@ -1413,9 +1460,9 @@ classdef Read < handle
                 fprintf('Analysis type not provided!\n');
                 return;
             elseif (sim.anl.type == fem.Anl.LINEAR_TRANSIENT)
-                if (isempty(sim.anl.scheme) ||...
-                    isempty(sim.anl.incr)   ||...
-                    isempty(sim.anl.max_step))
+                if (isempty(sim.anl.scheme)   ||...
+                    isempty(sim.anl.max_step) ||...
+                    isempty(sim.anl.incr))
                     fprintf('Missing analysis parameters: time integration scheme, step number, or increment!\n');
                     return;
                 end

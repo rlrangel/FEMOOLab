@@ -6,6 +6,10 @@
 % A plotting object is responsible for displaying the analysis results in
 % Matlab figure windows.
 %
+% This class currently deals with the plotting of all types of analysis
+% models. However, for the sake of oraganization, it should become a super-
+% class with a plotting sub-class for each analysis model.
+%
 classdef Plot < handle
     %% Constant values for contour types
     properties (Constant = true, Access = public)
@@ -130,7 +134,8 @@ classdef Plot < handle
                 if (sim.anl.type == fem.Anl.LINEAR_STATIC)
                     this.plotStatic(sim.mdl);
                 elseif (sim.anl.type == fem.Anl.LINEAR_TRANSIENT)
-                    this.plotTransient(sim.mdl);
+                    this.plotTransientCurves(sim.mdl);
+                    this.plotTransientContours(sim.mdl);
                 end
             end
         end
@@ -475,8 +480,8 @@ classdef Plot < handle
         end
         
         %------------------------------------------------------------------
-        % Plot transient analysis results.
-        function plotTransient(this,mdl)
+        % Plot transient analysis contours.
+        function plotTransientContours(this,mdl)
             % Display mesh labels
             if (mdl.res.eid || mdl.res.nid || mdl.res.gid)
                 this.fig_lbl = figure;
@@ -490,16 +495,36 @@ classdef Plot < handle
                 this.plotMeshLabels(mdl);
             end
             
-            % PLOT TEMPERATURE ANIMATION (NEED TO FINISH IT - IT IS VERY SLOW !!!)
+            % PLOT TEMPERATURE ANIMATION (NEED TO IMPROVE IT - IT IS VERY SLOW !!!)
             if (mdl.res.temp)
+                % Number of frames
+                steps = 1:mdl.res.steps;
+                steps = steps(rem(steps,mdl.res.output_freq)==0);
+                loops = length(steps);
+                
+                % Create arrays with data to be ploted in all steps
                 if (isempty(mdl.res.maxNen))
                     maxNen = mdl.maxNumElemNodes();
                 else
                     maxNen = mdl.res.maxNen;
                 end
-                XX = zeros(1,maxNen+1);
-                YY = zeros(1,maxNen+1);
-                ZZ = zeros(1,maxNen+1);
+                XX = zeros(mdl.nel,maxNen+1,loops);
+                YY = zeros(mdl.nel,maxNen+1,loops);
+                ZZ = zeros(mdl.nel,maxNen+1,loops);
+                contour = mdl.res.U(mdl.ID(1,:),steps);
+                for i = 1:mdl.nel
+                    nen = mdl.elems(i).shape.nen;
+                    for j = 1:nen
+                        node= mdl.elems(i).shape.ccwNodeIds(j);
+                        XX(i,j,:) = this.x_coord(node);
+                        YY(i,j,:) = this.y_coord(node);
+                        ZZ(i,j,:) = contour(node,:);
+                    end
+                    node = mdl.elems(i).shape.ccwNodeIds(1);
+                    XX(i,nen+1,:) = this.x_coord(node);
+                    YY(i,nen+1,:) = this.y_coord(node);
+                    ZZ(i,nen+1,:) = contour(node,:);
+                end
                 
                 % Get max and min temperature values
                 temp_min = min(min(mdl.res.U));
@@ -508,43 +533,70 @@ classdef Plot < handle
                 % Create figure object for temperature plot movie
                 this.fig_temp = figure;
                 ax = gca;
-                movegui(ax,'center')
+                movegui(ax,'center');
                 set(ax,'DataAspectRatio',[1 1 1],'Colormap',jet);
                 axis([this.plot_xmin this.plot_xmax this.plot_ymin this.plot_ymax]);
-                caxis([temp_min temp_max]);
+                if (temp_min < temp_max)
+                    caxis([temp_min temp_max]);
+                end
                 colorbar;
                 ax.NextPlot = 'replaceChildren';
                 
                 % Create frames
-                loops = size(mdl.res.U,2);
                 M(loops) = struct('cdata',[],'colormap',[]);
-                
                 %this.fig_temp.Visible = 'off';
                 for i = 1:loops
-                    title_text = sprintf('Temperature field, time: %f',mdl.res.times(i));
-                    title(title_text);
-                    contour = mdl.res.U(mdl.ID(1,:),i);
+                    %t = i*mdl.res.output_freq;
+                    %title_text = sprintf('Temperature field, time: %f',mdl.res.times(t));
+                    %title(title_text);
                     for j = 1:mdl.nel
-                        nen = mdl.elems(j).shape.nen;
-                        for k = 1:nen
-                            node  = mdl.elems(j).shape.ccwNodeIds(k);
-                            XX(k) = this.x_coord(node);
-                            YY(k) = this.y_coord(node);
-                            ZZ(k) = contour(node);
-                        end
-                        node = mdl.elems(j).shape.ccwNodeIds(1);
-                        XX(nen+1) = this.x_coord(node);
-                        YY(nen+1) = this.y_coord(node);
-                        ZZ(nen+1) = contour(node);
-                        patch(XX,YY,ZZ);
+                        patch(XX(j,:,i),YY(j,:,i),ZZ(j,:,i));
                     end
                     drawnow;
                     M(i) = getframe;
                 end
                 %this.fig_temp.Visible = 'on';
-                
-                movie(M,10);
+                movie(M);
             end
+        end
+        
+        %------------------------------------------------------------------
+        % Plot transient analysis curves.
+        function plotTransientCurves(~,mdl)
+            
+            % Nodal temperature
+            if (~isempty(mdl.res.curve_temp))
+                ncurves = length(mdl.res.curve_temp);
+                leg = strings(1,ncurves);
+                f1 = figure; hold on; grid on;
+                f2 = figure; hold on; grid on;
+                for i = 1:ncurves
+                    dof = mdl.ID(1,mdl.res.curve_temp(i));
+                    x  = mdl.res.times;
+                    y  = mdl.res.U(dof,:);
+                    yt = mdl.res.Ut(dof,:);
+                    legend_txt = sprintf('Node %d',mdl.res.curve_temp(i));
+                    leg(i) = legend_txt;
+                    % Plot temperature values
+                    figure(f1);
+                    plot(x,y);
+                    % Plot temperature rate of cahnge
+                    figure(f2);
+                    plot(x,yt);
+                end
+                figure(f2);
+                xlabel('Time');
+                ylabel('Temperature Rate of Change');
+                title('Nodal Temperature Rate of Change');
+                legend(leg);
+                
+                figure(f1);
+                xlabel('Time');
+                ylabel('Temperature');
+                title('Nodal Temperature');
+                legend(leg);
+            end
+            
         end
         
         %------------------------------------------------------------------
@@ -727,18 +779,12 @@ classdef Plot < handle
             
             % Temperature field
             if (mdl.res.temp)
-                % Create nodal temperature response data
-                temperature = mdl.res.U(mdl.ID(1,:));
-                temp_min = min(temperature);
-                temp_max = max(temperature);
-                
                 % Create figure for temperature plot
                 this.fig_temp = figure;
                 movegui(gca,'center')
                 set(gca,'DataAspectRatio',[1 1 1],'Colormap',jet);
                 title('Temperature field');
                 axis([this.plot_xmin this.plot_xmax this.plot_ymin this.plot_ymax]);
-                caxis([temp_min temp_max]);
                 colorbar;
                 hold on;
             end
