@@ -118,9 +118,10 @@ classdef Plot < handle
         plot_ymax  double = double.empty;
         
         % Visual properties
-        deform_fac   double = double.empty;  % Scale factor for deformed mesh
-        color_mesh   = 'k';                  % mesh color
-        color_deform = 'b';                  % deformed mesh color
+        deform_fac   double = double.empty;   % Scale factor for deformed mesh
+        color_mesh   = 'k';                   % mesh color
+        color_deform = 'b';                   % deformed mesh color
+        fcn_dataTip  = @drv.cb_dataTipCursor; % handle to function to manage data tip showing
     end
     
     %% Constructor method
@@ -1271,6 +1272,11 @@ classdef Plot < handle
                 patch(XX,YY,ZZ);
                 hold on;
             end
+            
+            % Set callback function to manage nodal data tip showing with cursor
+            dcm = datacursormode;
+            dcm.UpdateFcn = this.fcn_dataTip;
+            dcm.Enable = 'off';
         end
         
         %------------------------------------------------------------------
@@ -1351,6 +1357,11 @@ classdef Plot < handle
                 patch(XX,YY,ZZ);
                 hold on;
             end
+            
+            % Set callback function to manage nodal data tip showing with cursor
+            dcm = datacursormode;
+            dcm.UpdateFcn = this.fcn_dataTip;
+            dcm.Enable = 'off';
         end
         
         %------------------------------------------------------------------
