@@ -69,7 +69,7 @@ classdef Anm < handle
         FLUX_XX     = logical(false);    % Heat flux XX
         FLUX_YY     = logical(false);    % Heat flux YY
         FLUX_ZZ     = logical(false);    % Heat flux ZZ
-        FLUX_PRC    = logical(false);    % Heat principal flux
+        FLUX_MOD    = logical(false);    % Heat principal flux
     end
     
     %% Public properties

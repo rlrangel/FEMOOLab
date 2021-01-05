@@ -128,7 +128,6 @@ classdef Plot < handle
         %------------------------------------------------------------------
         function this = Plot(sim)
             if (nargin > 0)
-                % Setup bounding box for displaying results
                 this.setupBoundingBox(sim.mdl);
                 
                 if (sim.anl.type == fem.Anl.LINEAR_STATIC)

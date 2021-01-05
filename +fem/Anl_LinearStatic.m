@@ -73,7 +73,7 @@ classdef Anl_LinearStatic < fem.Anl
             mdl.anm.nodeDerivedVarExtrap(mdl);
             
             % Compute minimum and maximum values of obtained results
-            mdl.res.setMinMaxValues();
+            mdl.res.setMinMaxValues(mdl);
             
             % Clear numerical garbage
             mdl.res.clearSmallValues(mdl);

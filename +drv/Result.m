@@ -50,14 +50,15 @@ classdef Result < handle
         fyy    = logical(false);  % heat fluxes in Y direction
         fzz    = logical(false);  % heat fluxes in Z direction
         fm     = logical(false);  % heat fluxes module
+        
+        % Result curves options
+        curve_temp  int32 = int32.empty; % vector of node IDs to plot transient temperature response
+        output_freq = 1;                 % output frequency for plotting transient response
+        
     end
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        % Curve results options
-        curve_temp  int32 = int32.empty; % vector of node IDs to plot transient temperature response
-        output_freq = 1;                 % output frequency for plotting transient response
-        
         % Results from equilibrium system
         U     double = double.empty;  % global vector of state variables
         Ut    double = double.empty;  % global vector of state variable 1st time derivatives
@@ -331,122 +332,122 @@ classdef Result < handle
             this.y_gp = zeros(this.maxGPts*mdl.nel,1);
             this.z_gp = zeros(this.maxGPts*mdl.nel,1);
             
-            if (this.sxx)
+            if (mdl.anm.SIGMA_XX)
                 this.sxx_gp         = zeros(this.maxGPts,mdl.nel);
                 this.sxx_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.sxx_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.syy)
+            if (mdl.anm.SIGMA_YY)
                 this.syy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.syy_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.syy_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.szz)
+            if (mdl.anm.SIGMA_ZZ)
                 this.szz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.szz_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.szz_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.txy)
+            if (mdl.anm.TAU_XY)
                 this.txy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.txy_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.txy_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.txz)
+            if (mdl.anm.TAU_XZ)
                 this.txz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.txz_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.txz_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.tyz)
+            if (mdl.anm.TAU_YZ)
                 this.tyz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.tyz_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.tyz_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.s1)
+            if (mdl.anm.SIGMA_1)
                 this.s1_gp         = zeros(this.maxGPts,mdl.nel);
                 this.s1x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s1y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s1_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.s1_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.s2)
+            if (mdl.anm.SIGMA_2)
                 this.s2_gp         = zeros(this.maxGPts,mdl.nel);
                 this.s2x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s2y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s2_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.s2_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.s3)
+            if (mdl.anm.SIGMA_3)
                 this.s3_gp         = zeros(this.maxGPts,mdl.nel);
                 this.s3x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s3y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s3_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.s3_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.taumax)
+            if (mdl.anm.TAU_MAX)
                 this.tmax_gp         = zeros(this.maxGPts,mdl.nel);
                 this.tmax_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.tmax_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.qxz)
+            if (mdl.anm.SHEAR_XZ)
                 this.qxz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.qxz_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.qxz_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.qyz)
+            if (mdl.anm.SHEAR_YZ)
                 this.qyz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.qyz_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.qyz_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.mxx)
+            if (mdl.anm.MOMENT_XX)
                 this.mxx_gp         = zeros(this.maxGPts,mdl.nel);
                 this.mxx_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.mxx_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.myy)
+            if (mdl.anm.MOMENT_YY)
                 this.myy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.myy_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.myy_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.mxy)
+            if (mdl.anm.MOMENT_XY)
                 this.mxy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.mxy_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.mxy_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.m1)
+            if (mdl.anm.MOMENT_1)
                 this.m1_gp         = zeros(this.maxGPts,mdl.nel);
                 this.m1x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.m1y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.m1_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.m1_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.m2)
+            if (mdl.anm.MOMENT_2)
                 this.m2_gp         = zeros(this.maxGPts,mdl.nel);
                 this.m2x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.m2y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.m2_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.m2_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.tormax)
+            if (mdl.anm.TORSION_MAX)
                 this.tormax_gp         = zeros(this.maxGPts,mdl.nel);
                 this.tormax_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.tormax_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.fxx)
+            if (mdl.anm.FLUX_XX)
                 this.fxx_gp         = zeros(this.maxGPts,mdl.nel);
                 this.fxx_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.fxx_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.fyy)
+            if (mdl.anm.FLUX_YY)
                 this.fyy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.fyy_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.fyy_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.fzz)
+            if (mdl.anm.FLUX_ZZ)
                 this.fzz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.fzz_elemextrap = zeros(this.maxNen,mdl.nel);
                 this.fzz_nodeextrap = zeros(mdl.nnp,1);
             end
-            if (this.fm)
+            if (mdl.anm.FLUX_MOD)
                 this.fm_gp         = zeros(this.maxGPts,mdl.nel);
                 this.fmx_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.fmy_gp        = zeros(this.maxGPts*mdl.nel,1);
@@ -457,8 +458,8 @@ classdef Result < handle
         
         %------------------------------------------------------------------
         % Compute minimum and maximum values of obtained results.
-        function setMinMaxValues(this)
-            if (this.sxx)
+        function setMinMaxValues(this,mdl)
+            if (mdl.anm.SIGMA_XX)
                 this.sxx_gp_min         = min(min(this.sxx_gp));
                 this.sxx_gp_max         = max(max(this.sxx_gp));
                 this.sxx_elemextrap_min = min(min(this.sxx_elemextrap));
@@ -466,7 +467,7 @@ classdef Result < handle
                 this.sxx_nodeextrap_min = min(min(this.sxx_nodeextrap));
                 this.sxx_nodeextrap_max = max(max(this.sxx_nodeextrap));
             end
-            if (this.syy)
+            if (mdl.anm.SIGMA_YY)
                 this.syy_gp_min         = min(min(this.syy_gp));
                 this.syy_gp_max         = max(max(this.syy_gp));
                 this.syy_elemextrap_min = min(min(this.syy_elemextrap));
@@ -474,7 +475,7 @@ classdef Result < handle
                 this.syy_nodeextrap_min = min(min(this.syy_nodeextrap));
                 this.syy_nodeextrap_max = max(max(this.syy_nodeextrap));
             end
-            if (this.szz)
+            if (mdl.anm.SIGMA_ZZ)
                 this.szz_gp_min         = min(min(this.szz_gp));
                 this.szz_gp_max         = max(max(this.szz_gp));
                 this.szz_elemextrap_min = min(min(this.szz_elemextrap));
@@ -482,7 +483,7 @@ classdef Result < handle
                 this.szz_nodeextrap_min = min(min(this.szz_nodeextrap));
                 this.szz_nodeextrap_max = max(max(this.szz_nodeextrap));
             end
-            if (this.txy)
+            if (mdl.anm.TAU_XY)
                 this.txy_gp_min         = min(min(this.txy_gp));
                 this.txy_gp_max         = max(max(this.txy_gp));
                 this.txy_elemextrap_min = min(min(this.txy_elemextrap));
@@ -490,7 +491,7 @@ classdef Result < handle
                 this.txy_nodeextrap_min = min(min(this.txy_nodeextrap));
                 this.txy_nodeextrap_max = max(max(this.txy_nodeextrap));
             end
-            if (this.txz)
+            if (mdl.anm.TAU_XZ)
                 this.txz_gp_min         = min(min(this.txz_gp));
                 this.txz_gp_max         = max(max(this.txz_gp));
                 this.txz_elemextrap_min = min(min(this.txz_elemextrap));
@@ -498,7 +499,7 @@ classdef Result < handle
                 this.txz_nodeextrap_min = min(min(this.txz_nodeextrap));
                 this.txz_nodeextrap_max = max(max(this.txz_nodeextrap));
             end
-            if (this.tyz)
+            if (mdl.anm.TAU_YZ)
                 this.tyz_gp_min         = min(min(this.tyz_gp));
                 this.tyz_gp_max         = max(max(this.tyz_gp));
                 this.tyz_elemextrap_min = min(min(this.tyz_elemextrap));
@@ -506,7 +507,7 @@ classdef Result < handle
                 this.tyz_nodeextrap_min = min(min(this.tyz_nodeextrap));
                 this.tyz_nodeextrap_max = max(max(this.tyz_nodeextrap));
             end
-            if (this.s1)
+            if (mdl.anm.SIGMA_1)
                 this.s1_gp_min         = min(min(this.s1_gp));
                 this.s1_gp_max         = max(max(this.s1_gp));
                 this.s1_elemextrap_min = min(min(this.s1_elemextrap));
@@ -514,7 +515,7 @@ classdef Result < handle
                 this.s1_nodeextrap_min = min(min(this.s1_nodeextrap));
                 this.s1_nodeextrap_max = max(max(this.s1_nodeextrap));
             end
-            if (this.s2)
+            if (mdl.anm.SIGMA_2)
                 this.s2_gp_min         = min(min(this.s2_gp));
                 this.s2_gp_max         = max(max(this.s2_gp));
                 this.s2_elemextrap_min = min(min(this.s2_elemextrap));
@@ -522,7 +523,7 @@ classdef Result < handle
                 this.s2_nodeextrap_min = min(min(this.s2_nodeextrap));
                 this.s2_nodeextrap_max = max(max(this.s2_nodeextrap));
             end
-            if (this.s3)
+            if (mdl.anm.SIGMA_3)
                 this.s3_gp_min         = min(min(this.s3_gp));
                 this.s3_gp_max         = max(max(this.s3_gp));
                 this.s3_elemextrap_min = min(min(this.s3_elemextrap));
@@ -530,7 +531,7 @@ classdef Result < handle
                 this.s3_nodeextrap_min = min(min(this.s3_nodeextrap));
                 this.s3_nodeextrap_max = max(max(this.s3_nodeextrap));
             end
-            if (this.taumax)
+            if (mdl.anm.TAU_MAX)
                 this.tmax_gp_min         = min(min(this.tmax_gp));
                 this.tmax_gp_max         = max(max(this.tmax_gp));
                 this.tmax_elemextrap_min = min(min(this.tmax_elemextrap));
@@ -538,7 +539,7 @@ classdef Result < handle
                 this.tmax_nodeextrap_min = min(min(this.tmax_nodeextrap));
                 this.tmax_nodeextrap_max = max(max(this.tmax_nodeextrap));
             end        
-            if (this.qxz)
+            if (mdl.anm.SHEAR_XZ)
                 this.qxz_gp_min         = min(min(this.qxz_gp));
                 this.qxz_gp_max         = max(max(this.qxz_gp));
                 this.qxz_elemextrap_min = min(min(this.qxz_elemextrap));
@@ -546,7 +547,7 @@ classdef Result < handle
                 this.qxz_nodeextrap_min = min(min(this.qxz_nodeextrap));
                 this.qxz_nodeextrap_max = max(max(this.qxz_nodeextrap));
             end
-            if (this.qyz)
+            if (mdl.anm.SHEAR_YZ)
                 this.qyz_gp_min         = min(min(this.qyz_gp));
                 this.qyz_gp_max         = max(max(this.qyz_gp));
                 this.qyz_elemextrap_min = min(min(this.qyz_elemextrap));
@@ -554,7 +555,7 @@ classdef Result < handle
                 this.qyz_nodeextrap_min = min(min(this.qyz_nodeextrap));
                 this.qyz_nodeextrap_max = max(max(this.qyz_nodeextrap));
             end
-            if (this.mxx)
+            if (mdl.anm.MOMENT_XX)
                 this.mxx_gp_min         = min(min(this.mxx_gp));
                 this.mxx_gp_max         = max(max(this.mxx_gp));
                 this.mxx_elemextrap_min = min(min(this.mxx_elemextrap));
@@ -562,7 +563,7 @@ classdef Result < handle
                 this.mxx_nodeextrap_min = min(min(this.mxx_nodeextrap));
                 this.mxx_nodeextrap_max = max(max(this.mxx_nodeextrap));
             end
-            if (this.myy)
+            if (mdl.anm.MOMENT_YY)
                 this.myy_gp_min         = min(min(this.myy_gp));
                 this.myy_gp_max         = max(max(this.myy_gp));
                 this.myy_elemextrap_min = min(min(this.myy_elemextrap));
@@ -570,7 +571,7 @@ classdef Result < handle
                 this.myy_nodeextrap_min = min(min(this.myy_nodeextrap));
                 this.myy_nodeextrap_max = max(max(this.myy_nodeextrap));
             end
-            if (this.mxy)
+            if (mdl.anm.MOMENT_XY)
                 this.mxy_gp_min         = min(min(this.mxy_gp));
                 this.mxy_gp_max         = max(max(this.mxy_gp));
                 this.mxy_elemextrap_min = min(min(this.mxy_elemextrap));
@@ -578,7 +579,7 @@ classdef Result < handle
                 this.mxy_nodeextrap_min = min(min(this.mxy_nodeextrap));
                 this.mxy_nodeextrap_max = max(max(this.mxy_nodeextrap));
             end
-            if (this.m1)
+            if (mdl.anm.MOMENT_1)
                 this.m1_gp_min         = min(min(this.m1_gp));
                 this.m1_gp_max         = max(max(this.m1_gp));
                 this.m1_elemextrap_min = min(min(this.m1_elemextrap));
@@ -586,7 +587,7 @@ classdef Result < handle
                 this.m1_nodeextrap_min = min(min(this.m1_nodeextrap));
                 this.m1_nodeextrap_max = max(max(this.m1_nodeextrap));
             end
-            if (this.m2)
+            if (mdl.anm.MOMENT_2)
                 this.m2_gp_min         = min(min(this.m2_gp));
                 this.m2_gp_max         = max(max(this.m2_gp));
                 this.m2_elemextrap_min = min(min(this.m2_elemextrap));
@@ -594,7 +595,7 @@ classdef Result < handle
                 this.m2_nodeextrap_min = min(min(this.m2_nodeextrap));
                 this.m2_nodeextrap_max = max(max(this.m2_nodeextrap));
             end
-            if (this.tormax)
+            if (mdl.anm.TORSION_MAX)
                 this.tormax_gp_min         = min(min(this.tormax_gp));
                 this.tormax_gp_max         = max(max(this.tormax_gp));
                 this.tormax_elemextrap_min = min(min(this.tormax_elemextrap));
@@ -602,7 +603,7 @@ classdef Result < handle
                 this.tormax_nodeextrap_min = min(min(this.tormax_nodeextrap));
                 this.tormax_nodeextrap_max = max(max(this.tormax_nodeextrap));
             end
-            if (this.fxx)
+            if (mdl.anm.FLUX_XX)
                 this.fxx_gp_min         = min(min(this.fxx_gp));
                 this.fxx_gp_max         = max(max(this.fxx_gp));
                 this.fxx_elemextrap_min = min(min(this.fxx_elemextrap));
@@ -610,7 +611,7 @@ classdef Result < handle
                 this.fxx_nodeextrap_min = min(min(this.fxx_nodeextrap));
                 this.fxx_nodeextrap_max = max(max(this.fxx_nodeextrap));
             end
-            if (this.fyy)
+            if (mdl.anm.FLUX_YY)
                 this.fyy_gp_min         = min(min(this.fyy_gp));
                 this.fyy_gp_max         = max(max(this.fyy_gp));
                 this.fyy_elemextrap_min = min(min(this.fyy_elemextrap));
@@ -618,7 +619,7 @@ classdef Result < handle
                 this.fyy_nodeextrap_min = min(min(this.fyy_nodeextrap));
                 this.fyy_nodeextrap_max = max(max(this.fyy_nodeextrap));
             end
-            if (this.fzz)
+            if (mdl.anm.FLUX_ZZ)
                 this.fzz_gp_min         = min(min(this.fzz_gp));
                 this.fzz_gp_max         = max(max(this.fzz_gp));
                 this.fzz_elemextrap_min = min(min(this.fzz_elemextrap));
@@ -626,7 +627,7 @@ classdef Result < handle
                 this.fzz_nodeextrap_min = min(min(this.fzz_nodeextrap));
                 this.fzz_nodeextrap_max = max(max(this.fzz_nodeextrap));
             end
-            if (this.fm)
+            if (mdl.anm.FLUX_MOD)
                 this.fm_gp_min         = min(min(this.fm_gp));
                 this.fm_gp_max         = max(max(this.fm_gp));
                 this.fm_elemextrap_min = min(min(this.fm_elemextrap));
@@ -640,7 +641,7 @@ classdef Result < handle
         % Clear numerical garbage from pos-process results and smooth
         % constant results. (TEMPORARY SIMPLIFICATION !!)
         function clearSmallValues(this,mdl)
-            if (this.sxx)
+            if (mdl.anm.SIGMA_XX)
                 % Clear small values
                 if (abs(this.sxx_gp_min) < this.tol && abs(this.sxx_gp_max) < this.tol)
                     this.sxx_gp_min = 0.0;
@@ -677,7 +678,7 @@ classdef Result < handle
                     this.sxx_nodeextrap_max = this.sxx_nodeextrap_max+abs(this.sxx_nodeextrap_max/10);
                 end
             end
-            if (this.syy)
+            if (mdl.anm.SIGMA_YY)
                 % Clear small values
                 if (abs(this.syy_gp_min) < this.tol && abs(this.syy_gp_max) < this.tol)
                     this.syy_gp_min = 0.0;
@@ -714,7 +715,7 @@ classdef Result < handle
                     this.syy_nodeextrap_max = this.syy_nodeextrap_max+abs(this.syy_nodeextrap_max/10);
                 end
             end
-            if (this.szz)
+            if (mdl.anm.SIGMA_ZZ)
                 % Clear small values
                 if (abs(this.szz_gp_min) < this.tol && abs(this.szz_gp_max) < this.tol)
                     this.szz_gp_min = 0.0;
@@ -751,7 +752,7 @@ classdef Result < handle
                     this.szz_nodeextrap_max = this.szz_nodeextrap_max+abs(this.szz_nodeextrap_max/10);
                 end
             end
-            if (this.txy)
+            if (mdl.anm.TAU_XY)
                 % Clear small values
                 if (abs(this.txy_gp_min) < this.tol && abs(this.txy_gp_max) < this.tol)
                     this.txy_gp_min = 0.0;
@@ -788,7 +789,7 @@ classdef Result < handle
                     this.txy_nodeextrap_max = this.txy_nodeextrap_max+abs(this.txy_nodeextrap_max/10);
                 end
             end
-            if (this.txz)
+            if (mdl.anm.TAU_XZ)
                 % Clear small values
                 if (abs(this.txz_gp_min) < this.tol && abs(this.txz_gp_max) < this.tol)
                     this.txz_gp_min = 0.0;
@@ -825,7 +826,7 @@ classdef Result < handle
                     this.txz_nodeextrap_max = this.txz_nodeextrap_max+abs(this.txz_nodeextrap_max/10);
                 end
             end
-            if (this.tyz)
+            if (mdl.anm.TAU_YZ)
                 % Clear small values
                 if (abs(this.tyz_gp_min) < this.tol && abs(this.tyz_gp_max) < this.tol)
                     this.tyz_gp_min = 0.0;
@@ -862,7 +863,7 @@ classdef Result < handle
                     this.tyz_nodeextrap_max = this.tyz_nodeextrap_max+abs(this.tyz_nodeextrap_max/10);
                 end
             end
-            if (this.s1)
+            if (mdl.anm.SIGMA_1)
                 % Clear small values
                 if (abs(this.s1_gp_min) < this.tol && abs(this.s1_gp_max) < this.tol)
                     this.s1_gp_min = 0.0;
@@ -899,7 +900,7 @@ classdef Result < handle
                     this.s1_nodeextrap_max = this.s1_nodeextrap_max+abs(this.s1_nodeextrap_max/10);
                 end
             end
-            if (this.s2)
+            if (mdl.anm.SIGMA_2)
                 % Clear small values
                 if (abs(this.s2_gp_min) < this.tol && abs(this.s2_gp_max) < this.tol)
                     this.s2_gp_min = 0.0;
@@ -936,7 +937,7 @@ classdef Result < handle
                     this.s2_nodeextrap_max = this.s2_nodeextrap_max+abs(this.s2_nodeextrap_max/10);
                 end
             end
-            if (this.s3)
+            if (mdl.anm.SIGMA_3)
                 % Clear small values
                 if (abs(this.s3_gp_min) < this.tol && abs(this.s3_gp_max) < this.tol)
                     this.s3_gp_min = 0.0;
@@ -973,7 +974,7 @@ classdef Result < handle
                     this.s3_nodeextrap_max = this.s3_nodeextrap_max+abs(this.s3_nodeextrap_max/10);
                 end
             end
-            if (this.taumax)
+            if (mdl.anm.TAU_MAX)
                 % Clear small values
                 if (abs(this.tmax_gp_min) < this.tol && abs(this.tmax_gp_max) < this.tol)
                     this.tmax_gp_min = 0.0;
@@ -1011,7 +1012,7 @@ classdef Result < handle
                 end
             end
             %--------------------------------------------------------------
-            if (this.qxz)
+            if (mdl.anm.SHEAR_XZ)
                 % Clear small values
                 if (abs(this.qxz_gp_min) < this.tol && abs(this.qxz_gp_max) < this.tol)
                     this.qxz_gp_min = 0.0;
@@ -1048,7 +1049,7 @@ classdef Result < handle
                     this.qxz_nodeextrap_max = this.qxz_nodeextrap_max+abs(this.qxz_nodeextrap_max/10);
                 end
             end
-            if (this.qyz)
+            if (mdl.anm.SHEAR_YZ)
                 % Clear small values
                 if (abs(this.qyz_gp_min) < this.tol && abs(this.qyz_gp_max) < this.tol)
                     this.qyz_gp_min = 0.0;
@@ -1085,7 +1086,7 @@ classdef Result < handle
                     this.qyz_nodeextrap_max = this.qyz_nodeextrap_max+abs(this.qyz_nodeextrap_max/10);
                 end
             end
-            if (this.mxx)
+            if (mdl.anm.MOMENT_XX)
                 % Clear small values
                 if (abs(this.mxx_gp_min) < this.tol && abs(this.mxx_gp_max) < this.tol)
                     this.mxx_gp_min = 0.0;
@@ -1122,7 +1123,7 @@ classdef Result < handle
                     this.mxx_nodeextrap_max = this.mxx_nodeextrap_max+abs(this.mxx_nodeextrap_max/10);
                 end
             end
-            if (this.myy)
+            if (mdl.anm.MOMENT_YY)
                 % Clear small values
                 if (abs(this.myy_gp_min) < this.tol && abs(this.myy_gp_max) < this.tol)
                     this.myy_gp_min = 0.0;
@@ -1159,7 +1160,7 @@ classdef Result < handle
                     this.myy_nodeextrap_max = this.myy_nodeextrap_max+abs(this.myy_nodeextrap_max/10);
                 end
             end
-            if (this.mxy)
+            if (mdl.anm.MOMENT_XY)
                 % Clear small values
                 if (abs(this.mxy_gp_min) < this.tol && abs(this.mxy_gp_max) < this.tol)
                     this.mxy_gp_min = 0.0;
@@ -1196,7 +1197,7 @@ classdef Result < handle
                     this.mxy_nodeextrap_max = this.mxy_nodeextrap_max+abs(this.mxy_nodeextrap_max/10);
                 end
             end
-            if (this.m1)
+            if (mdl.anm.MOMENT_1)
                 % Clear small values
                 if (abs(this.m1_gp_min) < this.tol && abs(this.m1_gp_max) < this.tol)
                     this.m1_gp_min = 0.0;
@@ -1233,7 +1234,7 @@ classdef Result < handle
                     this.m1_nodeextrap_max = this.m1_nodeextrap_max+abs(this.m1_nodeextrap_max/10);
                 end
             end
-            if (this.m2)
+            if (mdl.anm.MOMENT_2)
                 % Clear small values
                 if (abs(this.m2_gp_min) < this.tol && abs(this.m2_gp_max) < this.tol)
                     this.m2_gp_min = 0.0;
@@ -1269,9 +1270,48 @@ classdef Result < handle
                     this.m2_nodeextrap_min = this.m2_nodeextrap_min-abs(this.m2_nodeextrap_min/10);
                     this.m2_nodeextrap_max = this.m2_nodeextrap_max+abs(this.m2_nodeextrap_max/10);
                 end
+                
+            end
+            if (mdl.anm.TORSION_MAX)
+                % Clear small values
+                if (abs(this.tormax_gp_min) < this.tol && abs(this.tormax_gp_max) < this.tol)
+                    this.tormax_gp_min = 0.0;
+                    this.tormax_gp_max = 0.0;
+                    this.tormax_gp     = zeros(this.maxGPts,mdl.nel);
+                end
+                if (abs(this.tormax_elemextrap_min) < this.tol && abs(this.tormax_elemextrap_max) < this.tol)
+                    this.tormax_elemextrap_min = 0.0;
+                    this.tormax_elemextrap_max = 0.0;
+                    this.tormax_elemextrap     = zeros(this.maxNen,mdl.nel);
+                end
+                if (abs(this.tormax_nodeextrap_min) < this.tol && abs(this.tormax_nodeextrap_max) < this.tol)
+                    this.tormax_nodeextrap_min = 0.0;
+                    this.tormax_nodeextrap_max = 0.0;
+                    this.tormax_nodeextrap     = zeros(mdl.nnp,1);
+                end
+                % Smooth constant values
+                if (abs(this.tormax_gp_min - this.tormax_gp_max) < this.tol)
+                    mean = (this.tormax_gp_min+this.tormax_gp_max)/2;
+                    this.tormax_gp     = mean*ones(this.maxGPts,mdl.nel);
+                    this.tormax_gp_min = this.tormax_gp_min-abs(this.tormax_gp_min/10);
+                    this.tormax_gp_max = this.tormax_gp_max+abs(this.tormax_gp_max/10);
+                end
+                if (abs(this.tormax_elemextrap_min - this.tormax_elemextrap_max) < this.tol)
+                    mean = (this.tormax_elemextrap_min+this.tormax_elemextrap_max)/2;
+                    this.tormax_elemextrap     = mean*ones(this.maxNen,mdl.nel);
+                    this.tormax_elemextrap_min = this.tormax_elemextrap_min-abs(this.tormax_elemextrap_min/10);
+                    this.tormax_elemextrap_max = this.tormax_elemextrap_max+abs(this.tormax_elemextrap_max/10);
+                end
+                if (abs(this.tormax_nodeextrap_min - this.tormax_nodeextrap_max) < this.tol)
+                    mean = (this.tormax_nodeextrap_min+this.tormax_nodeextrap_max)/2;
+                    this.tormax_nodeextrap     = mean*ones(mdl.nnp,1);
+                    this.tormax_nodeextrap_min = this.tormax_nodeextrap_min-abs(this.tormax_nodeextrap_min/10);
+                    this.tormax_nodeextrap_max = this.tormax_nodeextrap_max+abs(this.tormax_nodeextrap_max/10);
+                end
+                
             end
             %--------------------------------------------------------------
-            if (this.fxx)
+            if (mdl.anm.FLUX_XX)
                 % Clear small values
                 if (abs(this.fxx_gp_min) < this.tol && abs(this.fxx_gp_max) < this.tol)
                     this.fxx_gp_min = 0.0;
@@ -1308,7 +1348,7 @@ classdef Result < handle
                     this.fxx_nodeextrap_max = this.fxx_nodeextrap_max+abs(this.fxx_nodeextrap_max/10);
                 end
             end
-            if (this.fyy)
+            if (mdl.anm.FLUX_YY)
                 % Clear small values
                 if (abs(this.fyy_gp_min) < this.tol && abs(this.fyy_gp_max) < this.tol)
                     this.fyy_gp_min = 0.0;
@@ -1345,7 +1385,7 @@ classdef Result < handle
                     this.fyy_nodeextrap_max = this.fyy_nodeextrap_max+abs(this.fyy_nodeextrap_max/10);
                 end
             end
-            if (this.fzz)
+            if (mdl.anm.FLUX_ZZ)
                 % Clear small values
                 if (abs(this.fzz_gp_min) < this.tol && abs(this.fzz_gp_max) < this.tol)
                     this.fzz_gp_min = 0.0;
@@ -1382,7 +1422,7 @@ classdef Result < handle
                     this.fzz_nodeextrap_max = this.fzz_nodeextrap_max+abs(this.fzz_nodeextrap_max/10);
                 end
             end
-            if (this.fm)
+            if (mdl.anm.FLUX_MOD)
                 % Clear small values
                 if (abs(this.fm_gp_min) < this.tol && abs(this.fm_gp_max) < this.tol)
                     this.fm_gp_min = 0.0;

@@ -19,7 +19,7 @@ classdef Anm_AxisymConduction < fem.Anm
             this.TEMPERATURE = true;  % Temperature
             this.FLUX_XX     = true;  % flux XX
             this.FLUX_YY     = true;  % flux YY
-            this.FLUX_PRC    = true;  % Principal flux
+            this.FLUX_MOD    = true;  % flux module
         end
     end
     
