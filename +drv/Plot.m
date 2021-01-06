@@ -589,12 +589,14 @@ classdef Plot < handle
                 ylabel('Temperature Rate of Change');
                 title('Nodal Temperature Rate of Change');
                 legend(leg);
+                movegui(gca,'center')
                 
                 figure(f1);
                 xlabel('Time');
                 ylabel('Temperature');
                 title('Nodal Temperature');
                 legend(leg);
+                movegui(gca,'center')
             end
             
         end
