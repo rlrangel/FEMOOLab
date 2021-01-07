@@ -5,7 +5,6 @@
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <shape.html Shape: element shape super-class> to deal
 % with 6-noded isoparametric triangle (quadratic triangular) elements:
-%
 %                           s
 %                           ^
 %                           |
@@ -17,6 +16,9 @@
 %                           |    \
 %                         1 +--+--+ 2  ----> r
 %                              4
+%
+%% Class definition
+%
 classdef Shape_Tria6 < fem.Shape
     %% Constructor method
     methods
@@ -28,13 +30,12 @@ classdef Shape_Tria6 < fem.Shape
                 this.nodes = nodes;
                 
                 % Cartesian nodal coordiantes matrix [X Y]
-                this.carCoord =...
-                [ nodes(1).coord(1)   nodes(1).coord(2);
-                  nodes(2).coord(1)   nodes(2).coord(2);
-                  nodes(3).coord(1)   nodes(3).coord(2);
-                  nodes(4).coord(1)   nodes(4).coord(2);
-                  nodes(5).coord(1)   nodes(5).coord(2);
-                  nodes(6).coord(1)   nodes(6).coord(2) ];
+                this.carCoord = [ nodes(1).coord(1) nodes(1).coord(2);
+                                  nodes(2).coord(1) nodes(2).coord(2);
+                                  nodes(3).coord(1) nodes(3).coord(2);
+                                  nodes(4).coord(1) nodes(4).coord(2);
+                                  nodes(5).coord(1) nodes(5).coord(2);
+                                  nodes(6).coord(1) nodes(6).coord(2) ];
                 
                 % Parametric nodal coordinates matrix [r s]
                 this.parCoord = [ 0.0  0.0;
@@ -45,12 +46,12 @@ classdef Shape_Tria6 < fem.Shape
                                   0.0  0.5 ];
                 
                 % Vector of local node ids in ccw order
-                this.ccwLocalNodeIds = [ 1   4   2   5   3   6 ];
+                this.ccwLocalNodeIds = [ 1  4  2  5  3  6 ];
                 
                 % Vector of global node ids in ccw order
                 this.ccwNodeIds = ...
-                [ nodes(1).id   nodes(4).id   nodes(2).id ...
-                  nodes(5).id   nodes(3).id   nodes(6).id];
+                [ nodes(1).id  nodes(4).id  nodes(2).id ...
+                  nodes(5).id  nodes(3).id  nodes(6).id];
             end
         end
     end
@@ -59,17 +60,17 @@ classdef Shape_Tria6 < fem.Shape
     % Implementation of the abstract methods declared in super-class Shape
     methods
         %------------------------------------------------------------------
-        % Evaluate matrix of geometry map functions at a given position in
+        % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.
         % Since this is an isoparametric element shape it returns the
-        % evaluation of displacement shape functions. 
+        % evaluation of d.o.f. shape functions. 
         function M = Mmtx(this,r,s)
             M = this.Nmtx(r,s);
         end
         
         %------------------------------------------------------------------
-        % Evaluate matrix of displacement shape functions at a given
-        % position in parametric coordinates.
+        % Evaluate matrix of d.o.f. shape functions at a given position in
+        % parametric coordinates.
         function N = Nmtx(this,r,s)
             N = zeros(1,this.nen);
             
@@ -82,9 +83,9 @@ classdef Shape_Tria6 < fem.Shape
         end
         
         %------------------------------------------------------------------
-        % Evaluate matrix of edge displacement shape functions at a given
+        % Evaluate matrix of edge d.o.f. shape functions at a given
         % position in parametric coordinates.
-        function N = NmtxEdge(~,~,~,r)
+        function N = NmtxEdge(~,r)
             N = zeros(1,3);
             
             N(3) = 1-r*r;
@@ -102,7 +103,7 @@ classdef Shape_Tria6 < fem.Shape
         end
         
         %------------------------------------------------------------------
-        % Evaluate matrix of displacement shape functions derivatives
+        % Evaluate matrix of d.o.f. shape functions derivatives
         % w.r.t. parametric coordinates at a given position.
         function GradNpar = gradNmtx(this,r,s)
             GradNpar = zeros(2,this.nen);
@@ -122,9 +123,9 @@ classdef Shape_Tria6 < fem.Shape
         end
         
         %------------------------------------------------------------------
-        % Evaluate matrix of edge geometry map functions derivatives
+        % Evaluate matrix of edge geometry shape functions derivatives
         % w.r.t. parametric coordinates at a given position.
-        function GradMpar = gradMmtxEdge(~,~,~,r)
+        function GradMpar = gradMmtxEdge(~,r)
             GradMpar = zeros(1,3);
             
             GradMpar(1,1) = -0.5 + r;
@@ -143,9 +144,9 @@ classdef Shape_Tria6 < fem.Shape
         % in the parameter mid.
         function [valid,n1,n2,mid] = edgeLocalIds(this,corner1,corner2)
             valid = false;
-            n1 = 0;
-            n2 = 0;
-            mid = 0;
+            n1    = 0;
+            n2    = 0;
+            mid   = 0;
 
             % Get ids of corner nodes and check for consistency
             for i = 1:3

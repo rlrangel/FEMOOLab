@@ -6,24 +6,39 @@
 % An object of <model.html Model class> has a vector of Node objects.
 % Each <shape.html Shape> object of an <element.html Element> object
 % has a Node incidence vector.
+% The Node object also points to its connected elements.
+%
 % A node is always considered as a three-dimensional entity, with
 % coordinates and boundary conditions specified accordingly.
+% For structural problems, the boundary condition properties are 6-row
+% vectors accounting for all displacements/rotations d.o.f.'s:
+% [DX DY DZ RX RY RZ]
+% For thermal problems, these properties are scalars (temperature d.o.f.).
+%
+%% Class definition
 %
 classdef Node < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        id         int32  = int32.empty;   % identification number
-        coord      double = double.empty;  % vector of coordinates in global system [X Y Z]
-        ebc        int32  = int32.empty;   % vector of essential boundary conditions flags [DX DY DZ RX RY RZ]
-        prescDispl double = double.empty;  % vector of prescribed displacement values [DX DY DZ RX RY RZ]
-        load       double = double.empty;  % vector of applied load components [FX FY FZ MX MY MZ]
+        % General properties
+        id    int32       = int32.empty;        % identification number
+        coord double      = double.empty;       % vector of coordinates in global system [X Y Z]
+        elems fem.Element = fem.Element.empty;  % vector of objects of Element class (incident elements)
+        
+        % Boundary conditions
+        fixdDOF   logical = logical.empty;      % vector of flags for fixed d.o.f.'s (indicate essential boundary conditions)
+        prscDOF   double  = double.empty;       % vector of prescribed values of fixed d.o.f.'s
+        initDOF   double  = double.empty;       % vector of initial values of free d.o.f.'s
+        initDOFt  double  = double.empty;       % vector of initial values of 1st time derivatives of free d.o.f.'s
+        initDOFtt double  = double.empty;       % vector of initial values of 2nd time derivatives of free d.o.f.'s
+        prscNBC   double  = double.empty;       % vector of prescribed values of natural boundary conditions (applied forcing components)
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function node = Node()
-            node.ebc = zeros(6,1);
+        function this = Node()
+            return;
         end
     end
 end

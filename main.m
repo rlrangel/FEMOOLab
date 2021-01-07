@@ -1,75 +1,71 @@
 %% FEMOOLab - Finite Element Method Object-Oriented Laboratory
+%
+%% Description
+%
 % This is the main script file of FEMOOLab.
 % Run this script to select the input file with model and analysis data for
 % performing the simulation.
+%
 % Multiple files can be selected, by holding down the Shift or Ctrl key and
-% clicking file names, to run the simulations sequentially.
-% For more information, see the README file in the documents folder.
-
+% clicking on file names, to run the simulations sequentially.
+%
+% For more information, check the <readme.html README> file.
+%
 %% Plotting Options
 % Set result plotting options with flags (true or false):
-% * eid    -> Plot element numbers (NOT IMPLEMENTED)
-% * nid    -> Plot node numbers (NOT IMPLEMENTED)
-% * scl    -> Scale factor for deformed mesh (NOT IMPLEMENTED)
-% * dx     -> Plot contour of displacements in X direction (NOT IMPLEMENTED)
-% * dy     -> Plot contour of displacements in Y direction (NOT IMPLEMENTED)
-% * dz     -> Plot contour of displacements in Z directiont (NOT IMPLEMENTED)
-% * rx     -> Plot contour of rotations about X axis (NOT IMPLEMENTED)
-% * ry     -> Plot contour of rotations about Y axis (NOT IMPLEMENTED)
-% * rz     -> Plot contour of rotations about Z axis (NOT IMPLEMENTED)
-% * smooth -> Smooth element results at common nodes
-% * sxx    -> Plot contour of normal stresses in X direction
-% * syy    -> Plot contour of normal stresses in Y direction
-% * szz    -> Plot contour of normal stresses in Z direction
-% * txy    -> Plot contour of XY shear stresses
-% * txz    -> Plot contour of XZ shear stresses
-% * tyz    -> Plot contour of YZ shear stresses
-% * s1     -> Plot contour of principal stresses 1
-% * s2     -> Plot contour of principal stresses 2
-% * s3     -> Plot contour of principal stresses 3
-% * taumax -> Plot contour of maximum shear stresses
-% * mxx    -> Plot contour of moment about X direction (NOT IMPLEMENTED)
-% * myy    -> Plot contour of moment about Y direction (NOT IMPLEMENTED)
-% * mxy    -> Plot contour of torsion moment (NOT IMPLEMENTED)
-% * qxz    -> Plot contour of XZ shear force (NOT IMPLEMENTED)
-% * qyz    -> Plot contour of YZ shear force (NOT IMPLEMENTED)
-% * m1     -> Plot contour of principal moment 1 (NOT IMPLEMENTED)
-% * m2     -> Plot contour of principal moment 2 (NOT IMPLEMENTED)
-% * tormax -> Plot contour of maximum torsion (NOT IMPLEMENTED)
 
-%% Initialization
+% Mesh labels:
+opt.eid    = false;  % Plot element numbers
+opt.nid    = false;  % Plot node numbers
+opt.gid    = false;  % Plot gauss numbers
 
-% Clear workspace
-clear
-close(findall(0,'Type','figure'));
-clc
+% Mesh deformation:
+opt.deform = true;   % Plot deformed mesh
+opt.scl    = 0.0;    % Scale factor for deformed mesh (false or 0.0: scale automatically calculated)
 
-%% Run Simulation
-sim = drv.Simulation();
+% Nodal result:
+opt.dx     = true;   % Plot contour of displacements in X direction
+opt.dy     = true;   % Plot contour of displacements in Y direction
+opt.dz     = true;   % Plot contour of displacements in Z directiont
+opt.rx     = true;   % Plot contour of rotations about X axis
+opt.ry     = true;   % Plot contour of rotations about Y axis
+opt.rz     = true;   % Plot contour of rotations about Z axis
+opt.temp   = true;   % Plot contour of temperature field
 
-% Setup mesh result options:
-sim.res.eid = true;
-sim.res.nid = true;
+% Smoothing:
+opt.smooth = true;   % Smooth element results at common nodes
 
-% Setup nodal result options:
-sim.res.scl = 1.0;
-sim.res.dx  = false;  sim.res.dy  = false;  sim.res.dz  = false;
-sim.res.rx  = false;  sim.res.ry  = false;  sim.res.rz  = false;
+% Element stress result:
+opt.sxx    = true;   % Plot contour of normal stresses in X direction
+opt.syy    = true;   % Plot contour of normal stresses in Y direction
+opt.szz    = true;   % Plot contour of normal stresses in Z direction
+opt.txy    = true;   % Plot contour of XY shear stresses
+opt.txz    = true;   % Plot contour of XZ shear stresses
+opt.tyz    = true;   % Plot contour of YZ shear stresses
+opt.s1     = true;   % Plot contour of principal stresses 1
+opt.s2     = true;   % Plot contour of principal stresses 2
+opt.s3     = true;   % Plot contour of principal stresses 3
+opt.taumax = true;   % Plot contour of maximum shear stresses
 
-% Setup pption for smoothing element results:
-sim.res.smooth = true;
+% Element internal forces result:
+opt.qxz    = true;   % Plot contour of XZ shear force
+opt.qyz    = true;   % Plot contour of YZ shear force 
+opt.mxx    = true;   % Plot contour of moment about X direction
+opt.myy    = true;   % Plot contour of moment about Y direction
+opt.mxy    = true;   % Plot contour of torsion moment
+opt.m1     = true;   % Plot contour of principal moment 1
+opt.m2     = true;   % Plot contour of principal moment 2
+opt.tormax = true;   % Plot contour of maximum torsion
 
-% Setup element stress result options:
-sim.res.sxx = true;   sim.res.syy = true;   sim.res.szz = false;
-sim.res.txy = true;   sim.res.txz = false;  sim.res.tyz = false;
-sim.res.s1  = true;   sim.res.s2  = true;   sim.res.s3  = false;
-sim.res.taumax = true;
+% Element heat flux result:
+opt.fxx    = true;   % Plot contour of heat fluxes in X direction
+opt.fyy    = true;   % Plot contour of heat fluxes in Y direction
+opt.fzz    = true;   % Plot contour of heat fluxes in Z direction
+opt.fm     = true;   % Plot contour of heat flux module
 
-% Setup element internal forces result options:
-sim.res.mxx = false;   sim.res.myy = false;
-sim.res.qxz = false;   sim.res.qyz = false;
-sim.res.m1  = false;   sim.res.m2  = false;
-sim.res.tormax = false;
+% Other options:
+opt.tol    = 1e-5;   % Tolerance for cleaning small result values and differences
 
-% Run simulation
-sim.runAll();
+%% Run Analysis
+close(findall(0,'Type','figure')); clearvars -except opt; clc; 
+drv.Simulation(opt);

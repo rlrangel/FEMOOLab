@@ -1,25 +1,26 @@
-%% Anm_PlaneStress Class (Plane Stress Model)
+%% Anm_AxisymStress Class  (Axisymmetric Stress Model)
 %
 %% Description
 %
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <anm.html Anm: analysis model super-class> to deal
-% with plane stress models in a structural analysis.
+% with axisymmetric stress models in a structural analysis.
 %
 %% Class definition
 %
-classdef Anm_PlaneStress < fem.Anm
+classdef Anm_AxisymStress < fem.Anm
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anm_PlaneStress()
-            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.PLANE_STRESS,2,3,[1 2]);
+        function this = Anm_AxisymStress()
+            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.AXISYM_STRESS,2,4,[1 2]);
             
             % Types of response
             this.DISPL_X  = true;  % Displacement X
             this.DISPL_Y  = true;  % Displacement Y
             this.SIGMA_XX = true;  % Normal stress XX
             this.SIGMA_YY = true;  % Normal stress YY
+            this.SIGMA_ZZ = true;  % Normal stress ZZ
             this.TAU_XY   = true;  % Shear stress XY
             this.SIGMA_1  = true;  % Principal stress 1
             this.SIGMA_2  = true;  % Principal stress 2
@@ -35,11 +36,12 @@ classdef Anm_PlaneStress < fem.Anm
         function C = Cmtx(~,elem)
             E = elem.mat.E;
             v = elem.mat.v;
-            e = E/(1-(v^2));
+            e = E/((1+v)*(1-(2*v)));
             
-            C = e * [ 1    v    0;
-                      v    1    0;
-                      0    0    (1-v)/2 ];
+            C = e * [ 1-v  v    v    0;
+                      v    1-v  v    0;
+                      v    v    1-v  0;
+                      0    0    0    (1-(2*v))/2 ];
         end
         
         %------------------------------------------------------------------
@@ -47,21 +49,38 @@ classdef Anm_PlaneStress < fem.Anm
         % coordinates of an element.
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
-        function B = Bmtx(this,elem,GradNcar,~,~)
+        function B = Bmtx(this,elem,GradNcar,r,s)                
+            % Geometry and d.o.f. shape functions matrix evaluated at this point
+            M = elem.shape.Mmtx(r,s);
+            N = elem.shape.Nmtx(r,s);
+            
+            % Location of evaluation point (X coordinate is the radius in axisymm.)
+            p = M * elem.shape.carCoord;
+            radius = p(1);
+            
+            % Assemble strain matrix
             B = zeros(this.ndvc,elem.shape.nen*this.ndof);
             
             for i = 1:elem.shape.nen
-                B(1,2*i-1) = GradNcar(1,i);   B(1,2*i) = 0;
-                B(2,2*i-1) = 0;               B(2,2*i) = GradNcar(2,i);
-                B(3,2*i-1) = GradNcar(2,i);   B(3,2*i) = GradNcar(1,i);
+                B(1,2*i-1) = GradNcar(1,i);   B(1,2*i) = 0.0;
+                B(2,2*i-1) = N(i)/radius;     B(2,2*i) = 0.0;
+                B(3,2*i-1) = 0.0;             B(3,2*i) = GradNcar(2,i);
+                B(4,2*i-1) = GradNcar(2,i);   B(4,2*i) = GradNcar(1,i);
             end
         end
         
         %------------------------------------------------------------------
         % Return the ridigity coefficient at a given position in
         % parametric coordinates of an element.
-        function coeff = rigidityCoeff(~,elem,~,~)
-            coeff = elem.thk;
+        function coeff = rigidityCoeff(~,elem,r,s)
+            % Geometry shape functions matrix evaluated at this point
+            M = elem.shape.Mmtx(r,s);
+            
+            % Location of evaluation point (X coordinate is the radius in axisymm.)
+            % For axisymmetric analysis, the rigidity coefficient is the
+            % radius at the given point.
+            p = M * elem.shape.carCoord;
+            coeff = p(1);
         end
         
         %------------------------------------------------------------------
@@ -100,7 +119,13 @@ classdef Anm_PlaneStress < fem.Anm
         %  B: strain matrix
         %  u: displacements results
         function str = pointDerivedVar(~,C,B,u)
-            str = C * B * u;
+            % Compute point stress components
+            str_raw = C * B * u;
+            
+            % Skip tangential stress component
+            str(1) = str_raw(1);
+            str(2) = str_raw(3);
+            str(3) = str_raw(4);
         end
         
         %------------------------------------------------------------------
