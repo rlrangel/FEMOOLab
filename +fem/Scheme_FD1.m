@@ -8,9 +8,11 @@
 %
 % The following schemes are implemented with the same expression,
 % in which the value of the parameter 'theta' defines each one:
-%  * Foward Euler (fully explicit):   theta = 1.0
-%  * Backward Euler (fully implicit): theta = 0.0
-%  * Crank Nicolson (semi-implicit):  theta = 0.5
+%  * Foward Euler (fully explicit):      theta = 1.0
+%  * Backward Euler (fully implicit):    theta = 0.0
+%  * Crank Nicolson (semi-implicit):     theta = 1/2
+%  * Foward Galerkin:                    theta = 1/3
+%  * Backward Galerkin:                  theta = 2/3
 %
 % Ref.: Fundamentals of the Finite Element Method for Heat and Fluid Flow,
 %       R. W. Lewis, P. Nithiarasu and K. N. Seetharamu
@@ -44,6 +46,7 @@ classdef Scheme_FD1 < fem.Scheme
     methods
         %------------------------------------------------------------------
         function this = Scheme_FD1(theta)
+            type = fem.Scheme.FOWARD_EULER; % default scheme
             switch theta
                 case 0.0
                     type = fem.Scheme.FOWARD_EULER;
@@ -51,6 +54,10 @@ classdef Scheme_FD1 < fem.Scheme
                     type = fem.Scheme.BACKWARD_EULER;
                 case 0.5
                     type = fem.Scheme.CRANK_NICOLSON;
+                case 1/3
+                    type = fem.Scheme.FOWARD_GALERKIN;
+                case 2/3
+                    type = fem.Scheme.BACKWARD_GALERKIN;
             end
             this = this@fem.Scheme(type,1);
             this.theta = theta;

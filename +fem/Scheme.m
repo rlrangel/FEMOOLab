@@ -25,13 +25,15 @@ classdef Scheme < handle
         FOWARD_EULER       = int32(1);
         BACKWARD_EULER     = int32(2);
         CRANK_NICOLSON     = int32(3);
-        CENTRAL_DIFFERENCE = int32(4);
-        RUNGE_KUTTA_1      = int32(5);
-        RUNGE_KUTTA_2      = int32(6);
-        RUNGE_KUTTA_3      = int32(7);
-        RUNGE_KUTTA_4      = int32(8);
-        RUNGE_KUTTA_5      = int32(9);
-        NEWMARK            = int32(10);
+        FOWARD_GALERKIN    = int32(4);
+        BACKWARD_GALERKIN  = int32(5);
+        CENTRAL_DIFFERENCE = int32(6);
+        RUNGE_KUTTA_1      = int32(7);
+        RUNGE_KUTTA_2      = int32(8);
+        RUNGE_KUTTA_3      = int32(9);
+        RUNGE_KUTTA_4      = int32(10);
+        RUNGE_KUTTA_5      = int32(11);
+        NEWMARK            = int32(12);
     end
     
     %% Public properties

@@ -187,6 +187,10 @@ classdef Read < handle
                 sim.anl.scheme = fem.Scheme_FD1(0.0);
             elseif (strcmp(string,'''CRANK_NICOLSON''') || strcmp(string,'''crank_nicolson'''))
                 sim.anl.scheme = fem.Scheme_FD1(0.5);
+            elseif (strcmp(string,'''FOWARD_GALERKIN''') || strcmp(string,'''foward_galerkin'''))
+                sim.anl.scheme = fem.Scheme_FD1(1/3);
+            elseif (strcmp(string,'''BACKWARD_GALERKIN''') || strcmp(string,'''backward_galerkin'''))
+                sim.anl.scheme = fem.Scheme_FD1(2/3);
             elseif (strcmp(string,'''CENTRAL_DIFFERENCE''') || strcmp(string,'''central_difference'''))
                 sim.anl.scheme = fem.Scheme_FD2();
             elseif (strcmp(string,'''RUNGE_KUTTA_4''') || strcmp(string,'''runge_kutta_4'''))
