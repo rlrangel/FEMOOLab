@@ -495,7 +495,7 @@ classdef Plot < handle
                 this.plotMeshLabels(mdl);
             end
             
-            % PLOT TEMPERATURE ANIMATION (NEED TO IMPROVE IT - IT IS VERY SLOW !!!)
+            % Pot transient animation
             if (mdl.res.temp)
                 % Number of frames
                 steps = 1:mdl.res.steps;
@@ -530,7 +530,7 @@ classdef Plot < handle
                 temp_min = min(min(mdl.res.U));
                 temp_max = max(max(mdl.res.U));
                 
-                % Create figure object for temperature plot movie
+                % Create figure object
                 this.fig_temp = figure;
                 ax = gca;
                 movegui(ax,'center');
@@ -540,23 +540,15 @@ classdef Plot < handle
                     caxis([temp_min temp_max]);
                 end
                 colorbar;
-                ax.NextPlot = 'replaceChildren';
                 
-                % Create frames
-                M(loops) = struct('cdata',[],'colormap',[]);
-                %this.fig_temp.Visible = 'off';
+                % Plot animation
                 for i = 1:loops
-                    %t = i*mdl.res.output_freq;
-                    %title_text = sprintf('Temperature field, time: %f',mdl.res.times(t));
-                    %title(title_text);
                     for j = 1:mdl.nel
                         patch(XX(j,:,i),YY(j,:,i),ZZ(j,:,i));
                     end
-                    drawnow;
-                    M(i) = getframe;
+                    title(['Temperature, t = ',num2str(steps(i))],'FontSize',14)
+                    pause(eps);
                 end
-                %this.fig_temp.Visible = 'on';
-                movie(M);
             end
         end
         
