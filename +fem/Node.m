@@ -28,10 +28,15 @@ classdef Node < handle
         % Boundary conditions
         fixdDOF   logical = logical.empty;      % vector of flags for fixed d.o.f.'s (indicate essential boundary conditions)
         prscDOF   double  = double.empty;       % vector of prescribed values of fixed d.o.f.'s
+        prscNBC   double  = double.empty;       % vector of prescribed values of natural boundary conditions (applied forcing components)
+        
+        % Initial conditions
         initDOF   double  = double.empty;       % vector of initial values of free d.o.f.'s
         initDOFt  double  = double.empty;       % vector of initial values of 1st time derivatives of free d.o.f.'s
         initDOFtt double  = double.empty;       % vector of initial values of 2nd time derivatives of free d.o.f.'s
-        prscNBC   double  = double.empty;       % vector of prescribed values of natural boundary conditions (applied forcing components)
+        
+        % Convection conditions
+        convVel   double  = double.empty;       % vector of convection velocity values of free d.o.f.'s [vel_X vel_Y vel_Z]
     end
     
     %% Constructor method

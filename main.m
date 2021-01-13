@@ -17,7 +17,7 @@
 % Mesh labels:
 opt.eid    = false;  % Plot element numbers
 opt.nid    = false;  % Plot node numbers
-opt.gid    = false;  % Plot gauss numbers
+opt.gid    = false;  % Plot gauss points
 
 % Mesh deformation:
 opt.deform = true;   % Plot deformed mesh

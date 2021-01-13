@@ -71,6 +71,20 @@ classdef Anm_PlaneStress < fem.Anm
         end
         
         %------------------------------------------------------------------
+        % Assemble global stiffness matrix.
+        function K = gblStiffMtx(~,mdl)
+            % Initialize global stiffness matrix
+            K = zeros(mdl.neq,mdl.neq);
+            
+            % Get element matrices and assemble global matrix
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
+                K(gle,gle) = K(gle,gle) + Kdiff;
+            end
+        end
+        
+        %------------------------------------------------------------------
         % Assemble global matrix related to 1st time derivative of d.o.f.'s.
         % Damping matrix in structural analysis.
         function C = gblRate1Mtx(~,mdl)

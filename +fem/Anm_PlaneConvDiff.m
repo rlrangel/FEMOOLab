@@ -1,19 +1,19 @@
-%% Anm_PlaneConduction Class (Plane Heat Conduction Model)
+%% Anm_PlaneConvDiff Class (Plane Heat Convection Diffusion Model)
 %
 %% Description
 %
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <anm.html Anm: analysis model super-class> to deal
-% with plane heat conduction models in a thermal analysis.
+% with plane convection diffusion models in a thermal analysis.
 %
 %% Class definition
 %
-classdef Anm_PlaneConduction < fem.Anm
+classdef Anm_PlaneConvDiff < fem.Anm
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anm_PlaneConduction()
-            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.PLANE_CONDUCTION,1,2,1);
+        function this = Anm_PlaneConvDiff()
+            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.CONVECTION_DIFFUSION,1,2,1);
             
             % Types of response
             this.TEMPERATURE = true;  % Temperature
@@ -72,8 +72,9 @@ classdef Anm_PlaneConduction < fem.Anm
             for i = 1:mdl.nel
                 gle = mdl.elems(i).gle;
                 Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
+                Kconv = mdl.elems(i).stiffConvMtx(); % convective term
                 Krad  = mdl.elems(i).stiffRadMtx();  % radiation B.C.
-                K(gle,gle) = K(gle,gle) + Kdiff + Krad;
+                K(gle,gle) = K(gle,gle) + Kdiff + Kconv + Krad;
             end
         end
         

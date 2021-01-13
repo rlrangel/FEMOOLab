@@ -83,7 +83,7 @@ classdef Read < handle
                         status = this.elementQuad8(fid,mdl,gauss_quad,thickness,intgrorder);
                     case '%LOAD.CASE.NODAL.DISPLACEMENT'
                         status = this.nodePrescDispl(fid,mdl);
-                    case '%LOAD.CASE.NODAL.INITIAL.DISPLACEMENT'  % This is not on NF documentation
+                    case '%LOAD.CASE.NODAL.INITIAL.DISPLACEMENT' % This is not on NF documentation
                         status = this.nodeInitDispl(fid,mdl);
                     case '%LOAD.CASE.NODAL.FORCES'
                         status = this.loadPoint(fid,mdl);
@@ -93,13 +93,15 @@ classdef Read < handle
                         status = this.nodeInitTemp(fid,mdl);
                     case '%LOAD.CASE.NODAL.FLUX' % This is not on NF documentation
                         status = this.fluxPoint(fid,mdl);
+                    case '%LOAD.CASE.NODAL.CONVECTION.VELOCITY' % This is not on NF documentation
+                        status = this.nodeConvecVel(fid,mdl);
                     case '%LOAD.CASE.LINE.FORCE.UNIFORM'
                         status = this.loadLineUnif(fid,mdl);
                     case '%LOAD.CASE.DOMAIN.FORCE.UNIFORM'
                         status = this.loadDomainUnif(fid,mdl);
                     case '%LOAD.CASE.LINE.HEAT.FLUX.UNIFORM'
                         status = this.fluxLineUnif(fid,mdl);
-                    case '%LOAD.CASE.LINE.CONVECTION.UNIFORM' % This is reading an adapted format of NF documentation
+                    case '%LOAD.CASE.LINE.CONVECTION.UNIFORM' % This is for convection boundary condition (reading an adapted format of NF documentation)
                         status = this.ConvecLineUnif(fid,mdl);
                     case '%LOAD.CASE.AREA.HEAT.FLUX.UNIFORM' % This is being used as DOMAIN heat flux
                         status = this.fluxDomainUnif(fid,mdl);
@@ -161,6 +163,12 @@ classdef Read < handle
                 sim.anl = fem.Anl_LinearStatic();
             elseif (strcmp(string,'''AXISYM_CONDUCTION_TRANSIENT''') || strcmp(string,'''axisym_conduction_transient'''))
                 sim.mdl.anm = fem.Anm_AxisymConduction();
+                sim.anl = fem.Anl_LinearTransient();
+            elseif (strcmp(string,'''PLANE_CONVECTION_DIFFUSION''') || strcmp(string,'''plane_convection_diffusion'''))
+                sim.mdl.anm = fem.Anm_PlaneConvDiff();
+                sim.anl = fem.Anl_LinearStatic();
+            elseif (strcmp(string,'''PLANE_CONVECTION_DIFFUSION_TRANSIENT''') || strcmp(string,'''plane_convection_diffusion_transient'''))
+                sim.mdl.anm = fem.Anm_PlaneConvDiff();
                 sim.anl = fem.Anl_LinearTransient();
             else
                 fprintf('Invalid input data: analysis model!\n');
@@ -1127,6 +1135,45 @@ classdef Read < handle
             end
         end
         
+        %------------------------------------------------------------------
+        function status = nodeConvecVel(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.nodes))
+                fprintf('Node coordinates must be provided before convection velocities!\n');
+                status = 0;
+                return;
+            elseif (mdl.anm.phys == fem.Anm.STRUCTURAL)
+                return;
+            end
+            
+            % Total number of nodes with convection velocities
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,mdl.nnp,'number of nodes with convection velocities'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Node ID
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,mdl.nnp,'node ID for convection velocity specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Convection velocities values: vel_x, vel_y, vel_z
+                [vel,count] = fscanf(fid,'%f',3);
+                if (count ~= 3)
+                    fprintf('Invalid convection velocities of node %d\n',id);
+                    status = 0;
+                    return;
+                end
+                
+                % Store data
+                mdl.nodes(id).convVel = vel;
+            end
+        end
+        
         %--------------------------------------------------------------------------
         function status = loadLineUnif(this,fid,mdl)
             status = 1;
@@ -1275,16 +1322,16 @@ classdef Read < handle
         function status = ConvecLineUnif(this,fid,mdl)
             status = 1;
             if (isempty(mdl.elems))
-                fprintf('Elements must be provided before line convection!\n');
+                fprintf('Elements must be provided before line convection boundary condition!\n');
                 status = 0;
                 return;
             elseif (mdl.anm.phys == fem.Anm.STRUCTURAL)
                 return;
             end
             
-            % Total number of edges with line convection
+            % Total number of edges with line convection  boundary condition
             n = fscanf(fid,'%d',1);
-            if (~this.chkInt(n,inf,'number of edges with line convection'))
+            if (~this.chkInt(n,inf,'number of edges with line convection boundary condition'))
                 status = 0;
                 return;
             end
@@ -1293,17 +1340,17 @@ classdef Read < handle
             for i = 1:n
                 % Element ID
                 id = fscanf(fid,'%d',1);
-                if (~this.chkInt(id,mdl.nel,'element ID for line convection specification'))
+                if (~this.chkInt(id,mdl.nel,'element ID for line convection boundary condition specification'))
                     status = 0;
                     return;
                 end
                 
                 % Line convection nodes (node1,node2)
                 nodes = fscanf(fid,'%d',2);
-                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line convection specification'))
+                if (~this.chkInt(nodes(1),mdl.nnp,'node ID for line convection boundary condition specification'))
                     status = 0;
                     return;
-                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line convection specification'))
+                elseif (~this.chkInt(nodes(2),mdl.nnp,'node ID for line convection boundary condition specification'))
                     status = 0;
                     return;
                 end
@@ -1313,7 +1360,7 @@ classdef Read < handle
                 h = convec(1);
                 Tenv = convec(2);
                 if (count ~= 2)
-                    fprintf('Invalid line convection specification of element %d\n',id);
+                    fprintf('Invalid line convection boundary condition specification of element %d\n',id);
                     status = 0;
                     return;
                 end
@@ -1443,8 +1490,9 @@ classdef Read < handle
                 mdl.res.temp = opt.temp;
                 mdl.res.fm   = opt.fm;
                 
-                if (mdl.anm.type == fem.Anm.PLANE_CONDUCTION || ...
-                    mdl.anm.type == fem.Anm.AXISYM_CONDUCTION)
+                if (mdl.anm.type == fem.Anm.PLANE_CONDUCTION  || ...
+                    mdl.anm.type == fem.Anm.AXISYM_CONDUCTION || ...
+                    mdl.anm.type == fem.Anm.CONVECTION_DIFFUSION)
                     mdl.res.fxx = opt.fxx;
                     mdl.res.fyy = opt.fyy;
                 end

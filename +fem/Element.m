@@ -55,8 +55,8 @@ classdef Element < handle
     %% Public methods
     methods
         %------------------------------------------------------------------
-        % Compute stiffness/conductivity matrix for diffusion effect.
-        function K = diffStiffMtx(this)
+        % Compute stiffness matrix part accounting for diffusion.
+        function K = stiffDiffMtx(this)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
 
@@ -106,9 +106,68 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
-        % Compute stiffness/conductivity matrix for the effect of convection
-        % boundary conditions (d.o.f. dependent natural B.C.'s) over edges.
-        function K = convStiffMtx(this)
+        % Compute stiffness matrix part accounting for convection.
+        function K = stiffConvMtx(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
+
+            % Initialize element matrix
+            K = zeros(nen*ndof,nen*ndof);
+            
+            % Cartesian coordinates matrix
+            X = this.shape.carCoord;
+            
+            % Asemble nodal velocity vector (currently, X and Y componenets only!)
+            V = zeros(nen,2);
+            for i = 1:nen
+                if (~isempty(this.shape.nodes(i).convVel))
+                    V(i,1:2) = this.shape.nodes(i).convVel(1:2);
+                end
+            end
+            
+            % Gauss points and weights
+            [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
+            
+            % Loop over Gauss integration points
+            for i = 1:ngp
+                % Parametric coordinates
+                r = gp(1,i);
+                s = gp(2,i);
+                
+                % Shape functions matrix
+                N = this.shape.Nmtx(r,s);
+                
+                % Matrix of geometry shape functions derivatives
+                % w.r.t. parametric coordinates
+                GradMpar = this.shape.gradMmtx(r,s);
+                
+                % Jacobian matrix
+                J = GradMpar * X;
+                detJ = det(J);
+                
+                % Matrix of d.o.f. shape functions derivatives
+                % w.r.t. parametric coordinates
+                GradNpar = this.shape.gradNmtx(r,s);
+                
+                % Matrix of d.o.f. shape functions derivatives
+                % w.r.t. cartesian coordinates
+                GradNcar = J \ GradNpar;
+                
+                % Strain matrix 
+                B = this.anm.Bmtx(this,GradNcar,r,s);
+                
+                % Velocity at Gauss point
+                v = N * V;
+                
+                % Accumulate Gauss point contributions
+                K = K + w(i) * N' * v * B * detJ;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Compute stiffness matrix part accounting for radiation boundary
+        % conditions (d.o.f. dependent natural B.C.'s) over edges.
+        function K = stiffRadMtx(this)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
             
@@ -142,7 +201,7 @@ classdef Element < handle
                 % Edge nodes coordinates
                 X = this.shape.carCoord(edgLocIds,:);
                 
-                % Convection coefficient
+                % Radiation coefficient
                 h = this.lineNBC2(q,3);
                 
                 % Gauss points and weights for integration on edge
