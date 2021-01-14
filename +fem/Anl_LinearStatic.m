@@ -29,7 +29,7 @@ classdef Anl_LinearStatic < fem.Anl
             
             % Assemble global stiffness matrix
             fprintf('Assembling stiffness matrix...\n');
-            K = mdl.gblStiffMtx();
+            K = mdl.anm.gblStiffMtx(mdl);
             
             % Check for singular matrix
             if ((rcond(K(1:mdl.neqf,1:mdl.neqf)) < 10e-15))
@@ -43,6 +43,9 @@ classdef Anl_LinearStatic < fem.Anl
             F = zeros(mdl.neq,1);
             F = mdl.addPointForce(F);
             F = mdl.addEquivForce(F);
+            
+            % Stabilization of convective term
+            %[K,F] = mdl.anm.stabConvec(mdl,K,F);
             
             % Assemble global vector of state variables
             U = zeros(mdl.neq,1);

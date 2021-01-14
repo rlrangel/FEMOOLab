@@ -17,6 +17,7 @@
 % * <anm_thickplate.html Anm_ThickPlate: thick plate analysis model subclass>
 % * <anm_planeconduction.html Anm_PlaneConduction: plane heat conduction analysis model subclass>
 % * <anm_axisymconduction.html Anm_AxisymConduction: axisymmetric heat conduction analysis model subclass>
+% * <anm_planeconvdiff.html Anm_PlaneConvDiff: plane heat convection diffusion analysis model subclass>
 %
 %% Class definition
 %
@@ -28,12 +29,13 @@ classdef Anm < handle
         THERMAL    = int32(2);
         
         % Types of analysis model
-        PLANE_STRESS      = int32(1);
-        PLANE_STRAIN      = int32(2);
-        AXISYM_STRESS     = int32(3);
-        THICK_PLATE       = int32(4);
-        PLANE_CONDUCTION  = int32(5);
-        AXISYM_CONDUCTION = int32(6);
+        PLANE_STRESS         = int32(1);
+        PLANE_STRAIN         = int32(2);
+        AXISYM_STRESS        = int32(3);
+        THICK_PLATE          = int32(4);
+        PLANE_CONDUCTION     = int32(5);
+        AXISYM_CONDUCTION    = int32(6);
+        CONVECTION_DIFFUSION = int32(7);
     end
     
     %% Flags for types of responses
@@ -78,7 +80,7 @@ classdef Anm < handle
         type int32 = int32.empty;  % flag for type of analysis model
         ndof int32 = int32.empty;  % number of d.o.f.'s per node
         ndvc int32 = int32.empty;  % number of derived variable components
-        gla int32  = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
+        gla  int32 = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
     end
     
     %% Constructor method
@@ -115,12 +117,21 @@ classdef Anm < handle
         coeff = massCoeff(this,elem);
         
         %------------------------------------------------------------------
+        % Assemble global stiffness matrix.
+        K = gblStiffMtx(this,mdl);
+        
+        %------------------------------------------------------------------
         % Assemble global matrix related to 1st time derivative of d.o.f.'s.
         C = gblRate1Mtx(this,mdl);
         
         %------------------------------------------------------------------
         % Assemble global matrix related to 2nd time derivative of d.o.f.'s.
         M = gblRate2Mtx(this,mdl);
+        
+        %------------------------------------------------------------------
+        % Modify system arrays to include stabilization components for the
+        % convective term.
+        [K,F] = stabConvec(this,mdl,K,F);
         
         %------------------------------------------------------------------
         % Compute derived variable components at a given point of an element.

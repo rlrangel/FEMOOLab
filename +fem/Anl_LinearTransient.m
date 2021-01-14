@@ -44,7 +44,7 @@ classdef Anl_LinearTransient < fem.Anl
             
             % Assemble global matrices
             fprintf('Assembling global arrays...\n');
-            K = mdl.gblStiffMtx();        % stiffness matrix
+            K = mdl.anm.gblStiffMtx(mdl); % stiffness matrix
             C = mdl.anm.gblRate1Mtx(mdl); % matrix related to 1st time derivatives
             M = mdl.anm.gblRate2Mtx(mdl); % matrix related to 2nd time derivatives
             

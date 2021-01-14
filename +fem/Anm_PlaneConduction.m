@@ -52,14 +52,29 @@ classdef Anm_PlaneConduction < fem.Anm
         %------------------------------------------------------------------
         % Return the ridigity coefficient at a given position in
         % parametric coordinates of an element.
-        function coeff = rigidityCoeff(~,elem,~,~)
-            coeff = elem.thk;
+        function coeff = rigidityCoeff(~,~,~,~)
+            coeff = 1;
         end
         
         %------------------------------------------------------------------
         % Return the mass coefficient.
         function coeff = massCoeff(~,elem)
             coeff = elem.mat.rho * elem.mat.cp;
+        end
+        
+        %------------------------------------------------------------------
+        % Assemble global stiffness matrix.
+        function K = gblStiffMtx(~,mdl)
+            % Initialize global stiffness matrix
+            K = zeros(mdl.neq,mdl.neq);
+            
+            % Get element matrices and assemble global matrix
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
+                Krad  = mdl.elems(i).stiffRadMtx();  % radiation B.C.
+                K(gle,gle) = K(gle,gle) + Kdiff + Krad;
+            end
         end
         
         %------------------------------------------------------------------
@@ -82,6 +97,13 @@ classdef Anm_PlaneConduction < fem.Anm
         function M = gblRate2Mtx(~,mdl)
             % NOT IMPLEMENTED
             M = zeros(mdl.neq,mdl.neq);
+        end
+        
+        %------------------------------------------------------------------
+        % Modify system arrays to include stabilization components for the
+        % convective term.
+        function [K,F] = stabConvec(~,~,K,F)
+            return;
         end
         
         %------------------------------------------------------------------

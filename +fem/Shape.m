@@ -56,6 +56,10 @@ classdef Shape < handle
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
         %------------------------------------------------------------------
+        % Compute shape size (length, area, or volume).
+        s = size(this);
+        
+        %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.
         M = Mmtx(this,r,s);

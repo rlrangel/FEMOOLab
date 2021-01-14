@@ -65,6 +65,14 @@ classdef Shape_Quad8 < fem.Shape
     % Implementation of the abstract methods declared in super-class Shape
     methods
         %------------------------------------------------------------------
+        % Computes shape size (area).
+        function s = size(this)
+            x = this.carCoord(1:4,1);
+            y = this.carCoord(1:4,2);
+            s = polyarea(x,y);
+        end
+        
+        %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.
         % Since this is an isoparametric element shape it returns the

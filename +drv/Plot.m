@@ -135,7 +135,7 @@ classdef Plot < handle
                     this.plotStatic(sim.mdl);
                 elseif (sim.anl.type == fem.Anl.LINEAR_TRANSIENT)
                     this.plotTransientCurves(sim.mdl);
-                    this.plotTransientContours(sim.mdl);
+                    this.plotTransientContours(sim.mdl,sim.anl);
                 end
             end
         end
@@ -481,7 +481,7 @@ classdef Plot < handle
         
         %------------------------------------------------------------------
         % Plot transient analysis contours.
-        function plotTransientContours(this,mdl)
+        function plotTransientContours(this,mdl,anl)
             % Display mesh labels
             if (mdl.res.eid || mdl.res.nid || mdl.res.gid)
                 this.fig_lbl = figure;
@@ -546,7 +546,7 @@ classdef Plot < handle
                     for j = 1:mdl.nel
                         patch(XX(j,:,i),YY(j,:,i),ZZ(j,:,i));
                     end
-                    title(['Temperature, t = ',num2str(steps(i))],'FontSize',14)
+                    title(['Temperature, t = ',num2str(anl.incr*steps(i))],'FontSize',12)
                     pause(eps);
                 end
             end
@@ -1361,11 +1361,12 @@ classdef Plot < handle
         %------------------------------------------------------------------
         % Create figures for plotting results of static analysis.
         function createStaticFigs(this,mdl)
-            if (mdl.anm.type == fem.Anm.PLANE_STRESS     || ...
-                mdl.anm.type == fem.Anm.PLANE_STRAIN     || ...
-                mdl.anm.type == fem.Anm.AXISYM_STRESS    || ...
-                mdl.anm.type == fem.Anm.PLANE_CONDUCTION || ...
-                mdl.anm.type == fem.Anm.AXISYM_CONDUCTION)
+            if (mdl.anm.type == fem.Anm.PLANE_STRESS      || ...
+                mdl.anm.type == fem.Anm.PLANE_STRAIN      || ...
+                mdl.anm.type == fem.Anm.AXISYM_STRESS     || ...
+                mdl.anm.type == fem.Anm.PLANE_CONDUCTION  || ...
+                mdl.anm.type == fem.Anm.AXISYM_CONDUCTION || ...
+                mdl.anm.type == fem.Anm.CONVECTION_DIFFUSION)
                 this.createStaticFigsInplane(mdl);
             elseif (mdl.anm.type == fem.Anm.THICK_PLATE)
                 this.createStaticFigsOutplane(mdl);

@@ -149,21 +149,6 @@ classdef Model < handle
         end
         
         %------------------------------------------------------------------
-        % Assemble global stiffness/conductivity matrix.
-        function K = gblStiffMtx(this)
-            % Initialize global stiffness/conductivity matrix
-            K = zeros(this.neq,this.neq);
-            
-            % Get element matrices and assemble global matrix
-            for i = 1:this.nel
-                gle = this.elems(i).gle;
-                Kdiff = this.elems(i).diffStiffMtx();
-                Kconv = this.elems(i).convStiffMtx();
-                K(gle,gle) = K(gle,gle) + Kdiff + Kconv;
-            end
-        end
-        
-        %------------------------------------------------------------------
         % Add values of natural boundary conditions prescribed at nodal
         % points to global forcing vector.
         function F = addPointForce(this,F)

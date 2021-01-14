@@ -1,19 +1,19 @@
-%% Anm_AxisymConduction Class  (Axisymmetric Heat Conduction Model)
+%% Anm_PlaneConvDiff Class (Plane Heat Convection Diffusion Model)
 %
 %% Description
 %
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <anm.html Anm: analysis model super-class> to deal
-% with axisymmetric heat conduction models in a thermal analysis.
+% with plane convection diffusion models in a thermal analysis.
 %
 %% Class definition
 %
-classdef Anm_AxisymConduction < fem.Anm
+classdef Anm_PlaneConvDiff < fem.Anm
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anm_AxisymConduction()
-            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.AXISYM_CONDUCTION,1,2,1);
+        function this = Anm_PlaneConvDiff()
+            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.CONVECTION_DIFFUSION,1,2,1);
             
             % Types of response
             this.TEMPERATURE = true;  % Temperature
@@ -40,7 +40,7 @@ classdef Anm_AxisymConduction < fem.Anm
         % coordinates of an element.
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
-        function B = Bmtx(this,elem,GradNcar,~,~)                
+        function B = Bmtx(this,elem,GradNcar,~,~)
             B = zeros(this.ndvc,elem.shape.nen*this.ndof);
             
             for i = 1:elem.shape.nen
@@ -52,15 +52,8 @@ classdef Anm_AxisymConduction < fem.Anm
         %------------------------------------------------------------------
         % Return the ridigity coefficient at a given position in
         % parametric coordinates of an element.
-        function coeff = rigidityCoeff(~,elem,r,s)
-            % Geometry shape functions matrix evaluated at this point
-            M = elem.shape.Mmtx(r,s);
-            
-            % Location of evaluation point (X coordinate is the radius in axisymm.)
-            % For axisymmetric analysis, the rigidity coefficient is the
-            % radius at the given point.
-            p = M * elem.shape.carCoord;
-            coeff = p(1);
+        function coeff = rigidityCoeff(~,~,~,~)
+            coeff = 1;
         end
         
         %------------------------------------------------------------------
@@ -79,8 +72,9 @@ classdef Anm_AxisymConduction < fem.Anm
             for i = 1:mdl.nel
                 gle = mdl.elems(i).gle;
                 Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
+                Kconv = mdl.elems(i).stiffConvMtx(); % convective term
                 Krad  = mdl.elems(i).stiffRadMtx();  % radiation B.C.
-                K(gle,gle) = K(gle,gle) + Kdiff + Krad;
+                K(gle,gle) = K(gle,gle) + Kdiff + Kconv + Krad;
             end
         end
         
@@ -108,9 +102,21 @@ classdef Anm_AxisymConduction < fem.Anm
         
         %------------------------------------------------------------------
         % Modify system arrays to include stabilization components for the
-        % convective term.
-        function [K,F] = stabConvec(~,~,K,F)
-            return;
+        % convective term (currently, only SUPG in steady-state analysis).
+        function [K,F] = stabConvec(~,mdl,K,F)
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                
+                % Add stabilization component to stiffness matrix
+                Kstab = mdl.elems(i).stiffStabMtx();
+                K(gle,gle) = K(gle,gle) + Kstab;
+                
+                % Add stabilization component from internal domain source
+                if (~isempty(mdl.elems(i).src))
+                    Fstab = mdl.elems(i).domainStabForceVct();
+                    F(gle) = F(gle) + Fstab;
+                end
+            end
         end
         
         %------------------------------------------------------------------
