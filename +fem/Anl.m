@@ -11,7 +11,7 @@
 %
 %% Subclasses
 %
-% * <anl_linearstatic.html Anl_LinearStatic: linear static analysis subclass>
+% * <anl_linearsteadystate.html Anl_LinearSteadyState: linear steady state analysis subclass>
 % * <anl_lineartransient.html Anl_LinearTransient: linear transient analysis subclass>
 %
 %% Class definition
@@ -20,8 +20,8 @@ classdef Anl < handle
     %% Constant values
     properties (Constant = true, Access = public)
         % Types of analysis
-        LINEAR_STATIC    = int32(1);
-        LINEAR_TRANSIENT = int32(2);
+        LINEAR_STEADYSTATE = int32(1);
+        LINEAR_TRANSIENT   = int32(2);
     end
     
     %% Public properties

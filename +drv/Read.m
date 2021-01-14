@@ -130,43 +130,43 @@ classdef Read < handle
             
             if (strcmp(string,'''PLANE_STRESS''') || strcmp(string,'''plane_stress'''))
                 sim.mdl.anm = fem.Anm_PlaneStress();
-                sim.anl = fem.Anl_LinearStatic();
+                sim.anl = fem.Anl_LinearSteadyState();
             elseif (strcmp(string,'''PLANE_STRESS_TRANSIENT''') || strcmp(string,'''plane_stress_transient'''))
                 sim.mdl.anm = fem.Anm_PlaneStress();
                 sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''PLANE_STRAIN''') || strcmp(string,'''plane_strain'''))
                 sim.mdl.anm = fem.Anm_PlaneStrain();
-                sim.anl = fem.Anl_LinearStatic();
+                sim.anl = fem.Anl_LinearSteadyState();
             elseif (strcmp(string,'''PLANE_STRAIN_TRANSIENT''') || strcmp(string,'''plane_strain_transient'''))
                 sim.mdl.anm = fem.Anm_PlaneStrain();
                 sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''AXISYM_STRESS''') || strcmp(string,'''axisym_stress'''))
                 sim.mdl.anm = fem.Anm_AxisymStress();
-                sim.anl = fem.Anl_LinearStatic();
+                sim.anl = fem.Anl_LinearSteadyState();
             elseif (strcmp(string,'''AXISYM_STRESS_TRANSIENT''') || strcmp(string,'''axisym_stress_transient'''))
                 sim.mdl.anm = fem.Anm_AxisymStress();
                 sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''THICK_PLATE''') || strcmp(string,'''thick_plate'''))
                 sim.mdl.anm = fem.Anm_ThickPlate();
-                sim.anl = fem.Anl_LinearStatic();
+                sim.anl = fem.Anl_LinearSteadyState();
             elseif (strcmp(string,'''THICK_PLATE_TRANSIENT''') || strcmp(string,'''thick_plate_transient'''))
                 sim.mdl.anm = fem.Anm_ThickPlate();
                 sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''PLANE_CONDUCTION''') || strcmp(string,'''plane_conduction'''))
                 sim.mdl.anm = fem.Anm_PlaneConduction();
-                sim.anl = fem.Anl_LinearStatic();
+                sim.anl = fem.Anl_LinearSteadyState();
             elseif (strcmp(string,'''PLANE_CONDUCTION_TRANSIENT''') || strcmp(string,'''plane_conduction_transient'''))
                 sim.mdl.anm = fem.Anm_PlaneConduction();
                 sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''AXISYM_CONDUCTION''') || strcmp(string,'''axisym_conduction'''))
                 sim.mdl.anm = fem.Anm_AxisymConduction();
-                sim.anl = fem.Anl_LinearStatic();
+                sim.anl = fem.Anl_LinearSteadyState();
             elseif (strcmp(string,'''AXISYM_CONDUCTION_TRANSIENT''') || strcmp(string,'''axisym_conduction_transient'''))
                 sim.mdl.anm = fem.Anm_AxisymConduction();
                 sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''PLANE_CONVECTION_DIFFUSION''') || strcmp(string,'''plane_convection_diffusion'''))
                 sim.mdl.anm = fem.Anm_PlaneConvDiff();
-                sim.anl = fem.Anl_LinearStatic();
+                sim.anl = fem.Anl_LinearSteadyState();
             elseif (strcmp(string,'''PLANE_CONVECTION_DIFFUSION_TRANSIENT''') || strcmp(string,'''plane_convection_diffusion_transient'''))
                 sim.mdl.anm = fem.Anm_PlaneConvDiff();
                 sim.anl = fem.Anl_LinearTransient();
@@ -183,7 +183,7 @@ classdef Read < handle
                 fprintf('Analysis type must be provided before solution algorithm!\n');
                 status = 0;
                 return;
-            elseif (sim.anl.type == fem.Anl.LINEAR_STATIC)
+            elseif (sim.anl.type == fem.Anl.LINEAR_STEADYSTATE)
                 return;
             end
             
@@ -234,7 +234,7 @@ classdef Read < handle
                 fprintf('Analysis type must be provided before step increment!\n');
                 status = 0;
                 return;
-            elseif (sim.anl.type == fem.Anl.LINEAR_STATIC)
+            elseif (sim.anl.type == fem.Anl.LINEAR_STEADYSTATE)
                 return;
             end
             
@@ -261,7 +261,7 @@ classdef Read < handle
                 fprintf('Analysis type must be provided before number of steps!\n');
                 status = 0;
                 return;
-            elseif (sim.anl.type == fem.Anl.LINEAR_STATIC)
+            elseif (sim.anl.type == fem.Anl.LINEAR_STEADYSTATE)
                 return;
             end
             

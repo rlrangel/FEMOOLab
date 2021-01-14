@@ -131,8 +131,8 @@ classdef Plot < handle
             if (nargin > 0)
                 this.setupBoundingBox(sim.mdl);
                 
-                if (sim.anl.type == fem.Anl.LINEAR_STATIC)
-                    this.plotStatic(sim.mdl);
+                if (sim.anl.type == fem.Anl.LINEAR_STEADYSTATE)
+                    this.plotSteadyState(sim.mdl);
                 elseif (sim.anl.type == fem.Anl.LINEAR_TRANSIENT)
                     this.plotTransientCurves(sim.mdl);
                     this.plotTransientContours(sim.mdl,sim.anl);
@@ -172,10 +172,10 @@ classdef Plot < handle
         end
         
         %------------------------------------------------------------------
-        % Plot static analysis results.
-        function plotStatic(this,mdl)
+        % Plot steady state analysis results.
+        function plotSteadyState(this,mdl)
             % Create figures (windows) for displaying results
-            this.createStaticFigs(mdl);
+            this.createSteadyStateFigs(mdl);
             
             % Display results
             if (mdl.res.eid || mdl.res.nid || mdl.res.gid)
@@ -594,8 +594,8 @@ classdef Plot < handle
         end
         
         %------------------------------------------------------------------
-        % Create figures for plotting 2D inplane static analysis results.
-        function createStaticFigsInplane(this,mdl)
+        % Create figures for plotting 2D inplane steady state analysis results.
+        function createSteadyStateFigsInplane(this,mdl)
             % Mesh labels
             if (mdl.res.eid || mdl.res.nid || mdl.res.gid)
                 this.fig_lbl = figure;
@@ -843,8 +843,8 @@ classdef Plot < handle
         end
         
         %------------------------------------------------------------------
-        % Create figures for plotting 2D outplane static analysis results.
-        function createStaticFigsOutplane(this,mdl)
+        % Create figures for plotting 2D outplane steady state analysis results.
+        function createSteadyStateFigsOutplane(this,mdl)
             % Mesh labels
             if (mdl.res.eid || mdl.res.nid || mdl.res.gid)
                 this.fig_lbl = figure;
@@ -1359,17 +1359,17 @@ classdef Plot < handle
         end
         
         %------------------------------------------------------------------
-        % Create figures for plotting results of static analysis.
-        function createStaticFigs(this,mdl)
+        % Create figures for plotting results of steady state analysis.
+        function createSteadyStateFigs(this,mdl)
             if (mdl.anm.type == fem.Anm.PLANE_STRESS      || ...
                 mdl.anm.type == fem.Anm.PLANE_STRAIN      || ...
                 mdl.anm.type == fem.Anm.AXISYM_STRESS     || ...
                 mdl.anm.type == fem.Anm.PLANE_CONDUCTION  || ...
                 mdl.anm.type == fem.Anm.AXISYM_CONDUCTION || ...
                 mdl.anm.type == fem.Anm.CONVECTION_DIFFUSION)
-                this.createStaticFigsInplane(mdl);
+                this.createSteadyStateFigsInplane(mdl);
             elseif (mdl.anm.type == fem.Anm.THICK_PLATE)
-                this.createStaticFigsOutplane(mdl);
+                this.createSteadyStateFigsOutplane(mdl);
             end
         end
         

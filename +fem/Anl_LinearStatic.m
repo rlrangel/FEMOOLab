@@ -1,19 +1,19 @@
-%% Anl_LinearStatic Class (Linear Estatic Analysis)
+%% Anl_LinearSteadyState Class (Linear Steady State Analysis)
 %
 %% Description
 %
 % This is a sub-class in the FEMOOLab program that implements abstract 
 % methods declared in <anl.html Anl: analysis super-class> to deal
-% with linear-static analysis.
+% with linear steady state analysis.
 %
 %% Class definition
 %
-classdef Anl_LinearStatic < fem.Anl
+classdef Anl_LinearSteadyState < fem.Anl
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anl_LinearStatic()
-            this = this@fem.Anl(fem.Anl.LINEAR_STATIC);
+        function this = Anl_LinearSteadyState()
+            this = this@fem.Anl(fem.Anl.LINEAR_STEADYSTATE);
         end
     end
     
@@ -21,8 +21,8 @@ classdef Anl_LinearStatic < fem.Anl
     % Implementation of the abstract methods declared in super-class Anl
     methods
         %------------------------------------------------------------------
-        % Process linear-static analysis by assembling global equilibrium
-        % system of equations and calculating state variables.
+        % Process linear steady state analysis by assembling global
+        % equilibrium system of equations and calculating state variables.
         function status = process(this,mdl)
             status = 1;
             res = mdl.res;
