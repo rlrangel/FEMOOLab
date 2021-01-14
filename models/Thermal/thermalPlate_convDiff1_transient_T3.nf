@@ -1,5 +1,8 @@
 %HEADER.ANALYSIS
-'plane_convection_diffusion_transient'
+'plane_convection_diffusion'
+
+%HEADER.ANALYSIS.TYPE
+'transient'
 
 %HEADER.ANALYSIS.ALGORITHM
 'crank_nicolson'

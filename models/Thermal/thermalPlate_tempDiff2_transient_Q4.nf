@@ -1,5 +1,8 @@
 %HEADER.ANALYSIS
-'plane_conduction_transient'
+'plane_conduction'
+
+%HEADER.ANALYSIS.TYPE
+'transient'
 
 %HEADER.ANALYSIS.ALGORITHM
 'crank_nicolson'

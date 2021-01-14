@@ -31,6 +31,9 @@ classdef Read < handle
             status = 1;
             mdl = sim.mdl;
             
+            % Set default analysis type (linear steady state)
+            sim.anl = fem.Anl_LinearSteadyState();
+            
             % Create Gauss quadrature for triangular and quadrilateral shapes
             gauss_tria = fem.Gauss_Tria();
             gauss_quad = fem.Gauss_Quad();
@@ -45,15 +48,17 @@ classdef Read < handle
                 
                 % Look for tag strings
                 switch string
-                    case '%HEADER.ANALYSIS' % This is being used for both anl model and type
+                    case '%HEADER.ANALYSIS'
                         status = this.analysisModel(fid,sim);
+                    case '%HEADER.ANALYSIS.TYPE' % This is not on NF documentation
+                        status = this.analysisMode(fid,sim);
                     case '%HEADER.ANALYSIS.ALGORITHM' % This is being used for time integration scheme
                         status = this.analysisAlgorithm(fid,sim);
                     case '%HEADER.ANALYSIS.TIME.STEPS'
                         status = this.analysisStepIncrement(fid,sim);
                     case '%HEADER.ANALYSIS.MAXIMUM.STEPS'
                         status = this.analysisMaxSteps(fid,sim);
-                    case '%HEADER.ANALYSIS.PRINT.STEPS' % This is working for any output
+                    case '%HEADER.ANALYSIS.PRINT.STEPS' % This is working for plot output
                         status = this.analysisOutputSteps(fid,mdl);
                     case '%NODE.COORD'
                         status = this.nodeCoord(fid,mdl);
@@ -130,48 +135,35 @@ classdef Read < handle
             
             if (strcmp(string,'''PLANE_STRESS''') || strcmp(string,'''plane_stress'''))
                 sim.mdl.anm = fem.Anm_PlaneStress();
-                sim.anl = fem.Anl_LinearSteadyState();
-            elseif (strcmp(string,'''PLANE_STRESS_TRANSIENT''') || strcmp(string,'''plane_stress_transient'''))
-                sim.mdl.anm = fem.Anm_PlaneStress();
-                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''PLANE_STRAIN''') || strcmp(string,'''plane_strain'''))
                 sim.mdl.anm = fem.Anm_PlaneStrain();
-                sim.anl = fem.Anl_LinearSteadyState();
-            elseif (strcmp(string,'''PLANE_STRAIN_TRANSIENT''') || strcmp(string,'''plane_strain_transient'''))
-                sim.mdl.anm = fem.Anm_PlaneStrain();
-                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''AXISYM_STRESS''') || strcmp(string,'''axisym_stress'''))
                 sim.mdl.anm = fem.Anm_AxisymStress();
-                sim.anl = fem.Anl_LinearSteadyState();
-            elseif (strcmp(string,'''AXISYM_STRESS_TRANSIENT''') || strcmp(string,'''axisym_stress_transient'''))
-                sim.mdl.anm = fem.Anm_AxisymStress();
-                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''THICK_PLATE''') || strcmp(string,'''thick_plate'''))
                 sim.mdl.anm = fem.Anm_ThickPlate();
-                sim.anl = fem.Anl_LinearSteadyState();
-            elseif (strcmp(string,'''THICK_PLATE_TRANSIENT''') || strcmp(string,'''thick_plate_transient'''))
-                sim.mdl.anm = fem.Anm_ThickPlate();
-                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''PLANE_CONDUCTION''') || strcmp(string,'''plane_conduction'''))
                 sim.mdl.anm = fem.Anm_PlaneConduction();
-                sim.anl = fem.Anl_LinearSteadyState();
-            elseif (strcmp(string,'''PLANE_CONDUCTION_TRANSIENT''') || strcmp(string,'''plane_conduction_transient'''))
-                sim.mdl.anm = fem.Anm_PlaneConduction();
-                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''AXISYM_CONDUCTION''') || strcmp(string,'''axisym_conduction'''))
                 sim.mdl.anm = fem.Anm_AxisymConduction();
-                sim.anl = fem.Anl_LinearSteadyState();
-            elseif (strcmp(string,'''AXISYM_CONDUCTION_TRANSIENT''') || strcmp(string,'''axisym_conduction_transient'''))
-                sim.mdl.anm = fem.Anm_AxisymConduction();
-                sim.anl = fem.Anl_LinearTransient();
             elseif (strcmp(string,'''PLANE_CONVECTION_DIFFUSION''') || strcmp(string,'''plane_convection_diffusion'''))
                 sim.mdl.anm = fem.Anm_PlaneConvDiff();
-                sim.anl = fem.Anl_LinearSteadyState();
-            elseif (strcmp(string,'''PLANE_CONVECTION_DIFFUSION_TRANSIENT''') || strcmp(string,'''plane_convection_diffusion_transient'''))
-                sim.mdl.anm = fem.Anm_PlaneConvDiff();
-                sim.anl = fem.Anl_LinearTransient();
             else
                 fprintf('Invalid input data: analysis model!\n');
+                status = 0;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = analysisMode(~,fid,sim)
+            status = 1;
+            string = deblank(fgetl(fid));
+            
+            if (strcmp(string,'''STEADY_STATE''') || strcmp(string,'''steady_state'''))
+                sim.anl = fem.Anl_LinearSteadyState();
+            elseif (strcmp(string,'''TRANSIENT''') || strcmp(string,'''transient'''))
+                sim.anl = fem.Anl_LinearTransient();
+            else
+                fprintf('Invalid input data: analysis type!\n');
                 status = 0;
             end
         end
