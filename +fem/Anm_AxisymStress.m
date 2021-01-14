@@ -127,6 +127,13 @@ classdef Anm_AxisymStress < fem.Anm
         end
         
         %------------------------------------------------------------------
+        % Modify system arrays to include stabilization components for the
+        % convective term.
+        function [K,F] = stabConvec(~,~,K,F)
+            return;
+        end
+        
+        %------------------------------------------------------------------
         % Compute stress components (sx, sy, txy) at a given point of an element.
         % Input:
         %  C: constituive matrix

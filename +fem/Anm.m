@@ -129,6 +129,11 @@ classdef Anm < handle
         M = gblRate2Mtx(this,mdl);
         
         %------------------------------------------------------------------
+        % Modify system arrays to include stabilization components for the
+        % convective term.
+        [K,F] = stabConvec(this,mdl,K,F);
+        
+        %------------------------------------------------------------------
         % Compute derived variable components at a given point of an element.
         dvar = pointDerivedVar(this,C,B,d);
         

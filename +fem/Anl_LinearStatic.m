@@ -44,6 +44,9 @@ classdef Anl_LinearStatic < fem.Anl
             F = mdl.addPointForce(F);
             F = mdl.addEquivForce(F);
             
+            % Stabilization of convective term
+            %[K,F] = mdl.anm.stabConvec(mdl,K,F);
+            
             % Assemble global vector of state variables
             U = zeros(mdl.neq,1);
             U = mdl.addPrescDOF(U);

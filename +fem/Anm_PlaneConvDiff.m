@@ -101,6 +101,25 @@ classdef Anm_PlaneConvDiff < fem.Anm
         end
         
         %------------------------------------------------------------------
+        % Modify system arrays to include stabilization components for the
+        % convective term (currently, only SUPG in steady-state analysis).
+        function [K,F] = stabConvec(~,mdl,K,F)
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                
+                % Add stabilization component to stiffness matrix
+                Kstab = mdl.elems(i).stiffStabMtx();
+                K(gle,gle) = K(gle,gle) + Kstab;
+                
+                % Add stabilization component from internal domain source
+                if (~isempty(mdl.elems(i).src))
+                    Fstab = mdl.elems(i).domainStabForceVct();
+                    F(gle) = F(gle) + Fstab;
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
         % Compute flux components (fx, fy) at a given point of an element.
         % Input:
         %  C: constituive matrix

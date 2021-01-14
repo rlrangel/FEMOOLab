@@ -125,6 +125,9 @@ classdef Element < handle
                 end
             end
             
+            % Average nodal velocity assumed for the entire element
+            v = mean(V,1);
+            
             % Gauss points and weights
             [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
             
@@ -157,7 +160,7 @@ classdef Element < handle
                 B = this.anm.Bmtx(this,GradNcar,r,s);
                 
                 % Velocity at Gauss point
-                v = N * V;
+                %v = N * V;
                 
                 % Accumulate Gauss point contributions
                 K = K + w(i) * N' * v * B * detJ;
@@ -239,6 +242,78 @@ classdef Element < handle
                 
                 % Assemble edge matrix to element matrix
                 K(gledge,gledge) = K(gledge,gledge) + Kedge;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Compute stabilization matrix of convective term of steady-state
+        % analysis by SUPG method.
+        function K = stiffStabMtx(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
+
+            % Initialize element matrix
+            K = zeros(nen*ndof,nen*ndof);
+            
+            % Cartesian coordinates matrix
+            X = this.shape.carCoord;
+            
+            % Asemble nodal velocity vector (currently, X and Y componenets only!)
+            V = zeros(nen,2);
+            for i = 1:nen
+                if (~isempty(this.shape.nodes(i).convVel))
+                    V(i,1:2) = this.shape.nodes(i).convVel(1:2);
+                end
+            end
+            
+            % Average nodal velocity assumed for the entire element
+            v = mean(V,1);
+            
+            % Velocity norm and matrix
+            normV = norm(v);
+            Vmtx = v' * v;
+            
+            % Characteristic length (assuming 2D)
+            dim = 2;
+            L = this.shape.size()^(1/dim);
+            
+            % Peclet number
+            Pe = (normV*L)/(2*this.mat.k);
+            
+            % Stabilization coefficients
+            alpha = coth(abs(Pe)) - 1/abs(Pe);
+            beta  = (alpha*L)/(2*normV);
+            
+            % Gauss points and weights
+            [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
+            
+            % Loop over Gauss integration points
+            for i = 1:ngp
+                % Parametric coordinates
+                r = gp(1,i);
+                s = gp(2,i);
+                
+                % Matrix of geometry shape functions derivatives
+                % w.r.t. parametric coordinates
+                GradMpar = this.shape.gradMmtx(r,s);
+                
+                % Jacobian matrix
+                J = GradMpar * X;
+                detJ = det(J);
+                
+                % Matrix of d.o.f. shape functions derivatives
+                % w.r.t. parametric coordinates
+                GradNpar = this.shape.gradNmtx(r,s);
+                
+                % Matrix of d.o.f. shape functions derivatives
+                % w.r.t. cartesian coordinates
+                GradNcar = J \ GradNpar;
+                
+                % Strain matrix 
+                B = this.anm.Bmtx(this,GradNcar,r,s);
+                
+                % Accumulate Gauss point contributions
+                K = K + w(i) * beta * B' * Vmtx * B * detJ;
             end
         end
         
@@ -409,6 +484,79 @@ classdef Element < handle
                         F(m) = F(m) + w(i) * N(j) * Q(k) * detJ;
                     end
                 end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Compute stabilization vector for internal domain source.
+        function F = domainStabForceVct(this)
+            ndof = this.anm.ndof;
+            nen  = this.shape.nen;
+
+            % Initialize element forcing vector
+            F = zeros(nen*ndof,1);
+            
+            % Internal forcing source
+            Q = this.src;
+            
+            % Cartesian coordinates matrix
+            X = this.shape.carCoord;
+            
+            % Asemble nodal velocity vector (currently, X and Y componenets only!)
+            V = zeros(nen,2);
+            for i = 1:nen
+                if (~isempty(this.shape.nodes(i).convVel))
+                    V(i,1:2) = this.shape.nodes(i).convVel(1:2);
+                end
+            end
+            
+            % Average nodal velocity assumed for the entire element
+            v = mean(V,1);
+            
+            % Velocity norm
+            normV = norm(v);
+            
+            % Characteristic length (assuming 2D)
+            dim = 2;
+            L = this.shape.size()^(1/dim);
+            
+            % Peclet number
+            Pe = (normV*L)/(2*this.mat.k);
+            
+            % Stabilization coefficients
+            alpha = coth(abs(Pe)) - 1/abs(Pe);
+            beta  = (alpha*L)/(2*normV);
+            
+            % Gauss points and weights
+            [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
+            
+            % Loop over Gauss integration points
+            for i = 1:ngp
+                % Parametric coordinates
+                r = gp(1,i);
+                s = gp(2,i);
+                
+                % Matrix of geometry shape functions derivatives
+                % w.r.t. parametric coordinates
+                GradMpar = this.shape.gradMmtx(r,s);
+                
+                % Jacobian matrix
+                J = GradMpar * X;
+                detJ = det(J);
+                
+                % Matrix of d.o.f. shape functions derivatives
+                % w.r.t. parametric coordinates
+                GradNpar = this.shape.gradNmtx(r,s);
+                
+                % Matrix of d.o.f. shape functions derivatives
+                % w.r.t. cartesian coordinates
+                GradNcar = J \ GradNpar;
+                
+                % Strain matrix 
+                B = this.anm.Bmtx(this,GradNcar,r,s);
+                
+                % Accumulate Gauss point contributions
+                F = F + w(i) * beta * B' * v' * Q * detJ;
             end
         end
         
