@@ -36,7 +36,7 @@ classdef Anm_PlaneConvDiff < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Assemble strain matrix at a given position in parametric
+        % Assemble gradient matrix at a given position in parametric
         % coordinates of an element.
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
@@ -57,7 +57,7 @@ classdef Anm_PlaneConvDiff < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Return the mass coefficient.
+        % Return the mass coefficient of an element.
         function coeff = massCoeff(~,elem)
             coeff = elem.mat.rho * elem.mat.cp;
         end
@@ -70,11 +70,33 @@ classdef Anm_PlaneConvDiff < fem.Anm
             
             % Get element matrices and assemble global matrix
             for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
+                % Get element matrices
                 Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
                 Kconv = mdl.elems(i).stiffConvMtx(); % convective term
-                Krad  = mdl.elems(i).stiffRadMtx();  % radiation B.C.
+                Krad  = mdl.elems(i).stiffRadMtx();  % radiative B.C.
+                
+                % Assemble element matrices to global matrix
+                gle = mdl.elems(i).gle;
                 K(gle,gle) = K(gle,gle) + Kdiff + Kconv + Krad;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Modify system arrays to include stabilization components for the
+        % convective term (currently only SUPG in steady-state analysis).
+        function [K,F] = stabConvec(~,mdl,K,F)
+            for i = 1:mdl.nel
+                gle = mdl.elems(i).gle;
+                
+                % Add stabilization component to stiffness matrix
+                Kstab = mdl.elems(i).stiffStabMtx();
+                K(gle,gle) = K(gle,gle) + Kstab;
+                
+                % Add stabilization component to forcing vector
+                if (~isempty(mdl.elems(i).src))
+                    Fstab = mdl.elems(i).domainStabForceVct();
+                    F(gle) = F(gle) + Fstab;
+                end
             end
         end
         
@@ -85,45 +107,27 @@ classdef Anm_PlaneConvDiff < fem.Anm
             % Initialize global capacity matrix
             C = zeros(mdl.neq,mdl.neq);
             
-            % Get element matrices and assemble global matrix
             for i = 1:mdl.nel
+                % Get element matrix
+                Ce = mdl.elems(i).massMtx();
+                
+                % Assemble element matrix to global matrix
                 gle = mdl.elems(i).gle;
-                ce = mdl.elems(i).massMtx();
-                C(gle,gle) = C(gle,gle) + ce;
+                C(gle,gle) = C(gle,gle) + Ce;
             end
         end
         
         %------------------------------------------------------------------
         % Assemble global matrix related to 2nd time derivative of d.o.f.'s.
         function M = gblRate2Mtx(~,mdl)
-            % NOT IMPLEMENTED
             M = zeros(mdl.neq,mdl.neq);
-        end
-        
-        %------------------------------------------------------------------
-        % Modify system arrays to include stabilization components for the
-        % convective term (currently, only SUPG in steady-state analysis).
-        function [K,F] = stabConvec(~,mdl,K,F)
-            for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
-                
-                % Add stabilization component to stiffness matrix
-                Kstab = mdl.elems(i).stiffStabMtx();
-                K(gle,gle) = K(gle,gle) + Kstab;
-                
-                % Add stabilization component from internal domain source
-                if (~isempty(mdl.elems(i).src))
-                    Fstab = mdl.elems(i).domainStabForceVct();
-                    F(gle) = F(gle) + Fstab;
-                end
-            end
         end
         
         %------------------------------------------------------------------
         % Compute flux components (fx, fy) at a given point of an element.
         % Input:
         %  C: constituive matrix
-        %  B: strain matrix
+        %  B: gradient matrix
         %  u: temperature results
         function flx = pointDerivedVar(~,C,B,u)
             flx = -C * B * u;

@@ -37,11 +37,9 @@ classdef Element < handle
         % Domain forcing source
         src double = double.empty;              % components of body force (structural) / internal heat generation (thermal)
         
-        % Natural boundary conditions
-        lineNBC1 double = double.empty;         % matrix of uniform distributed values of natural boundary conditions over edges - constant values
-                                                % [corner1,corner2,forcing_components]
-        lineNBC2 double = double.empty;         % matrix of uniform distributed values of natural boundary conditions over edges - d.o.f. dependent values
-                                                % [corner1,corner2,forcing_term]
+        % Natural boundary conditions (uniformly distributed over edges)
+        lineNBC1 double = double.empty;         % matrix of standard NBCs (constant values) [corner1,corner2,forcing_components]
+        lineNBC2 double = double.empty;         % matrix of radiative NBCs (d.o.f. dependent values) [corner1,corner2,forcing_term]
     end
     
     %% Constructor method
@@ -94,7 +92,7 @@ classdef Element < handle
                 % w.r.t. cartesian coordinates
                 GradNcar = J \ GradNpar;
                 
-                % Strain matrix 
+                % Gradient matrix 
                 B = this.anm.Bmtx(this,GradNcar,r,s);
                 
                 % Rigidity coefficient at integration point
@@ -156,7 +154,7 @@ classdef Element < handle
                 % w.r.t. cartesian coordinates
                 GradNcar = J \ GradNpar;
                 
-                % Strain matrix 
+                % Gradient matrix 
                 B = this.anm.Bmtx(this,GradNcar,r,s);
                 
                 % Velocity at Gauss point
@@ -309,7 +307,7 @@ classdef Element < handle
                 % w.r.t. cartesian coordinates
                 GradNcar = J \ GradNpar;
                 
-                % Strain matrix 
+                % Gradient matrix 
                 B = this.anm.Bmtx(this,GradNcar,r,s);
                 
                 % Accumulate Gauss point contributions
@@ -552,7 +550,7 @@ classdef Element < handle
                 % w.r.t. cartesian coordinates
                 GradNcar = J \ GradNpar;
                 
-                % Strain matrix 
+                % Gradient matrix 
                 B = this.anm.Bmtx(this,GradNcar,r,s);
                 
                 % Accumulate Gauss point contributions
@@ -607,7 +605,7 @@ classdef Element < handle
                 % w.r.t. cartesian coordinates
                 GradNcar = J \ GradNpar;
                 
-                % Strain-displacemen matrix 
+                % Gradient matrix 
                 B = this.anm.Bmtx(this,GradNcar,r,s);
                 
                 % Gauss point stress components and cartesian coordinates

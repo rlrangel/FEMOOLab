@@ -36,7 +36,7 @@ classdef Anm_AxisymConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Assemble strain matrix at a given position in parametric
+        % Assemble gradient matrix at a given position in parametric
         % coordinates of an element.
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
@@ -64,7 +64,7 @@ classdef Anm_AxisymConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Return the mass coefficient.
+        % Return the mass coefficient of an element.
         function coeff = massCoeff(~,elem)
             coeff = elem.mat.rho * elem.mat.cp;
         end
@@ -77,33 +77,14 @@ classdef Anm_AxisymConduction < fem.Anm
             
             % Get element matrices and assemble global matrix
             for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
+                % Get element matrices
                 Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
-                Krad  = mdl.elems(i).stiffRadMtx();  % radiation B.C.
+                Krad  = mdl.elems(i).stiffRadMtx();  % radiative B.C.
+                
+                % Assemble element matrices to global matrix
+                gle = mdl.elems(i).gle;
                 K(gle,gle) = K(gle,gle) + Kdiff + Krad;
             end
-        end
-        
-        %------------------------------------------------------------------
-        % Assemble global matrix related to 1st time derivative of d.o.f.'s.
-        % Capacity matrix in thermal analysis.
-        function C = gblRate1Mtx(~,mdl)
-            % Initialize global capacity matrix
-            C = zeros(mdl.neq,mdl.neq);
-            
-            % Get element matrices and assemble global matrix
-            for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
-                ce = mdl.elems(i).massMtx();
-                C(gle,gle) = C(gle,gle) + ce;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Assemble global matrix related to 2nd time derivative of d.o.f.'s.
-        function M = gblRate2Mtx(~,mdl)
-            % NOT IMPLEMENTED
-            M = zeros(mdl.neq,mdl.neq);
         end
         
         %------------------------------------------------------------------
@@ -114,10 +95,33 @@ classdef Anm_AxisymConduction < fem.Anm
         end
         
         %------------------------------------------------------------------
+        % Assemble global matrix related to 1st time derivative of d.o.f.'s.
+        % Capacity matrix in thermal analysis.
+        function C = gblRate1Mtx(~,mdl)
+            % Initialize global capacity matrix
+            C = zeros(mdl.neq,mdl.neq);
+            
+            for i = 1:mdl.nel
+                % Get element matrix
+                Ce = mdl.elems(i).massMtx();
+                
+                % Assemble element matrix to global matrix
+                gle = mdl.elems(i).gle;
+                C(gle,gle) = C(gle,gle) + Ce;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Assemble global matrix related to 2nd time derivative of d.o.f.'s.
+        function M = gblRate2Mtx(~,mdl)
+            M = zeros(mdl.neq,mdl.neq);
+        end
+        
+        %------------------------------------------------------------------
         % Compute flux components (fx, fy) at a given point of an element.
         % Input:
         %  C: constituive matrix
-        %  B: strain matrix
+        %  B: gradient matrix
         %  u: temperature results
         function flx = pointDerivedVar(~,C,B,u)
             flx = -C * B * u;

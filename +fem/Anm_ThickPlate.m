@@ -40,7 +40,6 @@ classdef Anm_ThickPlate < fem.Anm
             v = elem.mat.v;
             e = E/(1-(v^2));
             t = elem.thk;
-            
            
             C = e * [ 1   v   0        0                0;
                       v   1   0        0                0;
@@ -50,7 +49,7 @@ classdef Anm_ThickPlate < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Assemble strain matrix at a given position in parametric
+        % Assemble gradient matrix at a given position in parametric
         % coordinates of an element.
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
@@ -58,7 +57,7 @@ classdef Anm_ThickPlate < fem.Anm
             % Matrix of d.o.f.'s shape functions w.r.t. parametric coordinates
             N = elem.shape.Nmtx(r,s);
                         
-            % Assemble strain matrix
+            % Assemble gradient matrix
             B = zeros(this.ndvc,elem.shape.nen*this.ndof);
             
             for i = 1:elem.shape.nen
@@ -78,7 +77,7 @@ classdef Anm_ThickPlate < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Return the mass coefficient.
+        % Return the mass coefficient of an element.
         function coeff = massCoeff(~,elem)
             coeff = elem.mat.rho;
         end
@@ -89,12 +88,21 @@ classdef Anm_ThickPlate < fem.Anm
             % Initialize global stiffness matrix
             K = zeros(mdl.neq,mdl.neq);
             
-            % Get element matrices and assemble global matrix
             for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
+                % Get element matrices
                 Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
+                
+                % Assemble element matrices to global matrix
+                gle = mdl.elems(i).gle;
                 K(gle,gle) = K(gle,gle) + Kdiff;
             end
+        end
+        
+        %------------------------------------------------------------------
+        % Modify system arrays to include stabilization components for the
+        % convective term.
+        function [K,F] = stabConvec(~,~,K,F)
+            return;
         end
         
         %------------------------------------------------------------------
@@ -112,19 +120,14 @@ classdef Anm_ThickPlate < fem.Anm
             % Initialize global mass matrix
             M = zeros(mdl.neq,mdl.neq);
             
-            % Get element matrices and assemble global matrix
             for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
+                % Get element matrix
                 Me = mdl.elems(i).massMtx();
+                
+                % Assemble element matrix to global matrix
+                gle = mdl.elems(i).gle;
                 M(gle,gle) = M(gle,gle) + Me;
             end
-        end
-        
-        %------------------------------------------------------------------
-        % Modify system arrays to include stabilization components for the
-        % convective term.
-        function [K,F] = stabConvec(~,~,K,F)
-            return;
         end
         
         %------------------------------------------------------------------
@@ -132,7 +135,7 @@ classdef Anm_ThickPlate < fem.Anm
         % point of an element.
         % Input:
         %  C: constituive matrix
-        %  B: strain matrix
+        %  B: gradient matrix
         %  u: displacements results
         function str = pointDerivedVar(~,C,B,u)
             str =  C * B * u;

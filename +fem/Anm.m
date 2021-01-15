@@ -105,7 +105,7 @@ classdef Anm < handle
         C = Cmtx(this,elem);
         
         %------------------------------------------------------------------
-        % Assemble strain matrix at a given position in parametric
+        % Assemble gradient matrix at a given position in parametric
         % coordinates of an element.
         B = Bmtx(this,elem,GradNcar,r,s);
         
@@ -115,7 +115,7 @@ classdef Anm < handle
         coeff = rigidityCoeff(this,elem,r,s);
         
         %------------------------------------------------------------------
-        % Return the mass coefficient.
+        % Return the mass coefficient of an element.
         coeff = massCoeff(this,elem);
         
         %------------------------------------------------------------------
@@ -137,7 +137,7 @@ classdef Anm < handle
         
         %------------------------------------------------------------------
         % Compute derived variable components at a given point of an element.
-        dvar = pointDerivedVar(this,C,B,d);
+        dvar = pointDerivedVar(this,C,B,u);
         
         %------------------------------------------------------------------
         % Compute derived variables and the principal values and directions

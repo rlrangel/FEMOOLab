@@ -45,7 +45,7 @@ classdef Anm_AxisymStress < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Assemble strain matrix at a given position in parametric
+        % Assemble gradient matrix at a given position in parametric
         % coordinates of an element.
         % Input:
         %  GradNcar: shape functions derivatives w.r.t. cartesian coordinates
@@ -58,7 +58,7 @@ classdef Anm_AxisymStress < fem.Anm
             p = M * elem.shape.carCoord;
             radius = p(1);
             
-            % Assemble strain matrix
+            % Assemble gradient matrix
             B = zeros(this.ndvc,elem.shape.nen*this.ndof);
             
             for i = 1:elem.shape.nen
@@ -84,7 +84,7 @@ classdef Anm_AxisymStress < fem.Anm
         end
         
         %------------------------------------------------------------------
-        % Return the mass coefficient.
+        % Return the mass coefficient of an element.
         function coeff = massCoeff(~,elem)
             coeff = elem.mat.rho;
         end
@@ -95,12 +95,21 @@ classdef Anm_AxisymStress < fem.Anm
             % Initialize global stiffness matrix
             K = zeros(mdl.neq,mdl.neq);
             
-            % Get element matrices and assemble global matrix
             for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
+                % Get element matrices
                 Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
+                
+                % Assemble element matrices to global matrix
+                gle = mdl.elems(i).gle;
                 K(gle,gle) = K(gle,gle) + Kdiff;
             end
+        end
+        
+        %------------------------------------------------------------------
+        % Modify system arrays to include stabilization components for the
+        % convective term.
+        function [K,F] = stabConvec(~,~,K,F)
+            return;
         end
         
         %------------------------------------------------------------------
@@ -118,26 +127,21 @@ classdef Anm_AxisymStress < fem.Anm
             % Initialize global mass matrix
             M = zeros(mdl.neq,mdl.neq);
             
-            % Get element matrices and assemble global matrix
             for i = 1:mdl.nel
-                gle = mdl.elems(i).gle;
+                % Get element matrix
                 Me = mdl.elems(i).massMtx();
+                
+                % Assemble element matrix to global matrix
+                gle = mdl.elems(i).gle;
                 M(gle,gle) = M(gle,gle) + Me;
             end
-        end
-        
-        %------------------------------------------------------------------
-        % Modify system arrays to include stabilization components for the
-        % convective term.
-        function [K,F] = stabConvec(~,~,K,F)
-            return;
         end
         
         %------------------------------------------------------------------
         % Compute stress components (sx, sy, txy) at a given point of an element.
         % Input:
         %  C: constituive matrix
-        %  B: strain matrix
+        %  B: gradient matrix
         %  u: displacements results
         function str = pointDerivedVar(~,C,B,u)
             % Compute point stress components
