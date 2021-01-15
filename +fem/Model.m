@@ -119,18 +119,6 @@ classdef Model < handle
         end
         
         %------------------------------------------------------------------
-        % Set initial properties of element.
-        function setupElemProps(this)
-            for i = 1:this.nel
-                % Set transformation matrices of gauss-to-node results
-                this.elems(i).TGNmtx();
-                
-                % Set convection properties
-                this.elems(i).convProps();
-            end
-        end
-        
-        %------------------------------------------------------------------
         % Assemble global initial conditions matrix.
         % Set initial values only to free d.o.f's.
         %  IC(i,j) = initial value of time derivative j-1 of d.o.f. i.

@@ -99,6 +99,10 @@ classdef Anm < handle
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
         %------------------------------------------------------------------
+        % Set initial properties of elements.
+        setupElemProps(this,mdl);
+        
+        %------------------------------------------------------------------
         % Assemble material constitutive matrix of a given element.
         C = Cmtx(this,elem);
         

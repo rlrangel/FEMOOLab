@@ -13,6 +13,7 @@ classdef Result < handle
         eid    = logical(false);  % element numbers
         nid    = logical(false);  % node numbers
         gid    = logical(false);  % gauss numbers
+        pec    = logical(false);  % element Peclet numbers
         smooth = logical(false);  % Smooth element results at common nodes
         tol    = double(1e-5);    % tolerance for cleaning small result values and differences
         

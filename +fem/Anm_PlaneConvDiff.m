@@ -27,6 +27,15 @@ classdef Anm_PlaneConvDiff < fem.Anm
     % Implementation of the abstract methods declared in super-class Anm
     methods
         %------------------------------------------------------------------
+        % Set initial properties of elements.
+        function setupElemProps(~,mdl)
+            for i = 1:mdl.nel
+                mdl.elems(i).TGNmtx();    % Gauss-to-node results transformation matrix
+                mdl.elems(i).convProps(); % Convection properties
+            end
+        end
+        
+        %------------------------------------------------------------------
         % Assemble material constitutive matrix of a given element.
         function C = Cmtx(~,elem)
             k = elem.mat.k;

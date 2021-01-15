@@ -135,18 +135,25 @@ classdef Read < handle
             
             if (strcmp(string,'''PLANE_STRESS''') || strcmp(string,'''plane_stress'''))
                 sim.mdl.anm = fem.Anm_PlaneStress();
+                sim.plot = drv.Plot_StructInPlane();
             elseif (strcmp(string,'''PLANE_STRAIN''') || strcmp(string,'''plane_strain'''))
                 sim.mdl.anm = fem.Anm_PlaneStrain();
+                sim.plot = drv.Plot_StructInPlane();
             elseif (strcmp(string,'''AXISYM_STRESS''') || strcmp(string,'''axisym_stress'''))
                 sim.mdl.anm = fem.Anm_AxisymStress();
+                sim.plot = drv.Plot_StructInPlane();
             elseif (strcmp(string,'''THICK_PLATE''') || strcmp(string,'''thick_plate'''))
                 sim.mdl.anm = fem.Anm_ThickPlate();
+                sim.plot = drv.Plot_StructOutPlane();
             elseif (strcmp(string,'''PLANE_CONDUCTION''') || strcmp(string,'''plane_conduction'''))
                 sim.mdl.anm = fem.Anm_PlaneConduction();
+                sim.plot = drv.Plot_ThermalPlane();
             elseif (strcmp(string,'''AXISYM_CONDUCTION''') || strcmp(string,'''axisym_conduction'''))
                 sim.mdl.anm = fem.Anm_AxisymConduction();
+                sim.plot = drv.Plot_ThermalPlane();
             elseif (strcmp(string,'''PLANE_CONVECTION_DIFFUSION''') || strcmp(string,'''plane_convection_diffusion'''))
                 sim.mdl.anm = fem.Anm_PlaneConvDiff();
+                sim.plot = drv.Plot_ThermalPlane();
             else
                 fprintf('Invalid input data: analysis model!\n');
                 status = 0;
@@ -1481,6 +1488,7 @@ classdef Read < handle
             elseif (mdl.anm.phys == fem.Anm.THERMAL)
                 mdl.res.temp = opt.temp;
                 mdl.res.fm   = opt.fm;
+                mdl.res.pec  = opt.pec;
                 
                 if (mdl.anm.type == fem.Anm.PLANE_CONDUCTION  || ...
                     mdl.anm.type == fem.Anm.AXISYM_CONDUCTION || ...

@@ -4,16 +4,18 @@
 %
 % This class defines a simulation object in the FEMOOLab program.
 % A simulation object is the one with the highest hierarchical level.
-% Its properties are the two fundamental objects to perform a Finite
-% Element analysis: <model.html Model> and <anl.html Analysis>.
+% Its properties are the two fundamental objects to perform a FEM analysis:
+% <model.html Model> and <anl.html Analysis>, besides a <plot.html Plot>
+% object for displaying results.
 %
 %% Class definition
 %
 classdef Simulation < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        mdl = [];  % object of Model class
-        anl = [];  % object of Anl (Analysis) class
+        mdl  = [];  % object of Model class
+        anl  = [];  % object of Anl (Analysis) class
+        plot = [];  % object of Plot class
     end
     
     %% Constructor method
@@ -85,7 +87,7 @@ classdef Simulation < handle
                 
                 % Plot results
                 fprintf('Plotting results...\n');
-                drv.Plot(this);
+                this.plot.execute(this);
                 fprintf('Finished!\n');
             end
         end

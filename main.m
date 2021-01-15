@@ -23,7 +23,7 @@ opt.gid    = false;  % Plot gauss points
 opt.deform = true;   % Plot deformed mesh
 opt.scl    = 0.0;    % Scale factor for deformed mesh (false or 0.0: scale automatically calculated)
 
-% Nodal result:
+% Nodal results:
 opt.dx     = true;   % Plot contour of displacements in X direction
 opt.dy     = true;   % Plot contour of displacements in Y direction
 opt.dz     = true;   % Plot contour of displacements in Z directiont
@@ -35,7 +35,7 @@ opt.temp   = true;   % Plot contour of temperature field
 % Smoothing:
 opt.smooth = true;   % Smooth element results at common nodes
 
-% Element stress result:
+% Element stress results:
 opt.sxx    = true;   % Plot contour of normal stresses in X direction
 opt.syy    = true;   % Plot contour of normal stresses in Y direction
 opt.szz    = true;   % Plot contour of normal stresses in Z direction
@@ -47,7 +47,7 @@ opt.s2     = true;   % Plot contour of principal stresses 2
 opt.s3     = true;   % Plot contour of principal stresses 3
 opt.taumax = true;   % Plot contour of maximum shear stresses
 
-% Element internal forces result:
+% Element internal forces results:
 opt.qxz    = true;   % Plot contour of XZ shear force
 opt.qyz    = true;   % Plot contour of YZ shear force 
 opt.mxx    = true;   % Plot contour of moment about X direction
@@ -57,11 +57,14 @@ opt.m1     = true;   % Plot contour of principal moment 1
 opt.m2     = true;   % Plot contour of principal moment 2
 opt.tormax = true;   % Plot contour of maximum torsion
 
-% Element heat flux result:
+% Element heat flux results:
 opt.fxx    = true;   % Plot contour of heat fluxes in X direction
 opt.fyy    = true;   % Plot contour of heat fluxes in Y direction
 opt.fzz    = true;   % Plot contour of heat fluxes in Z direction
 opt.fm     = true;   % Plot contour of heat flux module
+
+% Element properties:
+opt.pec    = true;   % Plot contour of Peclet numbers
 
 % Other options:
 opt.tol    = 1e-5;   % Tolerance for cleaning small result values and differences

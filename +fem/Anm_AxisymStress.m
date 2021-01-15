@@ -32,6 +32,14 @@ classdef Anm_AxisymStress < fem.Anm
     % Implementation of the abstract methods declared in super-class Anm
     methods
         %------------------------------------------------------------------
+        % Set initial properties of elements.
+        function setupElemProps(~,mdl)
+            for i = 1:mdl.nel
+                mdl.elems(i).TGNmtx(); % Gauss-to-node results transformation matrix
+            end
+        end
+        
+        %------------------------------------------------------------------
         % Assemble material constitutive matrix of a given element.
         function C = Cmtx(~,elem)
             E = elem.mat.E;

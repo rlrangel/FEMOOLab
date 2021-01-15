@@ -67,7 +67,7 @@ classdef Anl < handle
             mdl.assembleGle();
             
             % Set element initial properties
-            mdl.setupElemProps();
+            mdl.anm.setupElemProps(mdl);
         end
     end
     
