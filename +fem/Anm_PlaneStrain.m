@@ -13,7 +13,7 @@ classdef Anm_PlaneStrain < fem.Anm
     methods
         %------------------------------------------------------------------
         function this = Anm_PlaneStrain()
-            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.PLANE_STRAIN,2,3,[1 2]);
+            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.PLANE_STRAIN,2,2,3,[1 2]);
             
             % Types of response
             this.DISPL_X  = true;  % Displacement X

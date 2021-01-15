@@ -78,6 +78,7 @@ classdef Anm < handle
     properties (SetAccess = public, GetAccess = public)
         phys int32 = int32.empty;  % flag for type of physics
         type int32 = int32.empty;  % flag for type of analysis model
+        dim  int32 = int32.empty;  % dimension of of analysis model
         ndof int32 = int32.empty;  % number of d.o.f.'s per node
         ndvc int32 = int32.empty;  % number of derived variable components
         gla  int32 = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
@@ -86,9 +87,10 @@ classdef Anm < handle
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anm(phys,type,ndof,ndvc,gla)
+        function this = Anm(phys,type,dim,ndof,ndvc,gla)
             this.phys = phys;
             this.type = type;
+            this.dim  = dim;
             this.ndof = ndof;
             this.ndvc = ndvc;
             this.gla  = gla;
@@ -121,17 +123,17 @@ classdef Anm < handle
         K = gblStiffMtx(this,mdl);
         
         %------------------------------------------------------------------
+        % Modify system arrays to include stabilization components for the
+        % convective term.
+        [K,F] = stabConvec(this,mdl,K,F);
+        
+        %------------------------------------------------------------------
         % Assemble global matrix related to 1st time derivative of d.o.f.'s.
         C = gblRate1Mtx(this,mdl);
         
         %------------------------------------------------------------------
         % Assemble global matrix related to 2nd time derivative of d.o.f.'s.
         M = gblRate2Mtx(this,mdl);
-        
-        %------------------------------------------------------------------
-        % Modify system arrays to include stabilization components for the
-        % convective term.
-        [K,F] = stabConvec(this,mdl,K,F);
         
         %------------------------------------------------------------------
         % Compute derived variable components at a given point of an element.

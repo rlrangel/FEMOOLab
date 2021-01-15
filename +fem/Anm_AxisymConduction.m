@@ -13,7 +13,7 @@ classdef Anm_AxisymConduction < fem.Anm
     methods
         %------------------------------------------------------------------
         function this = Anm_AxisymConduction()
-            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.AXISYM_CONDUCTION,1,2,1);
+            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.AXISYM_CONDUCTION,2,1,2,1);
             
             % Types of response
             this.TEMPERATURE = true;  % Temperature
