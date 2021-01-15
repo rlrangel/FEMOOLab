@@ -33,8 +33,11 @@ classdef Shape < handle
         % General
         type  int32  = int32.empty;                 % flag for type of shape
         order int32  = int32.empty;                 % linear (1) or quadratic (2)
-        dim   double = double.empty;                % shape dimension
-        size  double = double.empty;                % shape size (length, area, or volume)
+        
+        % Dimensions
+        dim   double = double.empty;                % dimension
+        size  double = double.empty;                % size (length, area, or volume)
+        Lchr  double = double.empty;                % characteristic length
         
         % Coordinates
         carCoord        double   = double.empty;    % matrix of cartesian nodal coordinates

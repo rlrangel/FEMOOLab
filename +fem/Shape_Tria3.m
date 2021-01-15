@@ -50,6 +50,9 @@ classdef Shape_Tria3 < fem.Shape
                 x = this.carCoord(:,1);
                 y = this.carCoord(:,2);
                 this.size = polyarea(x,y);
+                
+                % Characteristic length
+                this.Lchr = this.size^(1/2);
             end
         end
     end

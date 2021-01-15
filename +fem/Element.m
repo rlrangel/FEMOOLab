@@ -238,10 +238,8 @@ classdef Element < handle
             normV = norm(v);
             Vmtx = v' * v;
             
-            % Characteristic length
-            L = this.shape.size^(1/this.shape.dim);
-            
             % Peclet number
+            L = this.shape.Lchr;
             Pe = (normV*L)/(2*this.mat.k);
             
             % Stabilization coefficients
@@ -482,10 +480,8 @@ classdef Element < handle
             % Velocity norm
             normV = norm(v);
             
-            % Characteristic length
-            L = this.shape.size^(1/this.shape.dim);
-            
             % Peclet number
+            L = this.shape.Lchr;
             Pe = (normV*L)/(2*this.mat.k);
             
             % Stabilization coefficients
