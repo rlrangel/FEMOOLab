@@ -275,7 +275,7 @@ classdef Element < handle
             
             % Characteristic length (assuming 2D)
             dim = 2;
-            L = this.shape.size()^(1/dim);
+            L = this.shape.size^(1/dim);
             
             % Peclet number
             Pe = (normV*L)/(2*this.mat.k);
@@ -518,7 +518,7 @@ classdef Element < handle
             
             % Characteristic length (assuming 2D)
             dim = 2;
-            L = this.shape.size()^(1/dim);
+            L = this.shape.size^(1/dim);
             
             % Peclet number
             Pe = (normV*L)/(2*this.mat.k);

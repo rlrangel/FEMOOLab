@@ -48,6 +48,11 @@ classdef Shape_Quad4 < fem.Shape
                 % Vector of global node ids in ccw order
                 this.ccwNodeIds = ...
                 [ nodes(1).id  nodes(2).id  nodes(3).id  nodes(4).id ];
+                
+                % Area
+                x = this.carCoord(:,1);
+                y = this.carCoord(:,2);
+                this.size = polyarea(x,y);
             end
         end
     end
@@ -55,14 +60,6 @@ classdef Shape_Quad4 < fem.Shape
     %% Public methods
     % Implementation of the abstract methods declared in super-class Shape
     methods
-        %------------------------------------------------------------------
-        % Computes shape size (area).
-        function s = size(this)
-            x = this.carCoord(:,1);
-            y = this.carCoord(:,2);
-            s = polyarea(x,y);
-        end
-        
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.

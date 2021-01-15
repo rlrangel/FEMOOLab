@@ -22,23 +22,26 @@ classdef Shape < handle
     %% Constant values
     properties (Constant = true, Access = public)
         % Types of shape
-        TRIA3   = int32(1);
-        QUAD4   = int32(2);
-        TRIA6   = int32(3);
-        QUAD8   = int32(4);
+        TRIA3 = int32(1);
+        QUAD4 = int32(2);
+        TRIA6 = int32(3);
+        QUAD8 = int32(4);
     end
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % General
-        type  int32 = int32.empty;                  % flag for type of shape
-        order int32 = int32.empty;                  % linear (1) or quadratic (2)
+        type  int32  = int32.empty;                 % flag for type of shape
+        order int32  = int32.empty;                 % linear (1) or quadratic (2)
+        size  double = double.empty;                % shape size (length, area, or volume)
         
-        % Geometry
-        nen             int32    = int32.empty;     % number of nodes
-        nodes           fem.Node = fem.Node.empty;  % vector of objects of Node class
+        % Coordinates
         carCoord        double   = double.empty;    % matrix of cartesian nodal coordinates
         parCoord        double   = double.empty;    % matrix of parametric nodal coordinates
+        
+        % Nodes
+        nen             int32    = int32.empty;     % number of nodes
+        nodes           fem.Node = fem.Node.empty;  % vector of objects of Node class
         ccwLocalNodeIds int32    = int32.empty;     % vector of local node ids in ccw order
         ccwNodeIds      int32    = int32.empty;     % vector of global node ids in ccw order
     end
@@ -55,10 +58,6 @@ classdef Shape < handle
     %% Abstract methods
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
-        %------------------------------------------------------------------
-        % Compute shape size (length, area, or volume).
-        s = size(this);
-        
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.

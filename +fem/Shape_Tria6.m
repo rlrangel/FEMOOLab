@@ -52,6 +52,11 @@ classdef Shape_Tria6 < fem.Shape
                 this.ccwNodeIds = ...
                 [ nodes(1).id  nodes(4).id  nodes(2).id ...
                   nodes(5).id  nodes(3).id  nodes(6).id];
+                
+                % Area
+                x = this.carCoord(1:3,1);
+                y = this.carCoord(1:3,2);
+                this.size = polyarea(x,y);
             end
         end
     end

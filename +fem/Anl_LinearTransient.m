@@ -28,7 +28,7 @@ classdef Anl_LinearTransient < fem.Anl
     % Implementation of the abstract methods declared in super-class Anl
     methods
         %------------------------------------------------------------------
-        % Process linear-transient analysis by assembling global semi-
+        % Process linear transient analysis by assembling the global semi-
         % discretized system of ODEs on time and calculating state variables
         % and their time derivatives.
         function status = process(this,mdl)
@@ -54,9 +54,9 @@ classdef Anl_LinearTransient < fem.Anl
             F = mdl.addEquivForce(F);
             
             % Assemble vector of fixed d.o.f.'s
-            Uc  = zeros(mdl.neq,1);
-            Uc  = mdl.addPrescDOF(Uc);
-            Uc  = Uc(mdl.neqf+1:end);
+            Uc = zeros(mdl.neq,1);
+            Uc = mdl.addPrescDOF(Uc);
+            Uc = Uc(mdl.neqf+1:end);
             
             % Extract free d.o.f.'s terms of global arrays
             Kff = K(1:mdl.neqf,1:mdl.neqf);
@@ -64,7 +64,7 @@ classdef Anl_LinearTransient < fem.Anl
             Mff = M(1:mdl.neqf,1:mdl.neqf);
             Ff  = F(1:mdl.neqf,1);
             
-            % Static condensation of forcing vector
+            % Static condensation of forcing vector (apply EBCs)
             Kfc = K(1:mdl.neqf,mdl.neqf+1:end);
             Ff  = Ff - Kfc * Uc;
             

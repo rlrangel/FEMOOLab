@@ -506,7 +506,7 @@ classdef Read < handle
                     return;
                 end
                 
-                % Material properties: cp,k
+                % Material properties: k,cp
                 [prop,count] = fscanf(fid,'%f',2);
                 if (count ~= 2)
                     fprintf('Invalid thermal properties for material %d\n',id);
@@ -1437,7 +1437,7 @@ classdef Read < handle
             end
         end
         
-        %% Method for reading plotting options (temporary)
+        %% Method for reading plotting options
         %------------------------------------------------------------------
         function setResultPlottingOpt(~,mdl,opt)
             % General

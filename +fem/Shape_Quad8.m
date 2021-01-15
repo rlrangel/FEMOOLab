@@ -57,6 +57,11 @@ classdef Shape_Quad8 < fem.Shape
                 this.ccwNodeIds = ...
                 [ nodes(1).id  nodes(5).id  nodes(2).id  nodes(6).id ...
                   nodes(3).id  nodes(7).id  nodes(4).id  nodes(8).id];
+                
+                % Area
+                x = this.carCoord(1:4,1);
+                y = this.carCoord(1:4,2);
+                this.size = polyarea(x,y);
             end
         end
     end
@@ -64,14 +69,6 @@ classdef Shape_Quad8 < fem.Shape
     %% Public methods
     % Implementation of the abstract methods declared in super-class Shape
     methods
-        %------------------------------------------------------------------
-        % Computes shape size (area).
-        function s = size(this)
-            x = this.carCoord(1:4,1);
-            y = this.carCoord(1:4,2);
-            s = polyarea(x,y);
-        end
-        
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.

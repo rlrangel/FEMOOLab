@@ -132,7 +132,7 @@ classdef Model < handle
                     id  = this.ID(j,i);
                     dof = this.anm.gla(j);
                     
-                    % Apply initial conditions
+                    % Apply initial conditions to free d.o.f.'s
                     if (id <= this.neqf)
                         if (~isempty(this.nodes(i).initDOF))
                             IC(id,1) = this.nodes(i).initDOF(dof);
