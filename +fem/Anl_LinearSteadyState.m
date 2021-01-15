@@ -59,9 +59,6 @@ classdef Anl_LinearSteadyState < fem.Anl
         %------------------------------------------------------------------
         % Pos-process results to compute derived variables.
         function posProcess(~,mdl)
-            % Set element transformation matrices of gauss-to-node results
-            mdl.setupTGNmtx();
-            
             % Initialize result arrays
             mdl.res.initPosResults(mdl);
             

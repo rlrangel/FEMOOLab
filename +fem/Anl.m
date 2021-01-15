@@ -65,6 +65,9 @@ classdef Anl < handle
             
             % Assemble element gather vectors
             mdl.assembleGle();
+            
+            % Set element initial properties
+            mdl.setupElemProps();
         end
     end
     

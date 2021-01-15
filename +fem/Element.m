@@ -40,6 +40,13 @@ classdef Element < handle
         % Natural boundary conditions (uniformly distributed over edges)
         lineNBC1 double = double.empty;         % matrix of standard NBCs (constant values) [corner1,corner2,forcing_components]
         lineNBC2 double = double.empty;         % matrix of radiative NBCs (d.o.f. dependent values) [corner1,corner2,forcing_term]
+        
+        % Convection conditions
+        avgV   double = double.empty            % cartesian components of average nodal velocities
+        normV  double = double.empty            % norm of average nodal velocities vector
+        peclet double = double.empty            % Peclet number
+        alpha  double = double.empty            % stabilization coefficient alpha
+        beta   double = double.empty            % stabilization coefficient beta
     end
     
     %% Constructor method
@@ -52,6 +59,85 @@ classdef Element < handle
     
     %% Public methods
     methods
+        %------------------------------------------------------------------
+        % Compute transformation matrix of gauss-to-node results.
+        % Refs.:
+        % -Hinton & Campbell, "Local and Global Smoothing of Discontinous
+        % Finite Element Functions using a Least Squares Method",
+        % Int. J. Num. Meth. Engng., Vol. 8, pp. 461-480, 1974.
+        % -Burnett, D.S., "Finite Element Analysis - From Concepts to Applications",
+        % Addison-Wesley, 1987.
+        % -Martha, L.F., "Notas de Aula do Curso CIV 2118 - Metodo dos Elementos
+        % Finitos", 1994.
+        function TGNmtx(this)
+            % Get parametric coordinates of Gauss points
+            [ngp,~,gp] = this.gauss.quadrature(this.gderive_order);
+            
+            % Set number of Gauss points for derived variables computation
+            this.gderive_npts = ngp;
+            
+            if (this.gderive_order == 1)
+                this.TGN = ones(this.shape.nen,1);
+            else
+                % Compute S matrix that defines the coefficients of the
+                % smoothing stress plane that fits the Gauss point stress
+                % values in a least square sence
+                P = zeros(3,3);
+                P(1,1) = ngp;
+                P(1,2) = sum(gp(1,:));
+                P(1,3) = sum(gp(2,:));
+                P(2,1) = P(1,2);
+                P(2,2) = gp(1,:) * gp(1,:)';
+                P(2,3) = gp(1,:) * gp(2,:)';
+                P(3,1) = P(1,3);
+                P(3,2) = P(2,3);
+                P(3,3) = gp(2,:) * gp(2,:)';
+                
+                Q = ones(3,ngp);
+                Q(2,:) = gp(1,:);
+                Q(3,:) = gp(2,:);
+                
+                S = P\Q;
+                
+                % Compute nodal stress evaluation matrix, which is obtained
+                % using nodal parametric coordinates in the smoothing stress
+                % plane equation
+                E = ones(this.shape.nen,3);
+                E(:,2) = this.shape.parCoord(:,1);
+                E(:,3) = this.shape.parCoord(:,2);
+                
+                % Compute transformation matrix
+                this.TGN = E * S;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Initialize convection properties: velocities, Peclet number, and
+        % stabilization coefficients.
+        function convProps(this)
+            nen = this.shape.nen;
+            dim = this.shape.dim;
+            
+            % Asemble nodal velocity vector            
+            V = zeros(nen,dim);
+            for i = 1:nen
+                if (~isempty(this.shape.nodes(i).convVel))
+                    V(i,:) = this.shape.nodes(i).convVel(1:dim);
+                end
+            end
+            
+            % Average nodal velocity vector and its norm
+            this.avgV = mean(V,1);
+            this.normV = norm(this.avgV);
+            
+            % Peclet number
+            this.peclet = (this.normV*this.shape.Lchr)/(2*this.mat.k);
+            
+            % Stabilization coefficients
+            this.alpha = coth(this.peclet) - 1/this.peclet;
+            this.beta  = (this.alpha*this.shape.Lchr)/(2*this.normV);
+        end
+        
         %------------------------------------------------------------------
         % Compute gradient matrix in a position of element domain given by
         % parametric coordinates.
@@ -179,16 +265,8 @@ classdef Element < handle
             nen = this.shape.nen;
             K = zeros(nen*ndof,nen*ndof);
             
-            % Asemble nodal velocity vector
-            V = zeros(nen,this.shape.dim);
-            for i = 1:nen
-                if (~isempty(this.shape.nodes(i).convVel))
-                    V(i,:) = this.shape.nodes(i).convVel(1:this.shape.dim);
-                end
-            end
-            
-            % Average nodal velocity assumed for the entire element
-            v = mean(V,1);
+            % Average nodal velocity vector
+            v = this.avgV;
             
             % Gauss points and weights
             [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
@@ -223,28 +301,11 @@ classdef Element < handle
             nen = this.shape.nen;
             K = zeros(nen*ndof,nen*ndof);
             
-            % Asemble nodal velocity vector
-            V = zeros(nen,this.shape.dim);
-            for i = 1:nen
-                if (~isempty(this.shape.nodes(i).convVel))
-                    V(i,:) = this.shape.nodes(i).convVel(1:this.shape.dim);
-                end
-            end
+            % Velocity matrix
+            Vmtx = this.avgV' * this.avgV;
             
-            % Average nodal velocity assumed for the entire element
-            v = mean(V,1);
-            
-            % Velocity norm and matrix
-            normV = norm(v);
-            Vmtx = v' * v;
-            
-            % Peclet number
-            L = this.shape.Lchr;
-            Pe = (normV*L)/(2*this.mat.k);
-            
-            % Stabilization coefficients
-            alpha = coth(abs(Pe)) - 1/abs(Pe);
-            beta  = (alpha*L)/(2*normV);
+            % Stabilization coefficient
+            b = this.beta;
             
             % Gauss points and weights
             [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
@@ -262,7 +323,7 @@ classdef Element < handle
                 B = this.BmtxElem(J,r,s);
                 
                 % Accumulate Gauss point contributions
-                K = K + w(i) * beta * B' * Vmtx * B * det(J);
+                K = K + w(i) * b * B' * Vmtx * B * det(J);
             end
         end
         
@@ -457,36 +518,15 @@ classdef Element < handle
         % stabilization of convective term: b[B]'[v]'Q
         % (steady-state analysis by SUPG method)
         function F = domainStabForceVct(this)
-            ndof = this.anm.ndof;
-            nen  = this.shape.nen;
-
             % Initialize element forcing vector
+            ndof = this.anm.ndof;
+            nen = this.shape.nen;
             F = zeros(nen*ndof,1);
             
-            % Internal forcing source
+            % Internal forcing source, avg velocity vector, stabilization coeff
             Q = this.src;
-            
-            % Asemble nodal velocity vector
-            V = zeros(nen,this.shape.dim);
-            for i = 1:nen
-                if (~isempty(this.shape.nodes(i).convVel))
-                    V(i,:) = this.shape.nodes(i).convVel(1:this.shape.dim);
-                end
-            end
-            
-            % Average nodal velocity assumed for the entire element
-            v = mean(V,1);
-            
-            % Velocity norm
-            normV = norm(v);
-            
-            % Peclet number
-            L = this.shape.Lchr;
-            Pe = (normV*L)/(2*this.mat.k);
-            
-            % Stabilization coefficients
-            alpha = coth(abs(Pe)) - 1/abs(Pe);
-            beta  = (alpha*L)/(2*normV);
+            v = this.avgV;
+            b = this.beta;
             
             % Gauss points and weights
             [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
@@ -504,7 +544,7 @@ classdef Element < handle
                 B = this.BmtxElem(J,r,s);
                 
                 % Accumulate Gauss point contributions
-                F = F + w(i) * beta * B' * v' * Q * det(J);
+                F = F + w(i) * b * B' * v' * Q * det(J);
             end
         end
         
@@ -547,58 +587,6 @@ classdef Element < handle
                 % Gauss point stress components and cartesian coordinates
                 dvar(:,i) = this.anm.pointDerivedVar(C,B,u);
                 gpc(:,i) = M * X;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Compute transformation matrix of gauss-to-node results.
-        % Refs.:
-        % -Hinton & Campbell, "Local and Global Smoothing of Discontinous
-        % Finite Element Functions using a Least Squares Method",
-        % Int. J. Num. Meth. Engng., Vol. 8, pp. 461-480, 1974.
-        % -Burnett, D.S., "Finite Element Analysis - From Concepts to Applications",
-        % Addison-Wesley, 1987.
-        % -Martha, L.F., "Notas de Aula do Curso CIV 2118 - Metodo dos Elementos
-        % Finitos", 1994.
-        function TGNmtx(this)
-            % Get parametric coordinates of Gauss points
-            [ngp,~,gp] = this.gauss.quadrature(this.gderive_order);
-            
-            % Set number of Gauss points for derived variables computation
-            this.gderive_npts = ngp;
-            
-            if (this.gderive_order == 1)
-                this.TGN = ones(this.shape.nen,1);
-            else
-                % Compute S matrix that defines the coefficients of the
-                % smoothing stress plane that fits the Gauss point stress
-                % values in a least square sence
-                P = zeros(3,3);
-                P(1,1) = ngp;
-                P(1,2) = sum(gp(1,:));
-                P(1,3) = sum(gp(2,:));
-                P(2,1) = P(1,2);
-                P(2,2) = gp(1,:) * gp(1,:)';
-                P(2,3) = gp(1,:) * gp(2,:)';
-                P(3,1) = P(1,3);
-                P(3,2) = P(2,3);
-                P(3,3) = gp(2,:) * gp(2,:)';
-                
-                Q = ones(3,ngp);
-                Q(2,:) = gp(1,:);
-                Q(3,:) = gp(2,:);
-                
-                S = P\Q;
-                
-                % Compute nodal stress evaluation matrix, which is obtained
-                % using nodal parametric coordinates in the smoothing stress
-                % plane equation
-                E = ones(this.shape.nen,3);
-                E(:,2) = this.shape.parCoord(:,1);
-                E(:,3) = this.shape.parCoord(:,2);
-                
-                % Compute transformation matrix
-                this.TGN = E * S;
             end
         end
     end
