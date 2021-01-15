@@ -13,7 +13,7 @@ classdef Anm_ThickPlate < fem.Anm
     methods
         %------------------------------------------------------------------
         function this = Anm_ThickPlate()
-            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.THICK_PLATE,2,3,5,[3 4 5]);
+            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.THICK_PLATE,3,5,[3 4 5]);
             
             % Types of response
             this.DISPL_Z     = true;  % Displacement Z

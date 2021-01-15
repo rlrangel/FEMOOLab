@@ -13,7 +13,7 @@ classdef Anm_PlaneConduction < fem.Anm
     methods
         %------------------------------------------------------------------
         function this = Anm_PlaneConduction()
-            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.PLANE_CONDUCTION,2,1,2,1);
+            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.PLANE_CONDUCTION,1,2,1);
             
             % Types of response
             this.TEMPERATURE = true;  % Temperature

@@ -25,7 +25,7 @@ classdef Shape_Quad4 < fem.Shape
     methods
         %------------------------------------------------------------------
         function this = Shape_Quad4(nodes)
-            this = this@fem.Shape(fem.Shape.QUAD4,4);
+            this = this@fem.Shape(fem.Shape.QUAD4,2,4);
             
             if (nargin > 0)
                 this.nodes = nodes;

@@ -53,16 +53,96 @@ classdef Element < handle
     %% Public methods
     methods
         %------------------------------------------------------------------
-        % Compute stiffness matrix part accounting for diffusion.
-        function K = stiffDiffMtx(this)
-            ndof = this.anm.ndof;
-            nen  = this.shape.nen;
-
-            % Initialize element matrix
-            K = zeros(nen*ndof,nen*ndof);
+        % Compute gradient matrix in a position of element domain given by
+        % parametric coordinates.
+        function B = BmtxElem(this,J,r,s)
+            % Matrix of d.o.f. shape functions derivatives w.r.t.
+            % parametric coordinates
+            GradNpar = this.shape.gradNmtx(r,s);
             
+            % Matrix of d.o.f. shape functions derivatives w.r.t.
+            % cartesian coordinates
+            GradNcar = J \ GradNpar;
+            
+            % Gradient matrix
+            B = this.anm.Bmtx(this,GradNcar,r,s);
+        end
+        
+        %------------------------------------------------------------------
+        % Compute Jacobian matrix in a position of element domain given by
+        % parametric coordinates.
+        function J = JmtxDomain(this,r,s)
             % Cartesian coordinates matrix
             X = this.shape.carCoord;
+            
+            % Matrix of geometry shape functions derivatives w.r.t.
+            % parametric coordinates
+            GradMpar = this.shape.gradMmtx(r,s);
+            
+            % Jacobian matrix
+            J = GradMpar * X;
+        end
+        
+        %------------------------------------------------------------------
+        % Compute Jacobian matrix in a position of element edge given by
+        % parametric coordinates.
+        function J = JmtxEdge(this,edgLocIds,r)
+            % Cartesian coordinates matrix
+            X = this.shape.carCoord(edgLocIds,:);
+            
+            % Matrix of edge geometry shape functions derivatives w.r.t.
+            % parametric coordinates
+            GradMpar = this.shape.gradMmtxEdge(r);
+            
+            % Jacobian matrix
+            J = GradMpar * X;
+        end
+        
+        %------------------------------------------------------------------
+        % Compute number of edge nodes and assemble vector of edge nodes ids
+        function [nedgen,edgLocIds] = edgeIds(this,corner1,corner2)
+            % Get local IDs of edge nodes
+            [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
+            
+            % Check for valid edge nodes
+            if (~valid)
+                nedgen = 0;
+                edgLocIds = [];
+                return;
+            end
+            
+            % Number of edge nodes and vector of edge nodes ids
+            if (mid == 0)
+                nedgen = 2;
+                edgLocIds = [n1,n2];
+            else
+                nedgen = 3;
+                edgLocIds = [n1,n2,mid];
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Assemble edge gather vector (stores local d.o.f.'s numbers).
+        function gledge = gleEdgeVct(this,nedgen,edgLocIds)
+            ndof = this.anm.ndof;
+            gledge = zeros(nedgen*ndof,1);
+            m = 0;
+            for i = 1:nedgen
+                for j = 1:ndof
+                    m = m + 1;
+                    gledge(m) = (edgLocIds(i)-1)*ndof + j;
+                end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Numerical integration of stiffness matrix part accounting for the
+        % diffusive term: [B]'[C][B]h
+        function K = stiffDiffMtx(this)
+            % Initialize element matrix
+            ndof = this.anm.ndof;
+            nen = this.shape.nen;
+            K = zeros(nen*ndof,nen*ndof);
             
             % Material constitutive matrix
             C = this.anm.Cmtx(this);
@@ -76,50 +156,34 @@ classdef Element < handle
                 r = gp(1,i);
                 s = gp(2,i);
                 
-                % Matrix of geometry shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradMpar = this.shape.gradMmtx(r,s);
-                
                 % Jacobian matrix
-                J = GradMpar * X;
-                detJ = det(J);
-                
-                % Matrix of d.o.f. shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradNpar = this.shape.gradNmtx(r,s);
-                
-                % Matrix of d.o.f. shape functions derivatives
-                % w.r.t. cartesian coordinates
-                GradNcar = J \ GradNpar;
+                J = this.JmtxDomain(r,s);
                 
                 % Gradient matrix 
-                B = this.anm.Bmtx(this,GradNcar,r,s);
+                B = this.BmtxElem(J,r,s);
                 
                 % Rigidity coefficient at integration point
                 h = this.anm.rigidityCoeff(this,r,s);
                 
                 % Accumulate Gauss point contributions
-                K = K + w(i) * B' * C * B * h * detJ;
+                K = K + w(i) * B' * C * B * h * det(J);
             end
         end
         
         %------------------------------------------------------------------
-        % Compute stiffness matrix part accounting for convection.
+        % Numerical integration of stiffness matrix part accounting for the
+        % convective term: [N]'[v]'[B]
         function K = stiffConvMtx(this)
-            ndof = this.anm.ndof;
-            nen  = this.shape.nen;
-
             % Initialize element matrix
+            ndof = this.anm.ndof;
+            nen = this.shape.nen;
             K = zeros(nen*ndof,nen*ndof);
             
-            % Cartesian coordinates matrix
-            X = this.shape.carCoord;
-            
-            % Asemble nodal velocity vector (currently, X and Y componenets only!)
-            V = zeros(nen,2);
+            % Asemble nodal velocity vector
+            V = zeros(nen,this.shape.dim);
             for i = 1:nen
                 if (~isempty(this.shape.nodes(i).convVel))
-                    V(i,1:2) = this.shape.nodes(i).convVel(1:2);
+                    V(i,:) = this.shape.nodes(i).convVel(1:this.shape.dim);
                 end
             end
             
@@ -138,69 +202,95 @@ classdef Element < handle
                 % Shape functions matrix
                 N = this.shape.Nmtx(r,s);
                 
-                % Matrix of geometry shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradMpar = this.shape.gradMmtx(r,s);
-                
                 % Jacobian matrix
-                J = GradMpar * X;
-                detJ = det(J);
-                
-                % Matrix of d.o.f. shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradNpar = this.shape.gradNmtx(r,s);
-                
-                % Matrix of d.o.f. shape functions derivatives
-                % w.r.t. cartesian coordinates
-                GradNcar = J \ GradNpar;
+                J = this.JmtxDomain(r,s);
                 
                 % Gradient matrix 
-                B = this.anm.Bmtx(this,GradNcar,r,s);
-                
-                % Velocity at Gauss point
-                %v = N * V;
+                B = this.BmtxElem(J,r,s);
                 
                 % Accumulate Gauss point contributions
-                K = K + w(i) * N' * v * B * detJ;
+                K = K + w(i) * N' * v * B * det(J);
             end
         end
         
         %------------------------------------------------------------------
-        % Compute stiffness matrix part accounting for radiation boundary
-        % conditions (d.o.f. dependent natural B.C.'s) over edges.
-        function K = stiffRadMtx(this)
-            ndof = this.anm.ndof;
-            nen  = this.shape.nen;
-            
+        % Numerical integration of stiffness matrix part accounting for the
+        % stabilization of convective term: b[B]'[V][B]
+        % (steady-state analysis by SUPG method)
+        function K = stiffStabMtx(this)
             % Initialize element matrix
+            ndof = this.anm.ndof;
+            nen = this.shape.nen;
             K = zeros(nen*ndof,nen*ndof);
             
-            % Loop over edges with d.o.f. dependent NBC
+            % Asemble nodal velocity vector
+            V = zeros(nen,this.shape.dim);
+            for i = 1:nen
+                if (~isempty(this.shape.nodes(i).convVel))
+                    V(i,:) = this.shape.nodes(i).convVel(1:this.shape.dim);
+                end
+            end
+            
+            % Average nodal velocity assumed for the entire element
+            v = mean(V,1);
+            
+            % Velocity norm and matrix
+            normV = norm(v);
+            Vmtx = v' * v;
+            
+            % Characteristic length
+            L = this.shape.size^(1/this.shape.dim);
+            
+            % Peclet number
+            Pe = (normV*L)/(2*this.mat.k);
+            
+            % Stabilization coefficients
+            alpha = coth(abs(Pe)) - 1/abs(Pe);
+            beta  = (alpha*L)/(2*normV);
+            
+            % Gauss points and weights
+            [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
+            
+            % Loop over Gauss integration points
+            for i = 1:ngp
+                % Parametric coordinates
+                r = gp(1,i);
+                s = gp(2,i);
+                
+                % Jacobian matrix
+                J = this.JmtxDomain(r,s);
+                
+                % Gradient matrix 
+                B = this.BmtxElem(J,r,s);
+                
+                % Accumulate Gauss point contributions
+                K = K + w(i) * beta * B' * Vmtx * B * det(J);
+            end
+        end
+        
+        %------------------------------------------------------------------
+        % Numerical integration of stiffness matrix part accounting for the
+        % radiative boundary conditions over edges: [N]'[N]h
+        function K = stiffRadMtx(this)
+            % Initialize element matrix
+            ndof = this.anm.ndof;
+            nen = this.shape.nen;
+            K = zeros(nen*ndof,nen*ndof);
+            
+            % Loop over edges with radiative NBC
             for q = 1:size(this.lineNBC2,1)
                 % Global IDs of edge initial and final nodes
                 corner1 = this.lineNBC2(q,1);
                 corner2 = this.lineNBC2(q,2);
                 
-                % Get local IDs of edge nodes
-                [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
-                if (~valid)
+                % Number of edge nodes and vector of edge nodes IDs
+                [nedgen,edgLocIds] = this.edgeIds(corner1,corner2);
+                if (nedgen == 0)
                     continue;
-                end
-                
-                % Compute number of edge nodes and assemble vector of edge nodes ids
-                if (mid == 0)
-                    nedgen = 2;
-                    edgLocIds = [n1,n2];
-                else
-                    nedgen = 3;
-                    edgLocIds = [n1,n2,mid];
                 end
                 
                 % Initialize edge matrix
                 Kedge = zeros(nedgen*ndof,nedgen*ndof);
-                
-                % Edge nodes coordinates
-                X = this.shape.carCoord(edgLocIds,:);
                 
                 % Radiation coefficient
                 h = this.lineNBC2(q,3);
@@ -216,27 +306,16 @@ classdef Element < handle
                     % Edge d.o.f. shape functions matrix
                     N = this.shape.NmtxEdge(r);
                     
-                    % Matrix of edge geometry shape functions derivatives
-                    % w.r.t. parametric coordinates
-                    GradMpar = this.shape.gradMmtxEdge(r);
-                    
                     % Jacobian matrix
-                    J = GradMpar * X;
+                    J = this.JmtxEdge(edgLocIds,r);
                     detJ = sqrt(J(1)*J(1) + J(2)*J(2));
                     
                     % Accumulate Gauss point contributions
                     Kedge = Kedge + w(i) * (N' * N) * h * detJ;
                 end
                 
-                % Edge gather vector (stores local d.o.f.'s numbers)
-                gledge = zeros(nedgen*ndof,1);
-                m = 0;
-                for i = 1:nedgen
-                    for j = 1:ndof
-                        m = m + 1;
-                        gledge(m) = (edgLocIds(i)-1)*ndof + j;
-                    end
-                end
+                % Edge gather vector
+                gledge = this.gleEdgeVct(nedgen,edgLocIds);
                 
                 % Assemble edge matrix to element matrix
                 K(gledge,gledge) = K(gledge,gledge) + Kedge;
@@ -244,91 +323,15 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
-        % Compute stabilization matrix of convective term of steady-state
-        % analysis by SUPG method.
-        function K = stiffStabMtx(this)
-            ndof = this.anm.ndof;
-            nen  = this.shape.nen;
-
-            % Initialize element matrix
-            K = zeros(nen*ndof,nen*ndof);
-            
-            % Cartesian coordinates matrix
-            X = this.shape.carCoord;
-            
-            % Asemble nodal velocity vector (currently, X and Y componenets only!)
-            V = zeros(nen,2);
-            for i = 1:nen
-                if (~isempty(this.shape.nodes(i).convVel))
-                    V(i,1:2) = this.shape.nodes(i).convVel(1:2);
-                end
-            end
-            
-            % Average nodal velocity assumed for the entire element
-            v = mean(V,1);
-            
-            % Velocity norm and matrix
-            normV = norm(v);
-            Vmtx = v' * v;
-            
-            % Characteristic length (assuming 2D)
-            dim = 2;
-            L = this.shape.size^(1/dim);
-            
-            % Peclet number
-            Pe = (normV*L)/(2*this.mat.k);
-            
-            % Stabilization coefficients
-            alpha = coth(abs(Pe)) - 1/abs(Pe);
-            beta  = (alpha*L)/(2*normV);
-            
-            % Gauss points and weights
-            [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
-            
-            % Loop over Gauss integration points
-            for i = 1:ngp
-                % Parametric coordinates
-                r = gp(1,i);
-                s = gp(2,i);
-                
-                % Matrix of geometry shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradMpar = this.shape.gradMmtx(r,s);
-                
-                % Jacobian matrix
-                J = GradMpar * X;
-                detJ = det(J);
-                
-                % Matrix of d.o.f. shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradNpar = this.shape.gradNmtx(r,s);
-                
-                % Matrix of d.o.f. shape functions derivatives
-                % w.r.t. cartesian coordinates
-                GradNcar = J \ GradNpar;
-                
-                % Gradient matrix 
-                B = this.anm.Bmtx(this,GradNcar,r,s);
-                
-                % Accumulate Gauss point contributions
-                K = K + w(i) * beta * B' * Vmtx * B * detJ;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        % Compute mass/capacity matrix.
+        % Numerical integration of mass matrix: [N]'[N]m
         function M = massMtx(this)
-            ndof = this.anm.ndof;
-            nen  = this.shape.nen;
-
             % Initialize element matrix
+            ndof = this.anm.ndof;
+            nen = this.shape.nen;
             M = zeros(nen*ndof,nen*ndof);
             
             % Mass coefficient
             m = this.anm.massCoeff(this);
-            
-            % Cartesian coordinates matrix
-            X = this.shape.carCoord;
             
             % Gauss points and weights
             [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
@@ -342,22 +345,17 @@ classdef Element < handle
                 % Shape functions matrix
                 N = this.shape.Nmtx(r,s);
                 
-                % Matrix of geometry shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradMpar = this.shape.gradMmtx(r,s);
-                
                 % Jacobian matrix
-                J = GradMpar * X;
-                detJ = det(J);
+                J = this.JmtxDomain(r,s);
                                 
                 % Accumulate Gauss point contributions
-                M = M + w(i) * (N' * N) * m * detJ;
+                M = M + w(i) * (N' * N) * m * det(J);
             end
         end
         
         %------------------------------------------------------------------
-        % Compute equivalent nodal forcing vector for constant natural
-        % boundary conditions prescribed over edges.
+        % Numerical integration of equivalent nodal forcing vector from
+        % standard natural boundary conditions prescribed over edges: [N]'q
         function F = edgeEquivForceVct(this)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
@@ -365,32 +363,20 @@ classdef Element < handle
             % Initialize element forcing vector
             F = zeros(nen*ndof,1);
             
-            % Loop over edges with constant NBC
+            % Loop over edges with standard NBC
             for q = 1:size(this.lineNBC1,1)
                 % Global IDs of edge initial and final nodes
                 corner1 = this.lineNBC1(q,1);
                 corner2 = this.lineNBC1(q,2);
                 
-                % Get local IDs of edge nodes
-                [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
-                if (~valid)
+                % Number of edge nodes and vector of edge nodes IDs
+                [nedgen,edgLocIds] = this.edgeIds(corner1,corner2);
+                if (nedgen == 0)
                     continue;
                 end
-
-                % Compute number of edge nodes and assemble vector of edge nodes ids
-                if (mid == 0)
-                    nedgen = 2;
-                    edgLocIds = [n1,n2];
-                else
-                    nedgen = 3;
-                    edgLocIds = [n1,n2,mid];
-                end
-
+                
                 % Initialize edge forcing vector
                 Fedge = zeros(nedgen*ndof,1);
-                
-                % Edge nodes coordinates
-                X = this.shape.carCoord(edgLocIds,:);
                 
                 % Forcing components
                 p = this.lineNBC1(q,3:end);
@@ -406,12 +392,8 @@ classdef Element < handle
                     % Edge d.o.f. shape functions matrix
                     N = this.shape.NmtxEdge(r);
                     
-                    % Matrix of edge geometry shape functions derivatives
-                    % w.r.t. parametric coordinates
-                    GradMpar = this.shape.gradMmtxEdge(r);
-                    
                     % Jacobian matrix
-                    J = GradMpar * X;
+                    J = this.JmtxEdge(edgLocIds,r);
                     detJ = sqrt(J(1)*J(1) + J(2)*J(2));
                     
                     % Accumulate Gauss point contributions
@@ -424,15 +406,8 @@ classdef Element < handle
                     end
                 end
                 
-                % Edge gather vector (stores local d.o.f.'s numbers)
-                gledge = zeros(nedgen*ndof,1);
-                m = 0;
-                for i = 1:nedgen
-                    for j = 1:ndof
-                        m = m + 1;
-                        gledge(m) = (edgLocIds(i)-1)*ndof + j;
-                    end
-                end
+                % Edge gather vector
+                gledge = this.gleEdgeVct(nedgen,edgLocIds);
                 
                 % Assemble edge forcing vetor to element forcing vector
                 F(gledge) = F(gledge) + Fedge;
@@ -440,7 +415,8 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
-        % Compute equivalent nodal forcing vector for internal domain source.
+        % Numerical integration of equivalent nodal forcing vector from
+        % internal domain source: [N]'Q
         function F = domainEquivForceVct(this)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
@@ -450,9 +426,6 @@ classdef Element < handle
             
             % Internal forcing source
             Q = this.src;
-            
-            % Cartesian coordinates matrix
-            X = this.shape.carCoord;
             
             % Gauss points and weights
             [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
@@ -466,12 +439,8 @@ classdef Element < handle
                 % Shape functions matrix
                 N = this.shape.Nmtx(r,s);
                 
-                % Matrix of geometry shape functions derivatives w.r.t.
-                % parametric coordinates
-                GradMpar = this.shape.gradMmtx(r,s);
-                
                 % Jacobian matrix
-                J = GradMpar * X;
+                J = this.JmtxDomain(r,s);
                 detJ = det(J);
                 
                 % Accumulate Gauss point contributions
@@ -486,7 +455,9 @@ classdef Element < handle
         end
         
         %------------------------------------------------------------------
-        % Compute stabilization vector for internal domain source.
+        % Numerical integration of nodal forcing vector accounting for the
+        % stabilization of convective term: b[B]'[v]'Q
+        % (steady-state analysis by SUPG method)
         function F = domainStabForceVct(this)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
@@ -497,14 +468,11 @@ classdef Element < handle
             % Internal forcing source
             Q = this.src;
             
-            % Cartesian coordinates matrix
-            X = this.shape.carCoord;
-            
-            % Asemble nodal velocity vector (currently, X and Y componenets only!)
-            V = zeros(nen,2);
+            % Asemble nodal velocity vector
+            V = zeros(nen,this.shape.dim);
             for i = 1:nen
                 if (~isempty(this.shape.nodes(i).convVel))
-                    V(i,1:2) = this.shape.nodes(i).convVel(1:2);
+                    V(i,:) = this.shape.nodes(i).convVel(1:this.shape.dim);
                 end
             end
             
@@ -514,9 +482,8 @@ classdef Element < handle
             % Velocity norm
             normV = norm(v);
             
-            % Characteristic length (assuming 2D)
-            dim = 2;
-            L = this.shape.size^(1/dim);
+            % Characteristic length
+            L = this.shape.size^(1/this.shape.dim);
             
             % Peclet number
             Pe = (normV*L)/(2*this.mat.k);
@@ -534,27 +501,14 @@ classdef Element < handle
                 r = gp(1,i);
                 s = gp(2,i);
                 
-                % Matrix of geometry shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradMpar = this.shape.gradMmtx(r,s);
-                
                 % Jacobian matrix
-                J = GradMpar * X;
-                detJ = det(J);
-                
-                % Matrix of d.o.f. shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradNpar = this.shape.gradNmtx(r,s);
-                
-                % Matrix of d.o.f. shape functions derivatives
-                % w.r.t. cartesian coordinates
-                GradNcar = J \ GradNpar;
+                J = this.JmtxDomain(r,s);
                 
                 % Gradient matrix 
-                B = this.anm.Bmtx(this,GradNcar,r,s);
+                B = this.BmtxElem(J,r,s);
                 
                 % Accumulate Gauss point contributions
-                F = F + w(i) * beta * B' * v' * Q * detJ;
+                F = F + w(i) * beta * B' * v' * Q * det(J);
             end
         end
         
@@ -573,7 +527,7 @@ classdef Element < handle
             
             % Initialize derived variable components and Gauss point coordinates
             dvar = zeros(this.anm.ndvc,ngp); 
-            gpc  = zeros(2,ngp);
+            gpc  = zeros(this.shape.dim,ngp);
             
             % Cartesian coordinates
             X = this.shape.carCoord;
@@ -590,23 +544,9 @@ classdef Element < handle
                 % Geometry shape functions matrix evaluated at this point
                 M = this.shape.Mmtx(r,s);
                 
-                % Matrix of geometry shape functions derivatives w.r.t.
-                % parametric coordinates
-                GradMpar = this.shape.gradMmtx(r,s);
-                
-                % Jacobian matrix
-                J = GradMpar * X;
-                
-                % Matrix of displacement shape functions derivatives
-                % w.r.t. parametric coordinates
-                GradNpar = this.shape.gradNmtx(r,s);
-                
-                % Matrix of displacement shape functions derivatives
-                % w.r.t. cartesian coordinates
-                GradNcar = J \ GradNpar;
-                
                 % Gradient matrix 
-                B = this.anm.Bmtx(this,GradNcar,r,s);
+                J = this.JmtxDomain(r,s);
+                B = this.BmtxElem(J,r,s);
                 
                 % Gauss point stress components and cartesian coordinates
                 dvar(:,i) = this.anm.pointDerivedVar(C,B,u);

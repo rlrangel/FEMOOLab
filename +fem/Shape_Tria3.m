@@ -24,7 +24,7 @@ classdef Shape_Tria3 < fem.Shape
     methods
         %------------------------------------------------------------------
         function this = Shape_Tria3(nodes)
-            this = this@fem.Shape(fem.Shape.TRIA3,3);
+            this = this@fem.Shape(fem.Shape.TRIA3,2,3);
             
             if (nargin > 0)
                 this.nodes = nodes;

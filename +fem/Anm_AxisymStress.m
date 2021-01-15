@@ -13,7 +13,7 @@ classdef Anm_AxisymStress < fem.Anm
     methods
         %------------------------------------------------------------------
         function this = Anm_AxisymStress()
-            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.AXISYM_STRESS,2,2,4,[1 2]);
+            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.AXISYM_STRESS,2,4,[1 2]);
             
             % Types of response
             this.DISPL_X  = true;  % Displacement X

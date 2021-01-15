@@ -78,7 +78,6 @@ classdef Anm < handle
     properties (SetAccess = public, GetAccess = public)
         phys int32 = int32.empty;  % flag for type of physics
         type int32 = int32.empty;  % flag for type of analysis model
-        dim  int32 = int32.empty;  % dimension of of analysis model
         ndof int32 = int32.empty;  % number of d.o.f.'s per node
         ndvc int32 = int32.empty;  % number of derived variable components
         gla  int32 = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
@@ -87,10 +86,9 @@ classdef Anm < handle
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anm(phys,type,dim,ndof,ndvc,gla)
+        function this = Anm(phys,type,ndof,ndvc,gla)
             this.phys = phys;
             this.type = type;
-            this.dim  = dim;
             this.ndof = ndof;
             this.ndvc = ndvc;
             this.gla  = gla;

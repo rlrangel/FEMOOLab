@@ -13,7 +13,7 @@ classdef Anm_PlaneConvDiff < fem.Anm
     methods
         %------------------------------------------------------------------
         function this = Anm_PlaneConvDiff()
-            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.CONVECTION_DIFFUSION,2,1,2,1);
+            this = this@fem.Anm(fem.Anm.THERMAL,fem.Anm.CONVECTION_DIFFUSION,1,2,1);
             
             % Types of response
             this.TEMPERATURE = true;  % Temperature
