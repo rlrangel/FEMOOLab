@@ -64,7 +64,7 @@ opt.fzz    = true;   % Plot contour of heat fluxes in Z direction
 opt.fm     = true;   % Plot contour of heat flux module
 
 % Element properties:
-opt.pec    = true;   % Plot contour of Peclet numbers
+opt.pec    = false;   % Plot contour of Peclet numbers
 
 % Other options:
 opt.tol    = 1e-5;   % Tolerance for cleaning small result values and differences

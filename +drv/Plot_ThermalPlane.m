@@ -266,10 +266,21 @@ classdef Plot_ThermalPlane < drv.Plot
                 this.plotMeshLabels2D(mdl);
             end
             
-            % Temperature animation
+            if (mdl.res.pec)
+                figure(this.fig_pec);
+                if (isempty(mdl.res.maxNen))
+                    maxNen = mdl.maxNumElemNodes();
+                else
+                    maxNen = mdl.res.maxNen;
+                end
+                contour = zeros(maxNen,mdl.nel);
+                for i = 1:mdl.nel
+                    contour(:,i) = mdl.elems(i).peclet;
+                end
+                this.plotElemContour2D(mdl,contour);
+            end
+            
             if (mdl.res.temp)
-                figure(this.fig_temp);
-                
                 % Number of frames
                 steps = 1:mdl.res.steps;
                 steps = steps(rem(steps,mdl.res.output_freq)==0);
@@ -301,6 +312,7 @@ classdef Plot_ThermalPlane < drv.Plot
                 
                 % Plot animation
                 for i = 1:loops
+                    figure(this.fig_temp);
                     for j = 1:mdl.nel
                         patch(XX(j,:,i),YY(j,:,i),ZZ(j,:,i));
                     end
