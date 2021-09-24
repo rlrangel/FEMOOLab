@@ -331,20 +331,12 @@ classdef Plot_StructInPlane < drv.Plot
         %------------------------------------------------------------------
         % Plot deformed mesh in active figure.
         function plotDeformMesh(this,mdl)
-            if (isempty(mdl.res.maxNen))
-                maxNen = mdl.maxNumElemNodes();
-            else
-                maxNen = mdl.res.maxNen;
-            end
-            
-            XX = zeros(1,maxNen+1);
-            YY = zeros(1,maxNen+1);
-            
             u = mdl.res.U(mdl.ID(1,:));
             v = mdl.res.U(mdl.ID(2,:));
-            
             for i = 1:mdl.nel
                 nen = mdl.elems(i).shape.nen;
+                XX = zeros(1,nen+1);
+                YY = zeros(1,nen+1);
                 for j = 1:nen
                     node = mdl.elems(i).shape.ccwNodeIds(j);
                     XX(j) = this.x_coord(node) + this.deform_fac*u(node);

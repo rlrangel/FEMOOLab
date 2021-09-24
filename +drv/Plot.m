@@ -139,17 +139,10 @@ classdef Plot < handle
         %------------------------------------------------------------------
         % Plot 2D mesh in active figure.
         function plotMesh2D(this,mdl)
-            if (isempty(mdl.res.maxNen))
-                maxNen = mdl.maxNumElemNodes();
-            else
-                maxNen = mdl.res.maxNen;
-            end
-            
-            XX = zeros(1,maxNen+1);
-            YY = zeros(1,maxNen+1);
-            
             for i = 1:mdl.nel
                 nen = mdl.elems(i).shape.nen;
+                XX = zeros(1,nen+1);
+                YY = zeros(1,nen+1);
                 for j = 1:nen
                     node = mdl.elems(i).shape.ccwNodeIds(j);
                     XX(j) = this.x_coord(node);
@@ -215,18 +208,11 @@ classdef Plot < handle
         % Plot element contour response in active figure.
         % Element contour is based on non average element results.
         function plotElemContour2D(this,mdl,contour)
-            if (isempty(mdl.res.maxNen))
-                maxNen = mdl.maxNumElemNodes();
-            else
-                maxNen = mdl.res.maxNen;
-            end
-            
-            XX = zeros(1,maxNen+1);
-            YY = zeros(1,maxNen+1);
-            ZZ = zeros(1,maxNen+1);
-            
             for i = 1:mdl.nel
                 nen = mdl.elems(i).shape.nen;
+                XX = zeros(1,nen+1);
+                YY = zeros(1,nen+1);
+                ZZ = zeros(1,nen+1);
                 for j = 1:nen
                     node  = mdl.elems(i).shape.ccwNodeIds(j);
                     locid = mdl.elems(i).shape.ccwLocalNodeIds(j);
@@ -253,18 +239,11 @@ classdef Plot < handle
         % Plot node contour response in active figure.
         % Node contour is based on nodal average adjacent element results.
         function plotNodeContour2D(this,mdl,contour)
-            if (isempty(mdl.res.maxNen))
-                maxNen = mdl.maxNumElemNodes();
-            else
-                maxNen = mdl.res.maxNen;
-            end
-            
-            XX = zeros(1,maxNen+1);
-            YY = zeros(1,maxNen+1);
-            ZZ = zeros(1,maxNen+1);
-            
             for i = 1:mdl.nel
                 nen = mdl.elems(i).shape.nen;
+                XX = zeros(1,nen+1);
+                YY = zeros(1,nen+1);
+                ZZ = zeros(1,nen+1);
                 for j = 1:nen
                     node  = mdl.elems(i).shape.ccwNodeIds(j);
                     XX(j) = this.x_coord(node);
