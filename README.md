@@ -38,10 +38,10 @@ The program handles plane models with C0 continuity for conventional isoparametr
 Analysis Model Types: 2D (plane) finite elements models of C0 continutity.
 
 The program adopts an isoparametric finite element formulation with conventional element shape types:
-* Tria3: linear planar triangular isoparametric element with 3 nodes, with Lagrangean interpolation
-* Quad4: linear planar quadrilateral isoparametric element with 4 nodes, with Lagrangean interpolation
-* Tria6: quadratic planar triangular isoparametric element with 6 nodes, with Lagrangean interpolation
-* Quad8: quadratic planar quadrilateral isoparametric element with 8 nodes, with Serendipity interpolation
+* _Tria3_: linear planar triangular isoparametric element with 3 nodes, with Lagrangean interpolation
+* _Quad4_: linear planar quadrilateral isoparametric element with 4 nodes, with Lagrangean interpolation
+* _Tria6_: quadratic planar triangular isoparametric element with 6 nodes, with Lagrangean interpolation
+* _Quad8_: quadratic planar quadrilateral isoparametric element with 8 nodes, with Serendipity interpolation
 
 ## Implementation Aspects
 
@@ -77,7 +77,7 @@ Moreover, a [template][modelparts_link] of this file, with all the possible inpu
 The name of the accompanying _Model_ _Parts_ file must be indicated in the Input Group ["ProblemData"][problem_data_link] of this file.
 
 A tutorial explaining each input field of this file can be found on its [Wiki page][wiki_parameters_link].
-Moreover, a [template][parameters_link] of this file, with all the possible input options, is available.
+Moreover, a [template][modelparts_link] of this file, with all the possible input options, is available.
 
 ### Running Simulations
 
@@ -145,11 +145,11 @@ International Center for Numerical Methods in Engineering ([CIMNE][cimne_website
 
 <p float="left">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/master/docs/images/logos/logo_puc.png" width="300"/>
+<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/new-version/docs/images/logos/logo_puc.png" width="300"/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/master/docs/images/logos/logo_tecgraf.png" width="400"/> 
+<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/new-version/docs/images/logos/logo_tecgraf.png" width="400"/> 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/master/docs/images/logos/logo_cimne.png" width="350"/>
+<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/new-version/docs/images/logos/logo_cimne.png" width="350"/>
 </p>
 
 ## License
@@ -166,6 +166,7 @@ The user is responsible for any and all conclusions made while using the program
 [matlab_website]:       https://www.mathworks.com/
 [wiki_mparts_link]:     https://gitlab.com/rafaelrangel/femoolab/-/wikis/model-parts-file
 [modelparts_link]:      https://gitlab.com/rafaelrangel/femoolab/-/blob/master/docs/help/ModelParts_template.txt
+[parameters_link]:      https://gitlab.com/rafaelrangel/femoolab/-/blob/master/docs/help/ProjectParameters_template.json
 [json_link]:            https://www.json.org/
 [problem_data_link]:    https://gitlab.com/rafaelrangel/femoolab/-/wikis/project-parameters-file#problemdata
 [wiki_parameters_link]: https://gitlab.com/rafaelrangel/femoolab/-/wikis/project-parameters-file
