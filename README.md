@@ -1,6 +1,6 @@
 # FEMOOLab - Finite Element Method Object-Oriented Laboratory
 
-<p align=center><img height="100.0%" width="100.0%" src="https://gitlab.com/rafaelrangel/femoolab/-/raw/new-version/docs/images/logos/logo_femoolab.png"></p>
+<p align=center><img height="100.0%" width="100.0%" src="https://gitlab.com/rafaelrangel/femoolab/-/raw/master/docs/images/logos/logo_femoolab.png"></p>
 
 FEMOOLab is a MATLAB program for performing numerical simulations using the Finite Element Method (FEM).
 
@@ -145,11 +145,11 @@ International Center for Numerical Methods in Engineering ([CIMNE][cimne_website
 
 <p float="left">
 &nbsp;&nbsp;&nbsp;&nbsp;
-<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/new-version/docs/images/logos/logo_puc.png" width="200"/>
+<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/master/docs/images/logos/logo_puc.png" width="200"/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/master/docs/images/logos/logo_tecgraf.png" width="280"/> 
 &nbsp;&nbsp;&nbsp;&nbsp;
-<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/new-version/docs/images/logos/logo_tecgraf.png" width="280"/> 
-&nbsp;&nbsp;&nbsp;&nbsp;
-<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/new-version/docs/images/logos/logo_cimne.png" width="240"/>
+<img src="https://gitlab.com/rafaelrangel/femoolab/-/raw/master/docs/images/logos/logo_cimne.png" width="240"/>
 </p>
 
 ## License
