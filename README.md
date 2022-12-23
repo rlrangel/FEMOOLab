@@ -1,6 +1,6 @@
 # FEMOOLab - Finite Element Method Object-Oriented Laboratory
 
-<p align=center><img height="100.0%" width="100.0%" src="https://gitlab.com/rafaelrangel/femoolab/-/raw/master/docs/images/logos/logo_femoolab.png"></p>
+<p align=center><img height="100.0%" width="100.0%" src="https://gitlab.com/rafaelrangel/femoolab/-/raw/new-version/docs/images/logos/logo_femoolab.png"></p>
 
 FEMOOLab is a MATLAB program for performing numerical simulations using the Finite Element Method (FEM).
 
