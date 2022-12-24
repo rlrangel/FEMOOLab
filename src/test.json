@@ -1,0 +1,64 @@
+{
+	"ProblemData": {
+		"name"             : "template",
+		"model_parts_file" : "ModelParts.txt"
+	},
+	"ResultsPlotting": {
+		"Option": {
+			"contour_smoothing"  : true,
+			"cleaning_tolerance" : 1e-5
+		},
+		"MeshLabel": {
+			"id_element" : false,
+			"id_node"    : false,
+			"id_gauss"   : false
+		},
+		"MeshDeformation": {
+			"deformed_mesh" : true,
+			"scale_factor"  : 1.0
+		},
+		"NodeResult": {
+			"displacement_x" : true,
+			"displacement_y" : true,
+			"displacement_z" : true,
+			"rotation_x"     : true,
+			"rotation_y"     : true,
+			"rotation_z"     : true,
+			"temperature"    : true
+		},
+		"ElementStress": {
+			"normal_stress_xx"   : true,
+			"normal_stress_yy"   : true,
+			"normal_stress_zz"   : true,
+			"shear_stress_xy"    : true,
+			"shear_stress_xz"    : true,
+			"shear_stress_yz"    : true,
+			"principal_stress_1" : true,
+			"principal_stress_2" : true,
+			"principal_stress_3" : true,
+			"shear_stress_max"   : true
+		},
+		"ElementForce": {
+			"shear_force_xz"     : true,
+			"shear_force_yz"     : true,
+			"bending_moment_xx"  : true,
+			"bending_moment_yy"  : true,
+			"torsion_moment"     : true,
+			"principal_moment_1" : true,
+			"principal_moment_2" : true,
+			"torsion_moment_max" : true
+		},
+		"ElementHeatFlux": {
+			"heat_flux_x"      : true,
+			"heat_flux_y"      : true,
+			"heat_flux_z"      : true,
+			"heat_flux_module" : true
+		},
+		"ElementProperty": {
+			"area"          : true,
+			"mass"          : true,
+			"jacobian"      : true,
+			"peclet_number" : true
+		}
+	}
+}

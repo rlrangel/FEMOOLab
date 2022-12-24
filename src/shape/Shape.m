@@ -7,16 +7,12 @@
 % This super-class defines abstract methods that must be implemented in
 % the derived *sub-classes*:
 %
-% * <shape_lin2.html Shape_Lin2>
-% * <shape_lin3.html Shape_Lin3>
-% * <shape_tri3.html Shape_Tri3>
-% * <shape_tri6.html Shape_Tri6>
-% * <shape_quad4.html Shape_Quad4>
-% * <shape_quad8.html Shape_Quad8>
-% * <shape_tet4.html Shape_Tet4>
-% * <shape_tet10.html Shape_Tet10>
-% * <shape_hex8.html Shape_Hex8>
-% * <shape_hex20.html Shape_Hex20>
+% * <Shape_Lin2.html Shape_Lin2>
+% * <Shape_Lin3.html Shape_Lin3>
+% * <Shape_Tri3.html Shape_Tri3>
+% * <Shape_Tri6.html Shape_Tri6>
+% * <Shape_Quad4.html Shape_Quad4>
+% * <Shape_Quad8.html Shape_Quad8>
 %
 classdef Shape < handle
     %% Constant values
@@ -28,15 +24,11 @@ classdef Shape < handle
         TRI6  = int32(4);
         QUAD4 = int32(5);
         QUAD8 = int32(6);
-        TET4  = int32(7);
-        TET10 = int32(8);
-        HEX8  = int32(9);
-        HEX20 = int32(10);
     end
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        % Indentification
+        % Identification
         type int32 = int32.empty;   % flag for type of shape
         
         % Dimensions
@@ -44,27 +36,26 @@ classdef Shape < handle
         len double = double.empty;   % characteristic length
         
         % Nodes
-        nen        int32 = int32.empty;   % number of nodes
-        nodes      Node  = Node.empty;    % handles to objects of Node class
-        nodeIdsLcl int32 = int32.empty;   % vector of local node ids
-        nodeIdsGbl int32 = int32.empty;   % vector of global node ids
+        n_nodes      int32 = int32.empty;   % number of nodes
+        nodes        Node  = Node.empty;    % handles to objects of Node class
+        node_ids_lcl int32 = int32.empty;   % vector of local node IDs
+        node_ids_gbl int32 = int32.empty;   % vector of global node IDs
         
         % Coordinates
-        carCoord double = double.empty;   % matrix of cartesian nodal coordinates
-        parCoord double = double.empty;   % matrix of parametric nodal coordinates
+        coord_car double = double.empty;   % matrix of cartesian nodal coordinates
+        coord_par double = double.empty;   % matrix of parametric nodal coordinates
         
         % Sub-components
         edge Shape = Shape.empty;   % handle to object of Shape class
-        face Shape = Shape.empty;   % handle to object of Shape class
     end
     
     %% Constructor method
     methods
-        function this = Shape(type,dim,nen)
+        function this = Shape(type,dim,n_nodes)
             if (nargin > 0)
-                this.type = type;
-                this.dim  = dim;
-                this.nen  = nen;
+                this.type    = type;
+                this.dim     = dim;
+                this.n_nodes = n_nodes;
             end
         end
     end
@@ -75,9 +66,9 @@ classdef Shape < handle
         initialize(this,nodes);
         
         %------------------------------------------------------------------
-        % Evaluate matrix of element d.o.f. shape functions at a given
+        % Evaluate matrix of d.o.f. shape functions at a given element
         % position in parametric coordinates.
-        N = ShpFcnMtx(this,r,s,t);
+        N = ShpFcnMtx(this,r,s);
         
         %------------------------------------------------------------------
         % Evaluate matrix of d.o.f. shape functions at a given edge
@@ -85,70 +76,40 @@ classdef Shape < handle
         N = ShpFcnMtxEdge(this,r);
         
         %------------------------------------------------------------------
-        % Evaluate matrix of d.o.f. shape functions at a given face
+        % Evaluate matrix of geometry map functions at a given element
         % position in parametric coordinates.
-        N = ShpFcnMtxFace(this,r,s);
+        M = MapFcnMtx(this,r,s);
         
         %------------------------------------------------------------------
-        % Evaluate matrix of d.o.f. shape functions at a given volume
-        % position in parametric coordinates.
-        N = ShpFcnMtxVol(this,r,s,t);
-        
-        %------------------------------------------------------------------
-        % Evaluate matrix of element geometry map functions at a given
-        % position in parametric coordinates.
-        M = MapFcnMtx(this,r,s,t);
-        
-        %------------------------------------------------------------------
-        % Evaluate matrix of derivatives of element d.o.f. shape functions
-        % w.r.t. parametric coordinates at a given position.
-        GradNpar = gradShpFcnMtx(this,r,s,t);
+        % Evaluate matrix of derivatives of d.o.f. shape functions
+        % w.r.t. parametric coordinates at a given element position.
+        GradNpar = GradShpFcnMtx(this,r,s);
         
         %------------------------------------------------------------------
         % Evaluate matrix of derivatives of d.o.f. shape functions
         % w.r.t. parametric coordinates at a given edge position.
-        GradNpar = gradShpFcnMtxEdge(this,r);
+        GradNpar = GradShpFcnMtxEdge(this,r);
         
         %------------------------------------------------------------------
-        % Evaluate matrix of derivatives of d.o.f. shape functions
-        % w.r.t. parametric coordinates at a given face position.
-        GradNpar = gradShpFcnMtxFace(this,r,s);
-        
-        %------------------------------------------------------------------
-        % Evaluate matrix of derivatives of d.o.f. shape functions
-        % w.r.t. parametric coordinates at a given volume position.
-        GradNpar = gradShpFcnMtxVol(this,r,s,t);
-        
-        %------------------------------------------------------------------
-        % Evaluate matrix of derivatives of element geometry map functions
-        % w.r.t. parametric coordinates at a given position.
-        GradMpar = gradMapFcnMtx(this,r,s,t);
+        % Evaluate matrix of derivatives of geometry map functions
+        % w.r.t. parametric coordinates at a given element position.
+        GradMpar = GradMapFcnMtx(this,r,s);
         
         %------------------------------------------------------------------
         % Evaluate matrix of derivatives of geometry map functions
         % w.r.t. parametric coordinates at a given edge position.
-        GradMpar = gradMapFcnMtxEdge(this,r);
+        GradMpar = GradMapFcnMtxEdge(this,r);
         
         %------------------------------------------------------------------
-        % Evaluate matrix of derivatives of geometry map functions
-        % w.r.t. parametric coordinates at a given face position.
-        GradMpar = gradMapFcnMtxFace(this,r,s);
-        
-        %------------------------------------------------------------------
-        % Evaluate matrix of derivatives of geometry map functions
-        % w.r.t. parametric coordinates at a given volume position.
-        GradMpar = gradMapFcnMtxVol(this,r,s,t);
-        
-        %------------------------------------------------------------------
-        % Returns the local ids of the nodes of a shape edge for a given
-        % pair of corner nodes global ids.
-        % In case the given corner nodes global ids do not correspond to
-        % a valid element shape edge, the returned value for the valid
-        % parameter is false. Otherwise, the returned value is true.
-        % The two corner nodes local ids are returned in parameters n1 and
-        % n2. In case there is a mid node at the target edge, the local id
-        % of this node is returned in the parameter mid. Otherwise, the
-        % returned value of mid is zero.
-        [valid,n1,n2,mid] = edgeLocalIds(this,corner1,corner2);
+        % Returns the local IDs of the nodes of a shape edge for a given
+        % pair of corner nodes global IDs.
+        % Output:
+        %  valid: In case the given corner nodes global IDs do not 
+        %         correspond to a valid element shape edge, the returned
+        %         value is false. Otherwise, the returned value is true.
+        %  n1,n2: The local IDs of the two corner nodes.
+        %  mid:   The local ID of the mid node. In case there is no mid
+        %         node, it returns zero.
+        [valid,n1,n2,mid] = EdgeLocalIds(this,corner1,corner2);
     end
 end

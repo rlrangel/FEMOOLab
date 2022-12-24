@@ -3,14 +3,14 @@
 %% Description
 %
 % This is a handle super-class for the definition of an element Gauss
-% quadrature.
+% quadrature for numerical integration of element arrays.
 %
 % This super-class defines abstract methods that must be implemented in
 % the derived *sub-classes*:
 %
-% * <gauss_lin.html Gauss_Lin>
-% * <gauss_tri.html Gauss_Tri>
-% * <gauss_quad.html Gauss_Quad>
+% * <Gauss_Lin.html Gauss_Lin>
+% * <Gauss_Tri.html Gauss_Tri>
+% * <Gauss_Quad.html Gauss_Quad>
 %
 classdef Gauss < handle
     %% Constant values
@@ -42,8 +42,8 @@ classdef Gauss < handle
         % given quadrature order.
         % Output:
         %  ngp: number of Gauss points
-        %  w:   vector of weights
-        %  gp:  array of parametric coordinates
-        [ngp,w,gp] = quadrature(this,order);
+        %  w:   vector of Gauss points weights
+        %  gp:  array of Gauss points parametric coordinates
+        [ngp,w,gp] = Quadrature(this,order);
     end
 end

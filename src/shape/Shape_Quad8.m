@@ -2,11 +2,11 @@
 %
 %% Description
 %
-% This is a sub-class of the <shape.html Shape> class for the
-% implementation of the *Serendipity Quadratic Quadrilateral Shape*
+% This is a sub-class of the <Shape.html Shape> class for the
+% implementation of *Serendipity Quadratic Quadrilateral Shape*
 % (8-noded isoparametric quadrilateral).
 %
-% <<shape_quadrilateral8.png>>
+% <<../images/tutorials/shape_quadrilateral8.png>>
 %
 classdef Shape_Quad8 < Shape
     %% Constructor method
@@ -26,97 +26,77 @@ classdef Shape_Quad8 < Shape
         function initialize(this,nodes)
             this.nodes = nodes;
             
-            % Vector of local node ids (ccw order)
-            this.nodeIdsLcl = [ 1; 5; 2; 6; 3; 7; 4; 8 ];
+            % Vector of local node IDs (ccw order)
+            this.node_ids_lcl = [ 1; 5; 2; 6; 3; 7; 4; 8 ];
             
-            % Vector of global node ids (ccw order)
-            this.nodeIdsGbl = [ nodes(1).id;
-                                nodes(5).id;
-                                nodes(2).id;
-                                nodes(6).id;
-                                nodes(3).id;
-                                nodes(7).id;
-                                nodes(4).id;
-                                nodes(8).id ];
+            % Vector of global node IDs (ccw order)
+            this.node_ids_gbl = [ nodes(1).id;
+                                  nodes(5).id;
+                                  nodes(2).id;
+                                  nodes(6).id;
+                                  nodes(3).id;
+                                  nodes(7).id;
+                                  nodes(4).id;
+                                  nodes(8).id ];
             
-            % Matrix of cartesian coordinates of nodes [X Y]
-            this.carCoord = [ nodes(1).coord(1) nodes(1).coord(2);
-                              nodes(2).coord(1) nodes(2).coord(2);
-                              nodes(3).coord(1) nodes(3).coord(2);
-                              nodes(4).coord(1) nodes(4).coord(2);
-                              nodes(5).coord(1) nodes(5).coord(2);
-                              nodes(6).coord(1) nodes(6).coord(2);
-                              nodes(7).coord(1) nodes(7).coord(2);
-                              nodes(8).coord(1) nodes(8).coord(2) ];
+            % Matrix of cartesian nodal coordinates [X Y]
+            this.coord_car = [ nodes(1).coord(1) nodes(1).coord(2);
+                               nodes(2).coord(1) nodes(2).coord(2);
+                               nodes(3).coord(1) nodes(3).coord(2);
+                               nodes(4).coord(1) nodes(4).coord(2);
+                               nodes(5).coord(1) nodes(5).coord(2);
+                               nodes(6).coord(1) nodes(6).coord(2);
+                               nodes(7).coord(1) nodes(7).coord(2);
+                               nodes(8).coord(1) nodes(8).coord(2) ];
             
-            % Matrix of parametric coordinates of nodes [r s]
-            this.parCoord = [ -1.0 -1.0;
-                               1.0 -1.0;
-                               1.0  1.0;
-                              -1.0  1.0;
-                               0.0 -1.0;
-                               1.0  0.0;
-                               0.0  1.0;
-                              -1.0  0.0 ];
-            
-            % Sub-components
-            this.edge = Shape_Lin3();
+            % Matrix of parametric nodal coordinates [r s]
+            this.coord_par = [ -1.0 -1.0;
+                                1.0 -1.0;
+                                1.0  1.0;
+                               -1.0  1.0;
+                                0.0 -1.0;
+                                1.0  0.0;
+                                0.0  1.0;
+                               -1.0  0.0 ];
             
             % Characteristic length
-            x = this.carCoord(:,1);
-            y = this.carCoord(:,2);
+            x = this.coord_car(:,1);
+            y = this.coord_car(:,2);
             area = polyarea(x,y);
             this.len = area^(1/2);
+
+            % Sub-components
+            this.edge = Shape_Lin3();
         end
         
         %------------------------------------------------------------------
-        function N = ShpFcnMtx(this,r,s,~)
-            N = this.ShpFcnMtxFace(r,s);
+        function N = ShpFcnMtx(this,r,s)
+            N = zeros(1,this.n_nodes);
+            
+            N(5) = 0.50 * (1 - r * r) * (1 - s);
+            N(6) = 0.50 * (1 + r) * (1 - s * s);
+            N(7) = 0.50 * (1 - r * r) * (1 + s);
+            N(8) = 0.50 * (1 - r) * (1 - s * s);
+            N(1) = 0.25 * (1 - r) * (1 - s) - 0.50 * N(8) - 0.50 * N(5);
+            N(2) = 0.25 * (1 + r) * (1 - s) - 0.50 * N(5) - 0.50 * N(6);
+            N(3) = 0.25 * (1 + r) * (1 + s) - 0.50 * N(6) - 0.50 * N(7);
+            N(4) = 0.25 * (1 - r) * (1 + s) - 0.50 * N(7) - 0.50 * N(8);
         end
         
         %------------------------------------------------------------------
         function N = ShpFcnMtxEdge(this,r) 
-            N = this.edge.ShpFcnMtx(r,[],[]);
+            N = this.edge.ShpFcnMtx(r,[]);
         end
         
         %------------------------------------------------------------------
-        function N = ShpFcnMtxFace(this,r,s)
-            N = zeros(1,this.nen);
-            
-            N(5) = 0.50*(1-r*r)*(1-s);
-            N(6) = 0.50*(1+r)*(1-s*s);
-            N(7) = 0.50*(1-r*r)*(1+s);
-            N(8) = 0.50*(1-r)*(1-s*s);
-            N(1) = 0.25*(1-r)*(1-s) - 0.50*N(8) - 0.50*N(5);
-            N(2) = 0.25*(1+r)*(1-s) - 0.50*N(5) - 0.50*N(6);
-            N(3) = 0.25*(1+r)*(1+s) - 0.50*N(6) - 0.50*N(7);
-            N(4) = 0.25*(1-r)*(1+s) - 0.50*N(7) - 0.50*N(8);
-        end
-        
-        %------------------------------------------------------------------
-        function N = ShpFcnMtxVol(~,~,~,~)
-            N = [];
-        end
-        
-        %------------------------------------------------------------------
-        function M = MapFcnMtx(this,r,s,t)
+        function M = MapFcnMtx(this,r,s)
             % Isoparametric element shape
-            M = this.ShpFcnMtx(r,s,t);
+            M = this.ShpFcnMtx(r,s);
         end
         
         %------------------------------------------------------------------
-        function GradNpar = gradShpFcnMtx(this,r,s,~)
-            GradNpar = this.gradShpFcnMtxFace(r,s);
-        end
-        
-        %------------------------------------------------------------------
-        function GradNpar = gradShpFcnMtxEdge(this,r)
-             GradNpar = this.edge.gradShpFcnMtx(r,[],[]);
-        end
-        
-        %------------------------------------------------------------------
-        function GradNpar = gradShpFcnMtxFace(this,r,s)
-            GradNpar = zeros(this.dim,this.nen);
+        function GradNpar = GradShpFcnMtx(this,r,s)
+            GradNpar = zeros(this.dim,this.n_nodes);
             
             GradNpar(1,1) = (2*r - 2*r*s - s*s   + s) / 4;
             GradNpar(2,1) = (2*s - r*r   - 2*r*s + r) / 4;
@@ -137,44 +117,24 @@ classdef Shape_Quad8 < Shape
         end
         
         %------------------------------------------------------------------
-        function GradNpar = gradShpFcnMtxVol(~,~,~,~)
-            GradNpar = [];
+        function GradNpar = GradShpFcnMtxEdge(this,r)
+             GradNpar = this.edge.GradShpFcnMtx(r,[]);
         end
         
         %------------------------------------------------------------------
-        function GradMpar = gradMapFcnMtx(this,r,s,t)
+        function GradMpar = GradMapFcnMtx(this,r,s)
             % Isoparametric element shape
-            GradMpar = this.gradShpFcnMtx(r,s,t);
+            GradMpar = this.GradShpFcnMtx(r,s);
         end
         
         %------------------------------------------------------------------
-        function GradMpar = gradMapFcnMtxEdge(this,r)
+        function GradMpar = GradMapFcnMtxEdge(this,r)
             % Isoparametric element shape
-            GradMpar = this.gradShpFcnMtxEdge(r);
+            GradMpar = this.GradShpFcnMtxEdge(r);
         end
         
         %------------------------------------------------------------------
-        function GradMpar = gradMapFcnMtxFace(this,r,s)
-            % Isoparametric element shape
-            GradMpar = this.gradShpFcnMtxFace(r,s);
-        end
-        
-        %------------------------------------------------------------------
-        function GradMpar = gradMapFcnMtxVol(this,r,s,t)
-            % Isoparametric element shape
-            GradMpar = this.gradShpFcnMtxVol(r,s,t);
-        end
-        
-        %------------------------------------------------------------------
-        % Returns the local ids of the nodes of a shape edge for a given
-        % pair of corner nodes global ids.
-        % In case the given corner nodes global ids do not correspond to
-        % a valid element shape edge, the returned value for the valid
-        % parameter is false. Otherwise, the returned value is true.
-        % The two corner nodes local ids are returned in parameters n1 and
-        % n2. The local id of the mid node at the target edge, is returned
-        % in the parameter mid.
-        function [valid,n1,n2,mid] = edgeLocalIds(this,corner1,corner2)
+        function [valid,n1,n2,mid] = EdgeLocalIds(this,corner1,corner2)
             valid = false;
             n1    = 0;
             n2    = 0;

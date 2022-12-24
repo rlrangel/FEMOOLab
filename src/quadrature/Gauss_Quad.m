@@ -2,10 +2,10 @@
 %
 %% Description
 %
-% This is a sub-class of the <gauss.html Gauss> class for the
-% implementation of the *Quadrilateral Quadrature*.
+% This is a sub-class of the <Gauss.html Gauss> class for the
+% implementation of *Quadrilateral Quadrature*.
 %
-% <<gauss_quadrilateral.png>>
+% <<../images/tutorials/gauss_quadrilateral.png>>
 %
 classdef Gauss_Quad < Gauss
     %% Constructor method
@@ -18,7 +18,7 @@ classdef Gauss_Quad < Gauss
     %% Public methods: implementation of super-class declarations
     methods
         %------------------------------------------------------------------
-        function [ngp,w,gp] = quadrature(~,order)
+        function [ngp,w,gp] = Quadrature(~,order)
             ngp = order * order;
             
             % Matrix of weights

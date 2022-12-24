@@ -2,7 +2,7 @@
 
 <p align=center><img height="100.0%" width="100.0%" src="https://gitlab.com/rafaelrangel/femoolab/-/raw/master/docs/images/logos/logo_femoolab.png"></p>
 
-FEMOOLab is a MATLAB program for performing numerical simulations using the Finite Element Method (FEM).
+FEMOOLab is a MATLAB program for performing multiphysics simulations using the Finite Element Method (FEM).
 
 Its purpose is to offer an open-source tool that is modular and extensible, allowing easy implementation, inspection and testing of new models and formulations.
 It targets researchers, who can use it as a numerical laboratory, and teachers and students who want to teach or learn implementation aspects about the FEM.
@@ -29,7 +29,7 @@ The program is based on the [FEMOOP][femoop_website] system.
 
 The program performs thermomechanical analyses of two-dimensional (2D) models.
 
-Steady-state and transient analysis.
+Steady-state and transient regimes.
 
 Linear-elastic analysis.
 
