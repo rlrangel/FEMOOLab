@@ -29,24 +29,24 @@ classdef Shape < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % Identification
-        type int32 = int32.empty;   % flag for type of shape
+        type int32 = int32.empty;  % flag for type of shape
         
         % Dimensions
-        dim double = double.empty;   % spatial dimension
-        len double = double.empty;   % characteristic length
+        dim double = double.empty;  % spatial dimension
+        len double = double.empty;  % characteristic length
         
         % Nodes
-        n_nodes      int32 = int32.empty;   % number of nodes
-        nodes        Node  = Node.empty;    % handles to objects of Node class
-        node_ids_lcl int32 = int32.empty;   % vector of local node IDs
-        node_ids_gbl int32 = int32.empty;   % vector of global node IDs
+        n_nodes      int32 = int32.empty;  % number of nodes
+        nodes        Node  = Node.empty;   % handles to objects of Node class
+        node_ids_lcl int32 = int32.empty;  % vector of local node IDs
+        node_ids_gbl int32 = int32.empty;  % vector of global node IDs
         
         % Coordinates
-        coord_car double = double.empty;   % matrix of cartesian nodal coordinates
-        coord_par double = double.empty;   % matrix of parametric nodal coordinates
+        coord_car double = double.empty;  % matrix of cartesian nodal coordinates
+        coord_par double = double.empty;  % matrix of parametric nodal coordinates
         
         % Sub-components
-        edge Shape = Shape.empty;   % handle to object of Shape class
+        edge Shape = Shape.empty;  % handle to object of Shape class
     end
     
     %% Constructor method
@@ -60,7 +60,7 @@ classdef Shape < handle
         end
     end
     
-    %% Abstract methods: implemented in derived sub-classes
+    %% Abstract methods
     methods (Abstract)
         %------------------------------------------------------------------
         initialize(this,nodes);

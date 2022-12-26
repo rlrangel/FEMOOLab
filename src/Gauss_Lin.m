@@ -13,7 +13,7 @@ classdef Gauss_Lin < Gauss
         end
     end
     
-    %% Public methods: implementation of super-class declarations
+    %% Public methods
     methods
         %------------------------------------------------------------------
         function [ngp,w,gp] = Quadrature(~,order)

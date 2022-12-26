@@ -1,9 +1,10 @@
 {
 	"ProblemData": {
 		"name"             : "template",
-		"model_parts_file" : "ModelParts.txt"
+		"model_parts_file" : "ModelParts.txt",
+		"analysis_model"   : "plane_stress"
 	},
-	"ResultsPlotting": {
+	"ResultPlotting": {
 		"Option": {
 			"contour_smoothing"  : true,
 			"cleaning_tolerance" : 1e-5

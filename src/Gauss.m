@@ -2,8 +2,8 @@
 %
 %% Description
 %
-% This is a handle super-class for the definition of an element Gauss
-% quadrature for numerical integration of element arrays.
+% This is a handle super-class for the definition of Gauss quadratures for
+% numerical integration of element arrays.
 %
 % This super-class defines abstract methods that must be implemented in
 % the derived *sub-classes*:
@@ -23,7 +23,7 @@ classdef Gauss < handle
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        type int32 = int32.empty;   % flag for type of Gauss quadrature
+        type int32 = int32.empty;  % flag for type of Gauss quadrature
     end
     
     %% Constructor method
@@ -35,7 +35,7 @@ classdef Gauss < handle
         end
     end
     
-    %% Abstract methods: implemented in derived sub-classes
+    %% Abstract methods
     methods (Abstract)
         %------------------------------------------------------------------
         % Get parametric coordinates and weights of Gauss points for a

@@ -5,18 +5,18 @@
 % This is the main class for running simulations and tests in FEMOOLab.
 %
 % It is responsible for managing the high-level tasks and call the
-% appropriate methods to perform each stage of a simulation, from the
-% reading of input files to the showing of results.
+% appropriate methods to perform each stage of a simulation,
+% from the reading of input files to the showing of results.
 %
 classdef Master < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
-        echo     int32   = int32.empty;     % echo level (amount of information to be printed in command window)
-        n_files  int32   = int32.empty;     % number of input files
-        path_in  string  = string.empty;    % path to input files folder
-        files    string  = string.empty;    % full name of input files (with path)
-        cur_file string  = string.empty;    % name of current file being run
-        is_last  logical = logical.empty;   % flag for last input file to run
+        echo     int32   = int32.empty;    % echo level (amount of information to be printed in command window)
+        n_files  int32   = int32.empty;    % number of input files
+        path_in  string  = string.empty;   % path to input files folder
+        files    string  = string.empty;   % full name of input files (with path)
+        cur_file string  = string.empty;   % name of current file being run
+        is_last  logical = logical.empty;  % flag for last input file to run
     end
 
     %% Constructor method

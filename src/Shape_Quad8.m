@@ -20,7 +20,7 @@ classdef Shape_Quad8 < Shape
         end
     end
     
-    %% Public methods: implementation of super-class declarations
+    %% Public methods
     methods
         %------------------------------------------------------------------
         function initialize(this,nodes)

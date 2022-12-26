@@ -1,18 +1,18 @@
-%% Shape_Quad4 Class
+%% Shape_Tri3 Class
 %
 %% Description
 %
 % This is a sub-class of the <Shape.html Shape> class for the
-% implementation of *Bilinear Quadrilateral Shape*
-% (4-noded isoparametric quadrilateral).
+% implementation of *Linear Triangular Shape*
+% (3-noded isoparametric triangle).
 %
-% <<../images/tutorials/shape_quadrilateral4.png>>
+% <<../images/tutorials/shape_triangle3.png>>
 %
-classdef Shape_Quad4 < Shape
+classdef Shape_Tri3 < Shape
     %% Constructor method
     methods
-        function this = Shape_Quad4(nodes)
-            this = this@Shape(Shape.QUAD4,2,4);
+        function this = Shape_Tri3(nodes)
+            this = this@Shape(Shape.TRI3,2,3);
             
             if (nargin > 0)
                 this.initialize(nodes);
@@ -20,32 +20,29 @@ classdef Shape_Quad4 < Shape
         end
     end
     
-    %% Public methods: implementation of super-class declarations
+    %% Public methods
     methods
         %------------------------------------------------------------------
         function initialize(this,nodes)
             this.nodes = nodes;
             
             % Vector of local node IDs (ccw order)
-            this.node_ids_lcl = [ 1; 2; 3; 4 ];
+            this.node_ids_lcl = [ 1; 2; 3 ];
             
             % Vector of global node IDs (ccw order)
             this.node_ids_gbl = [ nodes(1).id;
                                   nodes(2).id;
-                                  nodes(3).id;
-                                  nodes(4).id ];
+                                  nodes(3).id ];
             
             % Matrix of cartesian nodal coordinates [X Y]
             this.coord_car = [ nodes(1).coord(1) nodes(1).coord(2);
                                nodes(2).coord(1) nodes(2).coord(2);
-                               nodes(3).coord(1) nodes(3).coord(2);
-                               nodes(4).coord(1) nodes(4).coord(2) ];
+                               nodes(3).coord(1) nodes(3).coord(2) ];
             
             % Matrix of parametric nodal coordinates [r s]
-            this.coord_par = [ -1.0 -1.0;
-                                1.0 -1.0;
-                                1.0  1.0;
-                               -1.0  1.0 ];
+            this.coord_par = [ 0.0  0.0;
+                               1.0  0.0;
+                               0.0  1.0 ];
             
             % Characteristic length
             x = this.coord_car(:,1);
@@ -61,10 +58,9 @@ classdef Shape_Quad4 < Shape
         function N = ShpFcnMtx(this,r,s)
             N = zeros(1,this.n_nodes);
             
-            N(1) = 0.25 * (1 - r) * (1 - s);
-            N(2) = 0.25 * (1 + r) * (1 - s);
-            N(3) = 0.25 * (1 + r) * (1 + s);
-            N(4) = 0.25 * (1 - r) * (1 + s);
+            N(1) = 1 - r - s;
+            N(2) = r;
+            N(3) = s;
         end
         
         %------------------------------------------------------------------
@@ -79,17 +75,15 @@ classdef Shape_Quad4 < Shape
         end
         
         %------------------------------------------------------------------
-        function GradNpar = GradShpFcnMtx(this,r,s)
+        function GradNpar = GradShpFcnMtx(this,~,~)
             GradNpar = zeros(this.dim,this.n_nodes);
             
-            GradNpar(1,1) = -0.25 * (1.0 - s);
-            GradNpar(2,1) = -0.25 * (1.0 - r);
-            GradNpar(1,2) =  0.25 * (1.0 - s);
-            GradNpar(2,2) = -0.25 * (1.0 + r);
-            GradNpar(1,3) =  0.25 * (1.0 + s);
-            GradNpar(2,3) =  0.25 * (1.0 + r);
-            GradNpar(1,4) = -0.25 * (1.0 + s);
-            GradNpar(2,4) =  0.25 * (1.0 - r);
+            GradNpar(1,1) = -1.0;
+            GradNpar(2,1) = -1.0;
+            GradNpar(1,2) =  1.0;
+            GradNpar(2,2) =  0.0;
+            GradNpar(1,3) =  0.0;
+            GradNpar(2,3) =  1.0;
         end
         
         %------------------------------------------------------------------
@@ -140,27 +134,6 @@ classdef Shape_Quad4 < Shape
             if n2 == 0
                 n1 = 0;
                 return;
-            end
-            
-            % Check for corner node consistency
-            if n1 == 1
-                if n2 ~= 2 && n2 ~= 4
-                    n1 = 0;
-                    n2 = 0;
-                    return;
-                end
-            elseif n1 == 4
-                if n2 ~= 1 && n2 ~= 3
-                    n1 = 0;
-                    n2 = 0;
-                    return;
-                end
-            else
-                if n2 ~= n1+1 && n2 ~= n1-1
-                    n1 = 0;
-                    n2 = 0;
-                    return;
-                end
             end
             
             valid = true;
