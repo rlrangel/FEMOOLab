@@ -8,7 +8,7 @@ Its purpose is to offer an open-source tool that is modular and extensible, allo
 It targets researchers, who can use it as a numerical laboratory, and teachers and students who want to teach or learn implementation aspects about the FEM.
 
 The program is based on the [FEMOOP][femoop_website] system.
-   
+
 ## Table of Contents
 - [Main Features](#main-features)
 - [Implementation Aspects](#implementation-aspects)
