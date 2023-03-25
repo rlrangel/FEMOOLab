@@ -25,6 +25,7 @@ classdef Shape_Tria6 < fem.Shape
         %------------------------------------------------------------------
         function this = Shape_Tria6(nodes)
             this = this@fem.Shape(fem.Shape.TRIA6,2,6);
+            this.nep = this.nen;
             
             if (nargin > 0)
                 this.nodes = nodes;
@@ -67,6 +68,11 @@ classdef Shape_Tria6 < fem.Shape
     %% Public methods
     % Implementation of the abstract methods declared in super-class Shape
     methods
+        %------------------------------------------------------------------
+        % Not being used
+        function setEPoints(~,~,~,~)
+        end
+        
         %------------------------------------------------------------------
         % Computes shape size (area).
         function s = size(this)
