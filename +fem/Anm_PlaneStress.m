@@ -86,7 +86,12 @@ classdef Anm_PlaneStress < fem.Anm
             
             for i = 1:mdl.nel
                 % Get element matrices
-                Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
+                if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                    Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
+                elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                    surface = mdl.surfaces(mdl.elems(i).surfId);
+                    Kdiff = mdl.elems(i).stiffDiffMtx(surface);
+                end
                 
                 % Assemble element matrices to global matrix
                 gle = mdl.elems(i).gle;
@@ -147,7 +152,13 @@ classdef Anm_PlaneStress < fem.Anm
             for i = 1:mdl.nel
                 % Compute stress components and cartesian coord at Gauss points
                 U = r.U(mdl.elems(i).gle);
-                [ngp,str,gpc] = mdl.elems(i).derivedVar(U);
+                
+                if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                    [ngp,str,gpc] = mdl.elems(i).derivedVar(U);
+                elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                    surface = mdl.surfaces(mdl.elems(i).surfId);
+                    [ngp,str,gpc] = mdl.elems(i).derivedVar(U,surface);
+                end
                 
                 r.ngp(i) = ngp;
                 r.sxx_gp(1:ngp,i) = str(1,1:ngp);
@@ -187,15 +198,15 @@ classdef Anm_PlaneStress < fem.Anm
             
             for i = 1:mdl.nel
                 TGN = mdl.elems(i).TGN;
-                nen = mdl.elems(i).shape.nen;
+                nep = mdl.elems(i).shape.nep;
                 ngp = r.ngp(i);
                 
-                r.sxx_elemextrap(1:nen,i)  = TGN * r.sxx_gp(1:ngp,i);
-                r.syy_elemextrap(1:nen,i)  = TGN * r.syy_gp(1:ngp,i);
-                r.txy_elemextrap(1:nen,i)  = TGN * r.txy_gp(1:ngp,i);
-                r.s1_elemextrap(1:nen,i)   = TGN * r.s1_gp(1:ngp,i);
-                r.s2_elemextrap(1:nen,i)   = TGN * r.s2_gp(1:ngp,i);
-                r.tmax_elemextrap(1:nen,i) = TGN * r.tmax_gp(1:ngp,i);
+                r.sxx_elemextrap(1:nep,i)  = TGN * r.sxx_gp(1:ngp,i);
+                r.syy_elemextrap(1:nep,i)  = TGN * r.syy_gp(1:ngp,i);
+                r.txy_elemextrap(1:nep,i)  = TGN * r.txy_gp(1:ngp,i);
+                r.s1_elemextrap(1:nep,i)   = TGN * r.s1_gp(1:ngp,i);
+                r.s2_elemextrap(1:nep,i)   = TGN * r.s2_gp(1:ngp,i);
+                r.tmax_elemextrap(1:nep,i) = TGN * r.tmax_gp(1:ngp,i);
             end
         end
         
@@ -211,8 +222,10 @@ classdef Anm_PlaneStress < fem.Anm
             
             % Sum contributions of extrapolated node results from connected elements
             for i = 1:mdl.nel
-                for j = 1:mdl.elems(i).shape.nen
-                    n = mdl.elems(i).shape.nodes(j).id;
+                for j = 1:mdl.elems(i).shape.nep
+                        %n = mdl.elems(i).shape.nodes(j).id; % num da linha da matriz dos ePoints
+                    ccwNodeIds = mdl.elems(i).shape.ccwNodeIds;
+                    n = ccwNodeIds(j);
                     r.sxx_nodeextrap(n)  = r.sxx_nodeextrap(n)  + r.sxx_elemextrap(j,i);
                     r.syy_nodeextrap(n)  = r.syy_nodeextrap(n)  + r.syy_elemextrap(j,i);
                     r.txy_nodeextrap(n)  = r.txy_nodeextrap(n)  + r.txy_elemextrap(j,i);
@@ -223,14 +236,51 @@ classdef Anm_PlaneStress < fem.Anm
             end
             
             % Average nodal values by the number of connected elements
-            for i = 1:mdl.nnp
-                nadjelems = length(mdl.nodes(i).elems);
+            for i = 1:mdl.nep
+                %nadjelems = length(mdl.nodes(i).elems); % num de vezes que um epoint aparece naquela matriz do mdl
+                nadjelems = numel(find(mdl.ePointsId == i));
                 r.sxx_nodeextrap(i)  = r.sxx_nodeextrap(i)  / nadjelems;
                 r.syy_nodeextrap(i)  = r.syy_nodeextrap(i)  / nadjelems;
                 r.txy_nodeextrap(i)  = r.txy_nodeextrap(i)  / nadjelems;
                 r.s1_nodeextrap(i)   = r.s1_nodeextrap(i)   / nadjelems;
                 r.s2_nodeextrap(i)   = r.s2_nodeextrap(i)   / nadjelems;
                 r.tmax_nodeextrap(i) = r.tmax_nodeextrap(i) / nadjelems;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function ePointsCoordAndConec(~,mdl)
+            if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                mdl.nep = mdl.nnp;
+                
+            elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                ePoints = [];
+                for i = 1:mdl.nel
+                    % Element knot spans
+                    xiSpan = mdl.elems(i).knotSpanU;
+                    etaSpan = mdl.elems(i).knotSpanV;
+
+                    surfId = mdl.elems(i).surfId;
+                    surface = mdl.surfaces(surfId);
+                    mdl.elems(i).shape.setEPoints(xiSpan,etaSpan,surface);
+
+                    epCarCoord = mdl.elems(i).shape.epCarCoord;
+                    ePoints = uniquetol([ePoints; epCarCoord],1e-5,'ByRows',true);
+                end
+                mdl.ePoints = ePoints;
+                mdl.nep = size(ePoints,1);
+                
+                maxNen  = mdl.maxNumElemNodes();
+                mdl.ePointsId = zeros(mdl.nel,maxNen);
+                for i = 1:mdl.nel
+                    epCarCoord = mdl.elems(i).shape.epCarCoord;
+                    [~, ccwNodeIds] = ismembertol(epCarCoord,mdl.ePoints,1e-5,'ByRows',true);
+                    ccwNodeIds = [ ccwNodeIds(1)  ccwNodeIds(5)  ccwNodeIds(2)  ccwNodeIds(6)...
+                                   ccwNodeIds(3)  ccwNodeIds(7)  ccwNodeIds(4)  ccwNodeIds(8)];
+                    mdl.elems(i).shape.ccwNodeIds = ccwNodeIds;
+                    mdl.ePointsId(i,:) = ccwNodeIds';
+                end
+                mdl.ePoints(:,3) = zeros(size(ePoints,1),1);
             end
         end
     end
