@@ -100,13 +100,19 @@ classdef Plot < handle
         % Setup bounding box for plotting figures.
         function setupBoundingBox(this,mdl)
             % Assemble vectors of nodal coordinates
-            x = zeros(mdl.nnp,1);
-            y = zeros(mdl.nnp,1);
-            z = zeros(mdl.nnp,1);
-            for i = 1:mdl.nnp
-                x(i) = mdl.nodes(i).coord(1);
-                y(i) = mdl.nodes(i).coord(2);
-                z(i) = mdl.nodes(i).coord(3);
+            x = zeros(mdl.nep,1);
+            y = zeros(mdl.nep,1);
+            z = zeros(mdl.nep,1);
+            for i = 1:mdl.nep
+                if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                    x(i) = mdl.nodes(i).coord(1);
+                    y(i) = mdl.nodes(i).coord(2);
+                    z(i) = mdl.nodes(i).coord(3);
+                elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                    x(i) = mdl.ePoints(i,1);
+                    y(i) = mdl.ePoints(i,2);
+                    z(i) = mdl.ePoints(i,3);
+                end
             end
             this.x_coord = x;
             this.y_coord = y;
@@ -140,17 +146,17 @@ classdef Plot < handle
         % Plot 2D mesh in active figure.
         function plotMesh2D(this,mdl)
             for i = 1:mdl.nel
-                nen = mdl.elems(i).shape.nen;
-                XX = zeros(1,nen+1);
-                YY = zeros(1,nen+1);
-                for j = 1:nen
+                nep = mdl.elems(i).shape.nep;
+                XX = zeros(1,nep+1);
+                YY = zeros(1,nep+1);
+                for j = 1:nep
                     node = mdl.elems(i).shape.ccwNodeIds(j);
                     XX(j) = this.x_coord(node);
                     YY(j) = this.y_coord(node);
                 end
                 node1 = mdl.elems(i).shape.ccwNodeIds(1);
-                XX(nen+1) = this.x_coord(node1);
-                YY(nen+1) = this.y_coord(node1);
+                XX(nep+1) = this.x_coord(node1);
+                YY(nep+1) = this.y_coord(node1);
                 plot(XX,YY,this.color_mesh);
                 hold on;
             end
@@ -240,20 +246,20 @@ classdef Plot < handle
         % Node contour is based on nodal average adjacent element results.
         function plotNodeContour2D(this,mdl,contour)
             for i = 1:mdl.nel
-                nen = mdl.elems(i).shape.nen;
-                XX = zeros(1,nen+1);
-                YY = zeros(1,nen+1);
-                ZZ = zeros(1,nen+1);
-                for j = 1:nen
+                nep = mdl.elems(i).shape.nep;
+                XX = zeros(1,nep+1);
+                YY = zeros(1,nep+1);
+                ZZ = zeros(1,nep+1);
+                for j = 1:nep
                     node  = mdl.elems(i).shape.ccwNodeIds(j);
                     XX(j) = this.x_coord(node);
                     YY(j) = this.y_coord(node);
                     ZZ(j) = contour(node);
                 end
                 node = mdl.elems(i).shape.ccwNodeIds(1);
-                XX(nen+1) = this.x_coord(node);
-                YY(nen+1) = this.y_coord(node);
-                ZZ(nen+1) = contour(node);
+                XX(nep+1) = this.x_coord(node);
+                YY(nep+1) = this.y_coord(node);
+                ZZ(nep+1) = contour(node);
                 patch(XX,YY,ZZ);
                 hold on;
             end
