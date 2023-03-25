@@ -36,6 +36,10 @@ classdef Anm < handle
         PLANE_CONDUCTION     = int32(5);
         AXISYM_CONDUCTION    = int32(6);
         CONVECTION_DIFFUSION = int32(7);
+        
+        % Analysis set
+        ISOPARAMETRIC = int32(1);
+        ISOGEOMETRIC  = int32(2);
     end
     
     %% Flags for types of responses
@@ -81,6 +85,7 @@ classdef Anm < handle
         ndof int32 = int32.empty;  % number of d.o.f.'s per node
         ndvc int32 = int32.empty;  % number of derived variable components
         gla  int32 = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
+        anls int32 = int32.empty;  % flag for analysis set
     end
     
     %% Constructor method
