@@ -25,6 +25,7 @@ classdef Shape_Tria3 < fem.Shape
         %------------------------------------------------------------------
         function this = Shape_Tria3(nodes)
             this = this@fem.Shape(fem.Shape.TRIA3,2,3);
+            this.nep = this.nen;
             
             if (nargin > 0)
                 this.nodes = nodes;
@@ -60,6 +61,11 @@ classdef Shape_Tria3 < fem.Shape
     %% Public methods
     % Implementation of the abstract methods declared in super-class Shape
     methods
+        %------------------------------------------------------------------
+        % Not being used
+        function setEPoints(~,~,~,~)
+        end
+        
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.
