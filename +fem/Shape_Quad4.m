@@ -26,6 +26,7 @@ classdef Shape_Quad4 < fem.Shape
         %------------------------------------------------------------------
         function this = Shape_Quad4(nodes)
             this = this@fem.Shape(fem.Shape.QUAD4,2,4);
+            this.nep = this.nen;
             
             if (nargin > 0)
                 this.nodes = nodes;
@@ -63,6 +64,11 @@ classdef Shape_Quad4 < fem.Shape
     %% Public methods
     % Implementation of the abstract methods declared in super-class Shape
     methods
+        %------------------------------------------------------------------
+        % Not being used
+        function setEPoints(~,~,~,~)
+        end
+        
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.
