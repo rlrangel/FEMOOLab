@@ -14,22 +14,28 @@ classdef Model < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % General
-        anm = [];                                     % object of Anm (Analysis Model) class
-        res drv.Result = drv.Result.empty;            % object of Result class
+        anm             = [];               % object of Anm (Analysis Model) class
+        anme fem.Anme   = fem.Anme.empty    % object of Anme (Analysis Method) class
+        res  drv.Result = drv.Result.empty; % object of Result class
         
         % Model properties
-        nnp        int32        = int32.empty;        % number of nodes
-        nodes      fem.Node     = fem.Node.empty;     % vector of objects of Node class
-        nel        int32        = int32.empty;        % number of elements
-        elems      fem.Element  = fem.Element.empty;  % vector of objects of Element (finite element) class
-        nmat       int32        = int32.empty;        % number of materials
-        materials  fem.Material = fem.Material.empty; % vector of objects of Material class
+        nnp       int32        = int32.empty;        % number of nodes
+        nodes                  = [];                 % vector of objects of Node class or CtrlPt class
+        nel       int32        = int32.empty;        % number of elements
+        elems                  = [];                 % vector of objects of Element_Isoparametric class
+        nmat      int32        = int32.empty;        % number of materials
+        materials fem.Material = fem.Material.empty; % vector of objects of Material class
+        nsurf     int32        = int32.empty;        % number of surfaces
+        surfaces  fem.Surface  = fem.Surface.empty   % vector of objects of Surface class (used only in isogeometric analysis)
+        ePoints   double       = double.empty;
+        nep       int32        = int32.empty;
+        ePointsId double       = double.empty;
         
         % Degree-of-freedom numbering
-        ID   int32 = int32.empty;                     % global d.o.f. numbering matrix
-        neq  int32 = int32.empty;                     % number of d.o.f.'s
-        neqf int32 = int32.empty;                     % number of free d.o.f.'s
-        neqc int32 = int32.empty;                     % number of constrained (fixed) d.o.f.'s
+        ID   int32 = int32.empty; % global d.o.f. numbering matrix
+        neq  int32 = int32.empty; % number of d.o.f.'s
+        neqf int32 = int32.empty; % number of free d.o.f.'s
+        neqc int32 = int32.empty; % number of constrained (fixed) d.o.f.'s
     end
     
     %% Constructor method
@@ -210,11 +216,11 @@ classdef Model < handle
         
         %------------------------------------------------------------------
         % Compute maximum number nodes of all elements.
-        function nen = maxNumElemNodes(this)
-            nen = 0;
+        function nep = maxNumElemNodes(this)
+            nep = 0;
             for i = 1:this.nel
-                if this.elems(i).shape.nen > nen
-                    nen = this.elems(i).shape.nen;
+                if this.elems(i).shape.nep > nep
+                    nep = this.elems(i).shape.nep;
                 end
             end
         end
