@@ -50,6 +50,8 @@ classdef Read < handle
                 switch string
                     case '%HEADER.ANALYSIS'
                         status = this.analysisModel(fid,sim);
+                    case '%HEADER.ANALYSIS.METHOD'
+                        status = this.analysisMethod(fid,sim);
                     case '%HEADER.ANALYSIS.TYPE' % This is not on NF documentation
                         status = this.analysisMode(fid,sim);
                     case '%HEADER.ANALYSIS.ALGORITHM' % This is being used for time integration scheme
@@ -60,10 +62,14 @@ classdef Read < handle
                         status = this.analysisMaxSteps(fid,sim);
                     case '%HEADER.ANALYSIS.PRINT.STEPS' % This is working for plot output
                         status = this.analysisOutputSteps(fid,mdl);
+                    case '%NODE'
+                        status = this.nodeTotal(fid,mdl);
                     case '%NODE.COORD'
-                        status = this.nodeCoord(fid,mdl);
+                        status = this.nodeCoord(fid,mdl); 
+                    case '%NODE.WEIGHT'
+                        status = this.nodeWeight(fid,mdl); 
                     case '%NODE.SUPPORT'
-                        status = this.nodeSupport(fid,mdl);
+                        status = this.nodeSupport(fid,mdl); 
                     case '%MATERIAL'
                         status = this.materialTotal(fid,mdl);
                     case '%MATERIAL.ISOTROPIC'
@@ -76,6 +82,12 @@ classdef Read < handle
                         [status,thickness] = this.Thickness(fid);
                     case '%INTEGRATION.ORDER'
                         [status,intgrorder] = this.IntgrOrder(fid);
+                    case '%SURFACE'
+                        status = this.surfaceTotal(fid,mdl);
+                    case '%DEGREE'
+                        status = this.surfaceDegree(fid,mdl);
+                    case '%KNOTVECTOR'
+                        status = this.surfaceKnotVector(fid,mdl);
                     case '%ELEMENT'
                         status = this.elementTotal(fid,mdl);
                     case '%ELEMENT.T3'
@@ -86,6 +98,8 @@ classdef Read < handle
                         status = this.elementTria6(fid,mdl,gauss_tria,thickness,intgrorder);
                     case '%ELEMENT.Q8'
                         status = this.elementQuad8(fid,mdl,gauss_quad,thickness,intgrorder);
+                    case '%ELEMENT.ISOGEOMETRIC'
+                        status = this.elementIsogeometric(fid,mdl,gauss_quad,thickness,intgrorder);
                     case '%LOAD.CASE.NODAL.DISPLACEMENT'
                         status = this.nodePrescDispl(fid,mdl);
                     case '%LOAD.CASE.NODAL.INITIAL.DISPLACEMENT' % This is not on NF documentation
@@ -154,6 +168,21 @@ classdef Read < handle
             elseif (strcmp(string,'''PLANE_CONVECTION_DIFFUSION''') || strcmp(string,'''plane_convection_diffusion'''))
                 sim.mdl.anm = fem.Anm_PlaneConvDiff();
                 sim.plot = drv.Plot_ThermalPlane();
+            else
+                fprintf('Invalid input data: analysis model!\n');
+                status = 0;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = analysisMethod(~,fid,sim)
+            status = 1;
+            string = deblank(fgetl(fid));
+            
+            if (strcmp(string,'''ISOPARAMETRIC''') || strcmp(string,'''isoparametric'''))
+                sim.mdl.anme = fem.Anme(1);
+            elseif (strcmp(string,'''ISOGEOMETRIC''') || strcmp(string,'''isogeometric'''))
+                sim.mdl.anme = fem.Anme(2);
             else
                 fprintf('Invalid input data: analysis model!\n');
                 status = 0;
@@ -288,6 +317,35 @@ classdef Read < handle
         end
         
         %------------------------------------------------------------------
+        function status = nodeTotal(this,fid,mdl)
+            status = 1;
+            
+            % Total number of nodes
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,inf,'number of nodes'))
+                status = 0;
+                return;
+            end
+            
+            % Create vector of Node objects
+            mdl.nnp = n;
+            if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                nodes(n,1) = fem.Node();
+            elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                nodes(n,1) = fem.CtrlPt();
+            else
+                fprintf('Invalid analysis method %d\n',mdl.anme.type);
+                status = 0;
+            end
+            mdl.nodes = nodes;
+            
+            % Set nodes IDs
+            for i = 1:n
+                mdl.nodes(i).id = i;
+            end
+        end
+        
+        %------------------------------------------------------------------
         function status = nodeCoord(this,fid,mdl)
             status = 1;
             if (isempty(mdl.anm))
@@ -310,11 +368,6 @@ classdef Read < handle
                 ndof = 1;    
             end
             
-            % Create vector of Node objects
-            mdl.nnp = n;
-            nodes(n,1) = fem.Node();
-            mdl.nodes = nodes;
-            
             for i = 1:n
                 % Node ID
                 id = fscanf(fid,'%d',1);
@@ -332,9 +385,38 @@ classdef Read < handle
                 end
                 
                 % Store data
-                mdl.nodes(id).id      = id;
                 mdl.nodes(id).coord   = coord';
                 mdl.nodes(id).fixdDOF = false(ndof,1); % By default, all d.o.f.'s are free
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = nodeWeight(this,fid,mdl)
+            status = 1;
+            if (isempty(mdl.nodes))
+                fprintf('Node coordinates must be provided before node supports!\n');
+                status = 0;
+                return;
+            end
+            
+            % Total number of nodes
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,inf,'number of nodes'))
+                status = 0;
+                return;
+            end
+            
+            for i = 1:n
+                % Node ID
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,n,'node ID for weight specification'))
+                    status = 0;
+                    return;
+                end
+                
+                % Store weight
+                w = fscanf(fid,'%f',1);
+                mdl.nodes(id).weight = w;
             end
         end
         
@@ -604,6 +686,84 @@ classdef Read < handle
                 intgrorder(id,2) = order(4);
             end
         end
+
+        %------------------------------------------------------------------
+        function status = surfaceTotal(this,fid,mdl)
+            status = 1;
+            
+            % Total number of surfaces
+            n = fscanf(fid,'%d',1);
+            if (~this.chkInt(n,inf,'number of surfaces'))
+                status = 0;
+                return;
+            end
+            
+            % Create vector of Surfaces objects
+            mdl.nsurf = n;
+            surfaces(n,1) = fem.Surface();
+            mdl.surfaces = surfaces;
+            
+            % Store id
+            for i = 1:mdl.nsurf
+                mdl.surfaces(i).id = i;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = surfaceDegree(this,fid,mdl)
+            status = 1;
+            
+            % Set surfaces degrees
+            for i = 1:mdl.nsurf
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,inf,'surface id'))
+                    status = 0;
+                    return;
+                end
+                p = fscanf(fid,'%d',1);
+                if (~this.chkInt(p,inf,'degree p'))
+                    status = 0;
+                    return;
+                end
+                mdl.surfaces(id).degreeU = p;
+                q = fscanf(fid,'%d',1);
+                if (~this.chkInt(q,inf,'degree q'))
+                    status = 0;
+                    return;
+                end
+                mdl.surfaces(id).degreeV = q;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = surfaceKnotVector(this,fid,mdl)
+            status = 1;
+            
+            % Set surfaces knot vectors
+            for i = 1:mdl.nsurf
+                id = fscanf(fid,'%d',1);
+                if (~this.chkInt(id,inf,'surface id'))
+                    status = 0;
+                    return;
+                end
+                
+                knotVectorUSize = fscanf(fid,'%d',1);
+                if (~this.chkInt(knotVectorUSize,inf,'knot vector u size'))
+                    status = 0;
+                    return;
+                end
+                [knotVectorU,~] = fscanf(fid,'%f',knotVectorUSize);
+                mdl.surfaces(id).knotVectorU = knotVectorU';
+                
+                knotVectorVSize = fscanf(fid,'%d',1);
+                if (~this.chkInt(knotVectorVSize,inf,'knot vector v size'))
+                    status = 0;
+                    return;
+                end
+                [knotVectorV,~] = fscanf(fid,'%f',knotVectorVSize);
+                mdl.surfaces(id).knotVectorV = knotVectorV';
+            end
+        end
         
         %------------------------------------------------------------------
         function status = elementTotal(this,fid,mdl)
@@ -618,7 +778,14 @@ classdef Read < handle
             
             % Create vector of Element objects
             mdl.nel = n;
-            elems(n,1) = fem.Element();
+            if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                elems(n,1) = fem.Element_Isoparametric();
+            elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                elems(n,1) = fem.Element_Isogeometric();
+            else
+                fprintf('Invalid analysis method %d\n',mdl.anme.type);
+                status = 0;
+            end  
             mdl.elems = elems;
             
             % Set elements IDs
@@ -885,6 +1052,122 @@ classdef Read < handle
                 for j = 4:11
                     mdl.nodes(p(j)).elems(end+1) = mdl.elems(id);
                 end
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = elementIsogeometric(this,fid,mdl,gauss,thickness,intgrorder)
+            %                          CTRL_PT_8
+            %       CTRL_PT_7+             +             +CTRL_PT_9
+            %                       ---------------
+            %                      |               |
+            %                      |   CTRL_PT_5   |
+            %       CTRL_PT_4+     |       +       |     +CTRL_PT_6
+            %                      |               |
+            %                      |     ISOGe     |
+            %                       ---------------
+            %       CTRL_PT_1+             +             +CTRL_PT_3
+            %                          CTRL_PT_2
+            status = 1;
+            if (isempty(mdl.nodes) || isempty(mdl.materials))
+                fprintf('Node coordinates and materials must be provided before elements!\n');
+                status = 0;
+                return;
+            elseif (isempty(thickness) || isempty(intgrorder))
+                fprintf('Thicknesses and integration orders must be provided before elements!\n');
+                status = 0;
+                return;
+            end
+            
+            for i = 1:mdl.nsurf
+                % Surface ID
+                surfId = fscanf(fid,'%d',1);
+                if (~this.chkInt(surfId,mdl.nel,'surface id'))
+                    status = 0;
+                    return;
+                end
+
+                % Number of elements in Surface
+                n = fscanf(fid,'%d',1);
+                if (~this.chkInt(n,mdl.nel,'number of elements Isogeometric'))
+                    status = 0;
+                    return;
+                end
+                
+                ctrlNet = [];
+                elems = [];
+                for j = 1:n
+                    % Element ID
+                    id = fscanf(fid,'%d',1);
+                    if (~this.chkInt(id,mdl.nel,'element Isogeometric ID'))
+                        status = 0;
+                        return;
+                    end
+
+                    % Element properties:
+                    % Material ID, Thickness ID, Integration order ID
+                    [prop,count1] = fscanf(fid,'%d',3);
+
+                    % Number of associated control points
+                    [ncp,~] = fscanf(fid,'%d',1);
+
+                    % Connectivity
+                    [connec,count2] = fscanf(fid,'%d',ncp);
+                    
+                    % Knot spans
+                    [knotSpanU,~] = fscanf(fid,'%f',2);
+                    [knotSpanV,~] = fscanf(fid,'%f',2);
+
+                    % Check properties
+                    p = [prop; connec];
+                    count = count1 + count2;
+                    if (~this.chkElemProp(mdl,id,p,thickness,intgrorder,count,3+ncp))
+                        status = 0;
+                        return;
+                    end
+
+                    % Create shape object:
+                    % Node incidence starts in the positive direction of xi
+                    % and goes in the positive direction of eta
+                    k = 1:ncp;
+                    nodes = mdl.nodes(connec(k));
+                    shape = fem.Shape_Isogeometric(nodes);
+
+                    % Store properties
+                    mdl.elems(id).anm   = mdl.anm;
+                    mdl.elems(id).mat   = mdl.materials(p(1));
+                    mdl.elems(id).thk   = thickness(p(2));
+                    mdl.elems(id).shape = shape;
+                    mdl.elems(id).gauss = gauss;
+                    mdl.elems(id).gsystem_order = intgrorder(p(3),1);
+                    mdl.elems(id).gderive_order = intgrorder(p(3),2);
+                    mdl.elems(id).surfId = surfId;
+                    mdl.elems(id).knotSpanU = knotSpanU';
+                    mdl.elems(id).knotSpanV = knotSpanV';
+
+                    % Set control points incidence
+                    for l = 1:ncp
+                        mdl.nodes(connec(l)).elems(end+1) = mdl.elems(id);
+                    end
+                    
+                    % Add control points and elements id's on vectors
+                    % ctrlNet and elems
+                    ctrlNet = sort(unique([ctrlNet; connec]));
+                    elems = sort([elems; id]);
+                end
+                
+                % Store control points and elements id's in surface
+                mdl.surfaces(surfId).ctrlNet = ctrlNet;
+                mdl.surfaces(surfId).elems = elems;
+                
+                % Add weights of points in control net on vector weights
+                weights = zeros(length(ctrlNet),1);
+                for m = 1:length(ctrlNet)
+                    weights(m) = mdl.nodes(ctrlNet(m)).weight;
+                end
+                
+                % Store weights of points in control net in surface
+                mdl.surfaces(surfId).weights = weights;
             end
         end
         
