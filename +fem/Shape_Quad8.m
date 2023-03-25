@@ -26,6 +26,7 @@ classdef Shape_Quad8 < fem.Shape
         %------------------------------------------------------------------
         function this = Shape_Quad8(nodes)
             this = this@fem.Shape(fem.Shape.QUAD8,2,8);
+            this.nep = this.nen;
             
             if (nargin > 0)
                 this.nodes = nodes;
