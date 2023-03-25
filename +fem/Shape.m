@@ -26,6 +26,7 @@ classdef Shape < handle
         QUAD4 = int32(2);
         TRIA6 = int32(3);
         QUAD8 = int32(4);
+        ISOGe = int32(5);
     end
     
     %% Public properties
@@ -42,10 +43,15 @@ classdef Shape < handle
         % Coordinates
         carCoord        double   = double.empty;    % matrix of cartesian nodal coordinates
         parCoord        double   = double.empty;    % matrix of parametric nodal coordinates
+        epCarCoord      double   = double.empty;    % matrix of cartesian extrapolation points coordinates
+        
+        % Weights
+        weights         double   = double.empty;    % Vector of control points weights
         
         % Nodes
-        nen             int32    = int32.empty;     % number of nodes
-        nodes           fem.Node = fem.Node.empty;  % vector of objects of Node class
+        nen             int32    = int32.empty;     % number of nodes (isoparametric case) or associated control points (isogeometric case)
+        nodes = [];
+        nep             int32    = int32.empty;     % number of extrapolation points
         ccwLocalNodeIds int32    = int32.empty;     % vector of local node ids in ccw order
         ccwNodeIds      int32    = int32.empty;     % vector of global node ids in ccw order
     end
@@ -63,6 +69,7 @@ classdef Shape < handle
     %% Abstract methods
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
+        %setEPoints(this,xiSpan,etaSpan,surface);
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.
