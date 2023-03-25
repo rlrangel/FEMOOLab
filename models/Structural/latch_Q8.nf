@@ -4,6 +4,9 @@ Neutral file created by Mtool
 %HEADER.ANALYSIS
 'PLANE_STRESS'
 
+%HEADER.ANALYSIS.METHOD
+'ISOPARAMETRIC'
+
 %NODE
 1180
 
@@ -1596,9 +1599,9 @@ Neutral file created by Mtool
 
 %LOAD.CASE.LINE.FORCE.UNIFORM
 4
-174   456 512   0   0.0 10.0 0.0
-176   402 456   0   0.0 10.0 0.0
-178   342 402   0   0.0 10.0 0.0
-179   276 342   0   0.0 10.0 0.0
+174   456 512   0   0.0 -10.0 0.0
+176   402 456   0   0.0 -10.0 0.0
+178   342 402   0   0.0 -10.0 0.0
+179   276 342   0   0.0 -10.0 0.0
 
 %END
