@@ -25,11 +25,14 @@ classdef Model < handle
         elems                  = [];                 % vector of objects of Element_Isoparametric class
         nmat      int32        = int32.empty;        % number of materials
         materials fem.Material = fem.Material.empty; % vector of objects of Material class
+        nep       int32        = int32.empty         % number of extrapolation nodes
+        extNodes  fem.ExtNode  = fem.ExtNode.empty   % vector of objects of Node class (extrapolation nodes). 
+                                                     % In isoparametric analysis, nodes and extrapolation nodes 
+                                                     % are the same. 
+        
+        % Model properties for isogeometric analysis
         nsurf     int32        = int32.empty;        % number of surfaces
-        surfaces  fem.Surface  = fem.Surface.empty   % vector of objects of Surface class (used only in isogeometric analysis)
-        ePoints   double       = double.empty;
-        nep       int32        = int32.empty;
-        ePointsId double       = double.empty;
+        surfaces  fem.Surface  = fem.Surface.empty   % vector of objects of Surface class
         
         % Degree-of-freedom numbering
         ID   int32 = int32.empty; % global d.o.f. numbering matrix
@@ -181,7 +184,7 @@ classdef Model < handle
                 
                 % Add equivalent forcing vector from NBC prescribed over edges
                 if (~isempty(this.elems(i).lineNBC1))
-                    Fedge = this.elems(i).edgeEquivForceVct();
+                    Fedge = this.elems(i).edgeEquivForceVct(this);
                     F(gle) = F(gle) + Fedge;
                 end
                 
@@ -216,7 +219,7 @@ classdef Model < handle
         
         %------------------------------------------------------------------
         % Compute maximum number nodes of all elements.
-        function nep = maxNumElemNodes(this)
+        function nep = maxNumElemExtNodes(this)
             nep = 0;
             for i = 1:this.nel
                 if this.elems(i).shape.nep > nep
