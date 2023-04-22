@@ -166,6 +166,12 @@ classdef Result < handle
         fmz_gp                double = double.empty; % vector of gauss heat flux module z components
         
         % Structural analysis stresses extrapolated to element nodes
+        dx_elemextrap         double = double.empty; % displacements x element node extrap. array
+        dx_elemextrap_min     double = double.empty; % min. displacement x element node extrap. array
+        dx_elemextrap_max     double = double.empty; % max. displacement x element node extrap. array
+        dy_elemextrap         double = double.empty; % displacements y element node extrap. array
+        dy_elemextrap_min     double = double.empty; % min. displacement y element node extrap. array
+        dy_elemextrap_max     double = double.empty; % max. displacement y element node extrap. array
         sxx_elemextrap        double = double.empty; % sigma x element node extrap. stress array
         sxx_elemextrap_min    double = double.empty; % sigma x element node extrap. min. stress
         sxx_elemextrap_max    double = double.empty; % sigma x element node extrap. max. stress
@@ -238,6 +244,12 @@ classdef Result < handle
         fm_elemextrap_max     double = double.empty; % flux module element node extrap. max. value
         
         % Structural analysis stresses smoothed at nodes
+        dx_nodeextrap         double = double.empty; % displacements x extrap. node smoothed array
+        dx_nodeextrap_min     double = double.empty; % min. displacement x extrap. node smoothed array
+        dx_nodeextrap_max     double = double.empty; % max. displacement x extrap. node smoothed array
+        dy_nodeextrap         double = double.empty; % displacements y extrap. node smoothed array
+        dy_nodeextrap_min     double = double.empty; % min. displacement y extrap. node smoothed array
+        dy_nodeextrap_max     double = double.empty; % max. displacement y extrap. node smoothed array
         sxx_nodeextrap        double = double.empty; % sigma x extrap. node smoothed stress array
         sxx_nodeextrap_min    double = double.empty; % sigma x extrap. node smoothed min. stress
         sxx_nodeextrap_max    double = double.empty; % sigma x extrap. node smoothed max. stress
@@ -325,7 +337,7 @@ classdef Result < handle
         function initPosResults(this,mdl)
             % Get maximum number of Gauss points and nodes of all elements
             this.maxGPts = mdl.maxGaussDerivedVarNpts();
-            this.maxNen  = mdl.maxNumElemNodes();
+            this.maxNen  = mdl.maxNumElemExtNodes();
             
             % Initialize arrays of active results
             this.ngp  = zeros(mdl.nel,1);
@@ -333,6 +345,14 @@ classdef Result < handle
             this.y_gp = zeros(this.maxGPts*mdl.nel,1);
             this.z_gp = zeros(this.maxGPts*mdl.nel,1);
             
+            if (mdl.anm.DISPL_X)
+                this.dx_elemextrap = zeros(this.maxNen,mdl.nel);
+                this.dx_nodeextrap = zeros(mdl.nep,1);
+            end
+            if (mdl.anm.DISPL_Y)
+                this.dy_elemextrap = zeros(this.maxNen,mdl.nel);
+                this.dy_nodeextrap = zeros(mdl.nep,1);
+            end
             if (mdl.anm.SIGMA_XX)
                 this.sxx_gp         = zeros(this.maxGPts,mdl.nel);
                 this.sxx_elemextrap = zeros(this.maxNen,mdl.nel);
@@ -460,6 +480,18 @@ classdef Result < handle
         %------------------------------------------------------------------
         % Compute minimum and maximum values of obtained results.
         function setMinMaxValues(this,mdl)
+            if (mdl.anm.DISPL_X)
+                this.dx_elemextrap_min = min(min(this.dx_elemextrap));
+                this.dx_elemextrap_max = max(max(this.dx_elemextrap));
+                this.dx_nodeextrap_min = min(min(this.dx_nodeextrap));
+                this.dx_nodeextrap_max = max(max(this.dx_nodeextrap));
+            end
+            if (mdl.anm.DISPL_Y)
+                this.dy_elemextrap_min = min(min(this.dy_elemextrap));
+                this.dy_elemextrap_max = max(max(this.dy_elemextrap));
+                this.dy_nodeextrap_min = min(min(this.dy_nodeextrap));
+                this.dy_nodeextrap_max = max(max(this.dy_nodeextrap));
+            end
             if (mdl.anm.SIGMA_XX)
                 this.sxx_gp_min         = min(min(this.sxx_gp));
                 this.sxx_gp_max         = max(max(this.sxx_gp));
