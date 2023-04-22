@@ -49,62 +49,56 @@ classdef Plot_StructInPlane < drv.Plot
                 hold on;
             end
             
-%             % Deformed configuration
-%             if (mdl.res.deform)
-%                 % Create nodal displacement response data
-%                 udispl     = mdl.res.U(mdl.ID(1,:));
-%                 vdispl     = mdl.res.U(mdl.ID(2,:));
-%                 udispl_min = min(udispl);
-%                 udispl_max = max(udispl);
-%                 vdispl_min = min(vdispl);
-%                 vdispl_max = max(vdispl);
-%                 
-%                 % Compute deformed factor based on maximum displacement abs. value
-%                 max_displ = max([abs(udispl_min), abs(udispl_max), abs(vdispl_min), abs(vdispl_max)]);
-%                 min_plotsize = min(this.plot_xmax - this.plot_xmin, this.plot_ymax - this.plot_ymin);
-%                 
-%                 if (mdl.res.scl == 0)
-%                     this.deform_fac = (min_plotsize / max_displ) * 0.15;
-%                 else
-%                     this.deform_fac = mdl.res.scl;
-%                 end
-%                 
-%                 % Create figure for mesh and deformed mesh plot
-%                 this.fig_deform = figure;
-%                 movegui(gca,'center');
-%                 set(gca,'DataAspectRatio',[1 1 1]);
-%                 title_text = sprintf('Mesh and deformed mesh. Deformed factor: %s',num2str(this.deform_fac));
-%                 title(title_text);
-%                 shift = max_displ * this.deform_fac;
-%                 plot_xmin_shift = this.plot_xmin - shift;
-%                 plot_xmax_shift = this.plot_xmax + shift;
-%                 plot_ymin_shift = this.plot_ymin - shift;
-%                 plot_ymax_shift = this.plot_ymax + shift;
-%                 axis([plot_xmin_shift plot_xmax_shift plot_ymin_shift plot_ymax_shift]);
-%                 hold on;
-%             end
-%             
-%             % Displacement X
-%             if (mdl.res.dx)
-%                 this.fig_dx = figure;
-%                 movegui(gca,'center');
-%                 set(gca,'DataAspectRatio',[1 1 1],'Colormap',jet);
-%                 title('Displacement X');
-%                 axis([this.plot_xmin this.plot_xmax this.plot_ymin this.plot_ymax]);
-%                 colorbar;
-%                 hold on;
-%             end
-%             
-%             % Displacement Y
-%             if (mdl.res.dy)
-%                 this.fig_dy = figure;
-%                 movegui(gca,'center');
-%                 set(gca,'DataAspectRatio',[1 1 1],'Colormap',jet);
-%                 title('Displacement Y');
-%                 axis([this.plot_xmin this.plot_xmax this.plot_ymin this.plot_ymax]);
-%                 colorbar;
-%                 hold on;
-%             end
+            % Deformed configuration
+            if (mdl.res.deform)
+                res = mdl.res;
+                
+                % Compute deformed factor based on maximum displacement abs. value
+                max_displ = max([abs(res.dx_nodeextrap_min), abs(res.dx_nodeextrap_max), abs(res.dy_nodeextrap_min), abs(res.dy_nodeextrap_max)]);
+                min_plotsize = min(this.plot_xmax - this.plot_xmin, this.plot_ymax - this.plot_ymin);
+                
+                if (mdl.res.scl == 0)
+                    this.deform_fac = (min_plotsize / max_displ) * 0.15;
+                else
+                    this.deform_fac = mdl.res.scl;
+                end
+                
+                % Create figure for mesh and deformed mesh plot
+                this.fig_deform = figure;
+                movegui(gca,'center');
+                set(gca,'DataAspectRatio',[1 1 1]);
+                title_text = sprintf('Mesh and deformed mesh. Deformed factor: %s',num2str(this.deform_fac));
+                title(title_text);
+                shift = max_displ * this.deform_fac;
+                plot_xmin_shift = this.plot_xmin - shift;
+                plot_xmax_shift = this.plot_xmax + shift;
+                plot_ymin_shift = this.plot_ymin - shift;
+                plot_ymax_shift = this.plot_ymax + shift;
+                axis([plot_xmin_shift plot_xmax_shift plot_ymin_shift plot_ymax_shift]);
+                hold on;
+            end
+            
+            % Displacement X
+            if (mdl.res.dx)
+                this.fig_dx = figure;
+                movegui(gca,'center');
+                set(gca,'DataAspectRatio',[1 1 1],'Colormap',jet);
+                title('Displacement X');
+                axis([this.plot_xmin this.plot_xmax this.plot_ymin this.plot_ymax]);
+                colorbar;
+                hold on;
+            end
+            
+            % Displacement Y
+            if (mdl.res.dy)
+                this.fig_dy = figure;
+                movegui(gca,'center');
+                set(gca,'DataAspectRatio',[1 1 1],'Colormap',jet);
+                title('Displacement Y');
+                axis([this.plot_xmin this.plot_xmax this.plot_ymin this.plot_ymax]);
+                colorbar;
+                hold on;
+            end
             
             % Sigma X
             if (mdl.res.sxx)
@@ -199,23 +193,23 @@ classdef Plot_StructInPlane < drv.Plot
                 this.plotMeshLabels2D(mdl);
             end
             
-%             if (mdl.res.deform)
-%                 figure(this.fig_deform);
-%                 this.plotMesh2D(mdl);
-%                 this.plotDeformMesh(mdl);
-%             end
-%             
-%             if (mdl.res.dx)
-%                 figure(this.fig_dx);
-%                 contour = mdl.res.U(mdl.ID(1,:));
-%                 this.plotNodeContour2D(mdl,contour);
-%             end
-%             
-%             if (mdl.res.dy)
-%                 figure(this.fig_dy);
-%                 contour = mdl.res.U(mdl.ID(2,:));
-%                 this.plotNodeContour2D(mdl,contour);
-%             end
+            if (mdl.res.deform)
+                figure(this.fig_deform);
+                this.plotMesh2D(mdl);
+                this.plotDeformMesh(mdl);
+            end
+            
+            if (mdl.res.dx)
+                figure(this.fig_dx);
+                contour = mdl.res.dx_nodeextrap;
+                this.plotNodeContour2D(mdl,contour);
+            end
+            
+            if (mdl.res.dy)
+                figure(this.fig_dy);
+                contour = mdl.res.dy_nodeextrap;
+                this.plotNodeContour2D(mdl,contour);
+            end
             
             if (mdl.res.sxx)
                 figure(this.fig_sxx);
@@ -300,15 +294,15 @@ classdef Plot_StructInPlane < drv.Plot
             if (mdl.res.sxx)
                 figure(this.fig_sxx);
             end
-%             if (mdl.res.dy)
-%                 figure(this.fig_dy);
-%             end
-%             if (mdl.res.dx)
-%                 figure(this.fig_dx);
-%             end
-%             if (mdl.res.deform)
-%                 figure(this.fig_deform);
-%             end
+            if (mdl.res.dy)
+                figure(this.fig_dy);
+            end
+            if (mdl.res.dx)
+                figure(this.fig_dx);
+            end
+            if (mdl.res.deform)
+                figure(this.fig_deform);
+            end
             if (mdl.res.eid || mdl.res.nid || mdl.res.gid)
                 figure(this.fig_lbl);
             end
@@ -331,20 +325,20 @@ classdef Plot_StructInPlane < drv.Plot
         %------------------------------------------------------------------
         % Plot deformed mesh in active figure.
         function plotDeformMesh(this,mdl)
-            u = mdl.res.U(mdl.ID(1,:));
-            v = mdl.res.U(mdl.ID(2,:));
+            u = mdl.res.dx_nodeextrap;
+            v = mdl.res.dy_nodeextrap;
             for i = 1:mdl.nel
-                nen = mdl.elems(i).shape.nen;
-                XX = zeros(1,nen+1);
-                YY = zeros(1,nen+1);
-                for j = 1:nen
-                    node = mdl.elems(i).shape.ccwNodeIds(j);
+                nep = mdl.elems(i).shape.nep;
+                XX = zeros(1,nep+1);
+                YY = zeros(1,nep+1);
+                for j = 1:nep
+                    node = mdl.elems(i).shape.ccwExtNodeIds(j);
                     XX(j) = this.x_coord(node) + this.deform_fac*u(node);
                     YY(j) = this.y_coord(node) + this.deform_fac*v(node);
                 end
-                node1 = mdl.elems(i).shape.ccwNodeIds(1);
-                XX(nen+1) = this.x_coord(node1) + this.deform_fac*u(node1);
-                YY(nen+1) = this.y_coord(node1) + this.deform_fac*v(node1);
+                node1 = mdl.elems(i).shape.ccwExtNodeIds(1);
+                XX(nep+1) = this.x_coord(node1) + this.deform_fac*u(node1);
+                YY(nep+1) = this.y_coord(node1) + this.deform_fac*v(node1);
                 plot(XX,YY,this.color_deform);
                 hold on;
             end
