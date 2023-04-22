@@ -18,11 +18,11 @@ classdef Element_Isogeometric < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % General
-        id        int32 = int32.empty;          % identification number
-        surfId    int32 = int32.empty;          % surface identification number
-        knotSpanU double = double.empty;        % knot span in u direction
-        knotSpanV double = double.empty;        % knot span in v direction
-        gle       int32 = int32.empty;          % gather vector (stores element global d.o.f. numbers)
+        id          int32  = int32.empty;       % identification number
+        surfId      int32  = int32.empty;       % surface identification number
+        knotSpanXi  double = double.empty;      % knot span in xi direction
+        knotSpanEta double = double.empty;      % knot span in eta direction
+        gle         int32  = int32.empty;       % gather vector (stores element global d.o.f. numbers)
         anm   = [];                             % object of Anm class
         shape = [];                             % object of Shape class
         gauss = [];                             % object of Gauss class
@@ -147,23 +147,23 @@ classdef Element_Isogeometric < handle
         function B = BmtxElem(this,J2,surface,r,s)
             
             % Element knot spans
-            xiSpan  = this.knotSpanU;
-            etaSpan = this.knotSpanV;
+            xiSpan  = this.knotSpanXi;
+            etaSpan = this.knotSpanEta;
             
             % Element parametric coordinates
             xi  = this.shape.parent2ParametricSpace(xiSpan,r);
             eta = this.shape.parent2ParametricSpace(etaSpan,s);
             
             % Surface properties
-            p = surface.degreeU;
-            q = surface.degreeV;
-            knotVectorU = surface.knotVectorU;
-            knotVectorV = surface.knotVectorV;
+            p = surface.degreeXi;
+            q = surface.degreeEta;
+            knotVectorXi = surface.knotVectorXi;
+            knotVectorEta = surface.knotVectorEta;
             weights = surface.weights;
             
             % Matrix of d.o.f. shape functions derivatives w.r.t.
             % parametric coordinates
-            GradNpar = this.shape.gradNmtx(xi,eta,p,q,knotVectorU,knotVectorV,weights);
+            GradNpar = this.shape.gradNmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
             
             % Matrix of d.o.f. shape functions derivatives w.r.t.
             % cartesian coordinates
@@ -177,9 +177,10 @@ classdef Element_Isogeometric < handle
         % Compute Jacobian matrix in a position of element domain given by
         % parametric coordinates.
         function J = JmtxDomainPaToPa(this)
+            
             % Element knot spans
-            xiSpan  = this.knotSpanU;
-            etaSpan = this.knotSpanV;
+            xiSpan  = this.knotSpanXi;
+            etaSpan = this.knotSpanEta;
             
             % Jacobian matrix
             J = [0.5*(xiSpan(2) - xiSpan(1)), 0.0; 
@@ -194,23 +195,23 @@ classdef Element_Isogeometric < handle
             X = this.shape.carCoord;
             
             % Element knot spans
-            xiSpan  = this.knotSpanU;
-            etaSpan = this.knotSpanV;
+            xiSpan  = this.knotSpanXi;
+            etaSpan = this.knotSpanEta;
             
             % Element parametric coordinates
             xi  = this.shape.parent2ParametricSpace(xiSpan,r);
             eta = this.shape.parent2ParametricSpace(etaSpan,s);
             
             % Surface properties
-            p = surface.degreeU;
-            q = surface.degreeV;
-            knotVectorU = surface.knotVectorU;
-            knotVectorV = surface.knotVectorV;
+            p = surface.degreeXi;
+            q = surface.degreeEta;
+            knotVectorXi = surface.knotVectorXi;
+            knotVectorEta = surface.knotVectorEta;
             weights = surface.weights;
             
             % Matrix of geometry shape functions derivatives w.r.t.
             % parametric coordinates
-            GradMpar = this.shape.gradMmtx(xi,eta,p,q,knotVectorU,knotVectorV,weights);
+            GradMpar = this.shape.gradMmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
             
             % Jacobian matrix
             J = GradMpar * X;
@@ -219,13 +220,15 @@ classdef Element_Isogeometric < handle
         %------------------------------------------------------------------
         % Compute Jacobian matrix in a position of element edge given by
         % parametric coordinates.
-        function J = JmtxEdge(this,edgLocIds,r)
+        function J = JmtxEdgePatoPhy(this,edgLocIds,xi,p,knotVector)
             % Cartesian coordinates matrix
             X = this.shape.carCoord(edgLocIds,:);
             
+
+            
             % Matrix of edge geometry shape functions derivatives w.r.t.
             % parametric coordinates
-            GradMpar = this.shape.gradMmtxEdge(r);
+            GradMpar = this.shape.gradMmtxEdge(xi,p,knotVector);
             
             % Jacobian matrix
             J = GradMpar * X;
@@ -233,25 +236,19 @@ classdef Element_Isogeometric < handle
         
         %------------------------------------------------------------------
         % Compute number of edge nodes and assemble vector of edge nodes ids
-        function [nedgen,edgLocIds] = edgeIds(this,corner1,corner2)
+        function [nedgen,edgLocIds,direc] = edgeIds(this,corner1,corner2,degreeXi,degreeEta)
             % Get local IDs of edge nodes
-            [valid,n1,n2,mid] = this.shape.edgeLocalIds(corner1,corner2);
+            [valid,edgLocIds,direc] = this.shape.edgeLocalIds(corner1,corner2,degreeXi,degreeEta);
             
             % Check for valid edge nodes
             if (~valid)
-                nedgen = 0;
                 edgLocIds = [];
+                direc = "";
                 return;
             end
             
             % Number of edge nodes and vector of edge nodes ids
-            if (mid == 0)
-                nedgen = 2;
-                edgLocIds = [n1,n2];
-            else
-                nedgen = 3;
-                edgLocIds = [n1,n2,mid];
-            end
+            nedgen = length(edgLocIds);
         end
         
         %------------------------------------------------------------------
@@ -416,7 +413,7 @@ classdef Element_Isogeometric < handle
                     N = this.shape.NmtxEdge(r);
                     
                     % Jacobian matrix
-                    J = this.JmtxEdge(edgLocIds,r);
+                    J = this.JmtxEdgePatoPhy(edgLocIds,r);
                     detJ = sqrt(J(1)*J(1) + J(2)*J(2));
                     
                     % Accumulate Gauss point contributions
@@ -465,9 +462,11 @@ classdef Element_Isogeometric < handle
         %------------------------------------------------------------------
         % Numerical integration of equivalent nodal forcing vector from
         % standard natural boundary conditions prescribed over edges: [N]'q
-        function F = edgeEquivForceVct(this)
+        function F = edgeEquivForceVct(this,mdl)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
+            
+            surface = mdl.surfaces(this.surfId);
             
             % Initialize element forcing vector
             F = zeros(nen*ndof,1);
@@ -479,7 +478,7 @@ classdef Element_Isogeometric < handle
                 corner2 = this.lineNBC1(q,2);
                 
                 % Number of edge nodes and vector of edge nodes IDs
-                [nedgen,edgLocIds] = this.edgeIds(corner1,corner2);
+                [nedgen,edgLocIds,direc] = this.edgeIds(corner1,corner2,surface.degreeXi,surface.degreeEta);
                 if (nedgen == 0)
                     continue;
                 end
@@ -493,16 +492,35 @@ classdef Element_Isogeometric < handle
                 % Gauss points and weights for integration on edge
                 [ngp,w,gp] = this.gauss.lineQuadrature(this.gsystem_order);
                 
+                % Knot span, degree and knot vector
+                if direc == "xi"
+                    Span = this.knotSpanXi;
+                    degree = surface.degreeXi;
+                    knotVector = surface.knotVectorXi;
+                elseif direc == "eta"
+                    Span = this.knotSpanEta;
+                    degree = surface.degreeEta;
+                    knotVector = surface.knotVectorEta;
+                else
+                    return
+                end
+                
                 % Loop over edge Gauss integration points
                 for i = 1:ngp
-                    % Parametric coordinates
+                    % Parent coordinates
                     r = gp(i);
                     
+                    % Element parametric coordinates
+                    xi  = this.shape.parent2ParametricSpace(Span,r);
+            
                     % Edge d.o.f. shape functions matrix
-                    N = this.shape.NmtxEdge(r);
+                    N = this.shape.NmtxEdge(xi,degree,knotVector);
+                    
+                    % Jacobian 2
+                    J2 = 0.5 * (Span(2) - Span(1));
                     
                     % Jacobian matrix
-                    J = this.JmtxEdge(edgLocIds,r);
+                    J = this.JmtxEdgePatoPhy(edgLocIds,xi,degree,knotVector);
                     detJ = sqrt(J(1)*J(1) + J(2)*J(2));
                     
                     % Accumulate Gauss point contributions
@@ -510,7 +528,7 @@ classdef Element_Isogeometric < handle
                     for j = 1:nedgen
                         for k = 1:ndof
                             m = m + 1;
-                            Fedge(m) = Fedge(m) + w(i) * N(j) * p(k) * detJ;
+                            Fedge(m) = Fedge(m) + w(i) * N(j) * p(k) * detJ * J2;
                         end
                     end
                 end
@@ -629,22 +647,22 @@ classdef Element_Isogeometric < handle
                 s = gp(2,i);
                 
                 % Element knot spans
-                xiSpan  = this.knotSpanU;
-                etaSpan = this.knotSpanV;
+                xiSpan  = this.knotSpanXi;
+                etaSpan = this.knotSpanEta;
 
                 % Element parametric coordinates
                 xi  = this.shape.parent2ParametricSpace(xiSpan,r);
                 eta = this.shape.parent2ParametricSpace(etaSpan,s);
 
                 % Surface properties
-                p = surface.degreeU;
-                q = surface.degreeV;
-                knotVectorU = surface.knotVectorU;
-                knotVectorV = surface.knotVectorV;
+                p = surface.degreeXi;
+                q = surface.degreeEta;
+                knotVectorXi = surface.knotVectorXi;
+                knotVectorEta = surface.knotVectorEta;
                 weights = surface.weights;
                 
                 % Geometry shape functions matrix evaluated at this point
-                M = this.shape.Mmtx(xi,eta,p,q,knotVectorU,knotVectorV,weights);
+                M = this.shape.Mmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
                 
                 % Gradient matrix 
                 J = this.JmtxDomainPatoPhy(surface,r,s);
