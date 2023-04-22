@@ -415,7 +415,7 @@ classdef Element_Isoparametric < handle
         %------------------------------------------------------------------
         % Numerical integration of equivalent nodal forcing vector from
         % standard natural boundary conditions prescribed over edges: [N]'q
-        function F = edgeEquivForceVct(this)
+        function F = edgeEquivForceVct(this,~)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
             
