@@ -66,14 +66,14 @@ Neutral file created by Mtool
 
 %NODE.SUPPORT
 8
-1     1 1 0 0 0 0
-6     1 1 0 0 0 0
-7     1 1 0 0 0 0
-12    1 1 0 0 0 0
-13    1 1 0 0 0 0
-18    1 1 0 0 0 0
-19    1 1 0 0 0 0
-24    1 1 0 0 0 0
+1     0 1 0 0 0 0
+6     1 0 0 0 0 0
+7     0 1 0 0 0 0
+12    1 0 0 0 0 0
+13    0 1 0 0 0 0
+18    1 0 0 0 0 0
+19    0 1 0 0 0 0
+24    1 0 0 0 0 0
 
 %MATERIAL
 1
@@ -93,11 +93,18 @@ Neutral file created by Mtool
 %SURFACE
 1
 
-%DEGREE
+%SURFACE.DEGREE
 1   2 2
 
-%KNOTVECTOR
+%SURFACE.KNOTVECTOR
 1   9   0 0 0 0.25 0.5 0.75 1 1 1   7   0 0 0 0.5 1 1 1
+
+%SURFACE.CTRLNET
+1
+1   2   3   4   5   6
+7   8   9   10  11  12
+13  14  15  16  17  18
+19  20  21  22  23  24
 
 %ELEMENT
 8
@@ -113,10 +120,9 @@ Neutral file created by Mtool
 7     1 1 1	9   9   10  11  15  16  17  21  22  23     0.50  0.75     0.50  1.00
 8     1 1 1	9   10  11  12  16  17  18  22  23  24     0.75  1.00     0.50  1.00
 
-%LOAD.CASE.NODAL.FORCES
-3
-19   -10.0  0.0  0.0  0.0  0.0  0.0
-20   -10.0  0.0  0.0  0.0  0.0  0.0
-21   -10.0  0.0  0.0  0.0  0.0  0.0
+%LOAD.CASE.LINE.FORCE.UNIFORM
+2
+5   19 21   0   -10.0 0.0 0.0
+6   20 22   0   -10.0 0.0 0.0
 
 %END
