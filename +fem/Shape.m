@@ -32,44 +32,45 @@ classdef Shape < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % General
-        type  int32  = int32.empty;                 % flag for type of shape
-        order int32  = int32.empty;                 % linear (1) or quadratic (2)
+        type  int32  = int32.empty; % flag for type of shape
+        order int32  = int32.empty; % linear (1) or quadratic (2)
         
         % Dimensions
-        dim   double = double.empty;                % dimension
-        size  double = double.empty;                % size (length, area, or volume)
-        Lchr  double = double.empty;                % characteristic length
+        dim   double = double.empty; % dimension
+        size  double = double.empty; % size (length, area, or volume)
+        Lchr  double = double.empty; % characteristic length
         
         % Coordinates
-        carCoord        double   = double.empty;    % matrix of cartesian nodal coordinates
-        parCoord        double   = double.empty;    % matrix of parametric nodal coordinates
-        epCarCoord      double   = double.empty;    % matrix of cartesian extrapolation points coordinates
+        carCoord     double = double.empty; % matrix of cartesian nodal coordinates
+        parCoord     double = double.empty; % matrix of parametric nodal coordinates
+        extCarCoord  double = double.empty; % matrix of cartesian coordinates of extrapolation points
         
-        % Weights
-        weights         double   = double.empty;    % Vector of control points weights
-        
-        % Nodes
-        nen             int32    = int32.empty;     % number of nodes (isoparametric case) or associated control points (isogeometric case)
-        nodes = [];
-        nep             int32    = int32.empty;     % number of extrapolation points
-        ccwLocalNodeIds int32    = int32.empty;     % vector of local node ids in ccw order
-        ccwNodeIds      int32    = int32.empty;     % vector of global node ids in ccw order
+        % Nodes and extrapolation nodes
+        nen                int32       = int32.empty;       % number of nodes (isoparametric case) or associated control points (isogeometric case)
+        nodes                          = [];                % vector of objects of Node class or CtrlPt class
+        nep                int32       = int32.empty;       % number of extrapolation nodes
+        extNodes           fem.ExtNode = fem.ExtNode.empty; % vector of objects of Node class
+        ccwLocalExtNodeIds int32       = int32.empty;       % vector of local extrapolation nodes ids in ccw order
+        ccwExtNodeIds      int32       = int32.empty;       % vector of global extrapolation nodes ids in ccw order
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Shape(type,dim,nen)
+        function this = Shape(type,dim,nen,nep)
             this.type = type;
             this.dim  = dim;
             this.nen  = nen;
+            this.nep  = nep;
         end
     end
     
     %% Abstract methods
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
-        %setEPoints(this,xiSpan,etaSpan,surface);
+        %------------------------------------------------------------------
+        setExtNodesCoord(this);
+
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.
