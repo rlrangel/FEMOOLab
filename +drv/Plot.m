@@ -104,15 +104,9 @@ classdef Plot < handle
             y = zeros(mdl.nep,1);
             z = zeros(mdl.nep,1);
             for i = 1:mdl.nep
-                if mdl.anme.type == mdl.anme.ISOPARAMETRIC
-                    x(i) = mdl.nodes(i).coord(1);
-                    y(i) = mdl.nodes(i).coord(2);
-                    z(i) = mdl.nodes(i).coord(3);
-                elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
-                    x(i) = mdl.ePoints(i,1);
-                    y(i) = mdl.ePoints(i,2);
-                    z(i) = mdl.ePoints(i,3);
-                end
+                x(i) = mdl.extNodes(i).coord(1);
+                y(i) = mdl.extNodes(i).coord(2);
+                z(i) = mdl.extNodes(i).coord(3);
             end
             this.x_coord = x;
             this.y_coord = y;
@@ -150,11 +144,11 @@ classdef Plot < handle
                 XX = zeros(1,nep+1);
                 YY = zeros(1,nep+1);
                 for j = 1:nep
-                    node = mdl.elems(i).shape.ccwNodeIds(j);
+                    node = mdl.elems(i).shape.ccwExtNodeIds(j);
                     XX(j) = this.x_coord(node);
                     YY(j) = this.y_coord(node);
                 end
-                node1 = mdl.elems(i).shape.ccwNodeIds(1);
+                node1 = mdl.elems(i).shape.ccwExtNodeIds(1);
                 XX(nep+1) = this.x_coord(node1);
                 YY(nep+1) = this.y_coord(node1);
                 plot(XX,YY,this.color_mesh);
@@ -251,12 +245,12 @@ classdef Plot < handle
                 YY = zeros(1,nep+1);
                 ZZ = zeros(1,nep+1);
                 for j = 1:nep
-                    node  = mdl.elems(i).shape.ccwNodeIds(j);
+                    node  = mdl.elems(i).shape.ccwExtNodeIds(j);
                     XX(j) = this.x_coord(node);
                     YY(j) = this.y_coord(node);
                     ZZ(j) = contour(node);
                 end
-                node = mdl.elems(i).shape.ccwNodeIds(1);
+                node = mdl.elems(i).shape.ccwExtNodeIds(1);
                 XX(nep+1) = this.x_coord(node);
                 YY(nep+1) = this.y_coord(node);
                 ZZ(nep+1) = contour(node);
