@@ -24,33 +24,33 @@ classdef Shape_Tria6 < fem.Shape
     methods
         %------------------------------------------------------------------
         function this = Shape_Tria6(nodes)
-            this = this@fem.Shape(fem.Shape.TRIA6,2,6);
+            this = this@fem.Shape(fem.Shape.TRIA6,2,6,6);
             this.nep = this.nen;
             
             if (nargin > 0)
                 this.nodes = nodes;
                 
                 % Cartesian nodal coordiantes matrix [X Y]
-                this.carCoord = [ nodes(1).coord(1) nodes(1).coord(2);
-                                  nodes(2).coord(1) nodes(2).coord(2);
-                                  nodes(3).coord(1) nodes(3).coord(2);
-                                  nodes(4).coord(1) nodes(4).coord(2);
-                                  nodes(5).coord(1) nodes(5).coord(2);
-                                  nodes(6).coord(1) nodes(6).coord(2) ];
+                this.carCoord = [nodes(1).coord(1) nodes(1).coord(2);
+                                 nodes(2).coord(1) nodes(2).coord(2);
+                                 nodes(3).coord(1) nodes(3).coord(2);
+                                 nodes(4).coord(1) nodes(4).coord(2);
+                                 nodes(5).coord(1) nodes(5).coord(2);
+                                 nodes(6).coord(1) nodes(6).coord(2)];
                 
                 % Parametric nodal coordinates matrix [r s]
-                this.parCoord = [ 0.0  0.0;
-                                  1.0  0.0;
-                                  0.0  1.0;
-                                  0.5  0.0;
-                                  0.5  0.5;
-                                  0.0  0.5 ];
+                this.parCoord = [0.0  0.0;
+                                 1.0  0.0;
+                                 0.0  1.0;
+                                 0.5  0.0;
+                                 0.5  0.5;
+                                 0.0  0.5];
                 
                 % Vector of local node ids in ccw order
-                this.ccwLocalNodeIds = [ 1  4  2  5  3  6 ];
+                this.ccwLocalExtNodeIds = [1  4  2  5  3  6];
                 
                 % Vector of global node ids in ccw order
-                this.ccwNodeIds = ...
+                this.ccwExtNodeIds = ...
                 [ nodes(1).id  nodes(4).id  nodes(2).id ...
                   nodes(5).id  nodes(3).id  nodes(6).id];
                 
@@ -69,8 +69,8 @@ classdef Shape_Tria6 < fem.Shape
     % Implementation of the abstract methods declared in super-class Shape
     methods
         %------------------------------------------------------------------
-        % Not being used
-        function setEPoints(~,~,~,~)
+        function setExtNodesCoord(this)
+            this.extCarCoord = this.carCoord;
         end
         
         %------------------------------------------------------------------
