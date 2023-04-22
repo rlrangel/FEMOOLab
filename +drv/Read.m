@@ -84,10 +84,12 @@ classdef Read < handle
                         [status,intgrorder] = this.IntgrOrder(fid);
                     case '%SURFACE'
                         status = this.surfaceTotal(fid,mdl);
-                    case '%DEGREE'
+                    case '%SURFACE.DEGREE'
                         status = this.surfaceDegree(fid,mdl);
-                    case '%KNOTVECTOR'
+                    case '%SURFACE.KNOTVECTOR'
                         status = this.surfaceKnotVector(fid,mdl);
+                    case '%SURFACE.CTRLNET'
+                        status = this.surfaceCtrlNet(fid,mdl);
                     case '%ELEMENT'
                         status = this.elementTotal(fid,mdl);
                     case '%ELEMENT.T3'
@@ -715,23 +717,25 @@ classdef Read < handle
             
             % Set surfaces degrees
             for i = 1:mdl.nsurf
-                id = fscanf(fid,'%d',1);
-                if (~this.chkInt(id,inf,'surface id'))
+                surfId = fscanf(fid,'%d',1);
+                if (~this.chkInt(surfId,inf,'surface id'))
                     status = 0;
                     return;
                 end
+                
                 p = fscanf(fid,'%d',1);
                 if (~this.chkInt(p,inf,'degree p'))
                     status = 0;
                     return;
                 end
-                mdl.surfaces(id).degreeU = p;
+                mdl.surfaces(surfId).degreeXi = p;
+                
                 q = fscanf(fid,'%d',1);
                 if (~this.chkInt(q,inf,'degree q'))
                     status = 0;
                     return;
                 end
-                mdl.surfaces(id).degreeV = q;
+                mdl.surfaces(surfId).degreeEta = q;
             end
         end
         
@@ -741,27 +745,66 @@ classdef Read < handle
             
             % Set surfaces knot vectors
             for i = 1:mdl.nsurf
-                id = fscanf(fid,'%d',1);
-                if (~this.chkInt(id,inf,'surface id'))
+                surfId = fscanf(fid,'%d',1);
+                if (~this.chkInt(surfId,inf,'surface id'))
                     status = 0;
                     return;
                 end
                 
-                knotVectorUSize = fscanf(fid,'%d',1);
-                if (~this.chkInt(knotVectorUSize,inf,'knot vector u size'))
+                knotVectorXiSize = fscanf(fid,'%d',1);
+                if (~this.chkInt(knotVectorXiSize,inf,'knot vector xi size'))
                     status = 0;
                     return;
                 end
-                [knotVectorU,~] = fscanf(fid,'%f',knotVectorUSize);
-                mdl.surfaces(id).knotVectorU = knotVectorU';
+                [knotVectorXi,~] = fscanf(fid,'%f',knotVectorXiSize);
+                mdl.surfaces(surfId).knotVectorXi = knotVectorXi';
                 
-                knotVectorVSize = fscanf(fid,'%d',1);
-                if (~this.chkInt(knotVectorVSize,inf,'knot vector v size'))
+                knotVectorEtaSize = fscanf(fid,'%d',1);
+                if (~this.chkInt(knotVectorEtaSize,inf,'knot vector eta size'))
                     status = 0;
                     return;
                 end
-                [knotVectorV,~] = fscanf(fid,'%f',knotVectorVSize);
-                mdl.surfaces(id).knotVectorV = knotVectorV';
+                [knotVectorEta,~] = fscanf(fid,'%f',knotVectorEtaSize);
+                mdl.surfaces(surfId).knotVectorEta = knotVectorEta';
+            end
+        end
+        
+        % Set surfaces control net
+        %------------------------------------------------------------------
+        function status = surfaceCtrlNet(this,fid,mdl)
+            status = 1;
+            
+            % Surface ID
+            for i = 1:mdl.nsurf
+                surfId = fscanf(fid,'%d',1);
+                if (~this.chkInt(surfId,inf,'surface id'))
+                    status = 0;
+                    return;
+                end
+                
+                % Degress in xi and eta directions
+                degreeXi = mdl.surfaces(surfId).degreeXi;
+                degreeEta = mdl.surfaces(surfId).degreeEta;
+                
+                % Number of control points in xi and eta directions
+                nCPXi = length(mdl.surfaces(surfId).knotVectorXi) - degreeXi - 1;
+                nCPEta = length(mdl.surfaces(surfId).knotVectorEta) - degreeEta - 1;
+                
+                % Store control points ID's in ctrlNet matrix
+                ctrlNet = zeros(nCPEta,nCPXi);
+                for j = 1:nCPEta
+                    [ctrlPoints,~] = fscanf(fid,'%d',nCPXi);
+                    ctrlNet(j,:) = ctrlPoints';
+                end
+                mdl.surfaces(surfId).ctrlNet = ctrlNet;
+                
+                % Store weights
+                ctrlNet = reshape(ctrlNet',[],1); % convert matrix to column vector
+                weights = zeros(nCPXi*nCPEta,1);
+                for k = 1:nCPXi*nCPEta
+                    weights(k) = mdl.nodes(ctrlNet(k)).weight;
+                end
+                mdl.surfaces(surfId).weights = weights;
             end
         end
         
@@ -1094,7 +1137,6 @@ classdef Read < handle
                     return;
                 end
                 
-                ctrlNet = [];
                 elems = [];
                 for j = 1:n
                     % Element ID
@@ -1115,8 +1157,8 @@ classdef Read < handle
                     [connec,count2] = fscanf(fid,'%d',ncp);
                     
                     % Knot spans
-                    [knotSpanU,~] = fscanf(fid,'%f',2);
-                    [knotSpanV,~] = fscanf(fid,'%f',2);
+                    [xiSpan,~] = fscanf(fid,'%f',2);
+                    [etaSpan,~] = fscanf(fid,'%f',2);
 
                     % Check properties
                     p = [prop; connec];
@@ -1129,9 +1171,7 @@ classdef Read < handle
                     % Create shape object:
                     % Node incidence starts in the positive direction of xi
                     % and goes in the positive direction of eta
-                    k = 1:ncp;
-                    nodes = mdl.nodes(connec(k));
-                    shape = fem.Shape_Isogeometric(nodes);
+                    shape = fem.Shape_Isogeometric(mdl.nodes(connec(1:ncp)));
 
                     % Store properties
                     mdl.elems(id).anm   = mdl.anm;
@@ -1142,32 +1182,20 @@ classdef Read < handle
                     mdl.elems(id).gsystem_order = intgrorder(p(3),1);
                     mdl.elems(id).gderive_order = intgrorder(p(3),2);
                     mdl.elems(id).surfId = surfId;
-                    mdl.elems(id).knotSpanU = knotSpanU';
-                    mdl.elems(id).knotSpanV = knotSpanV';
+                    mdl.elems(id).knotSpanXi = xiSpan';
+                    mdl.elems(id).knotSpanEta = etaSpan';
 
                     % Set control points incidence
                     for l = 1:ncp
                         mdl.nodes(connec(l)).elems(end+1) = mdl.elems(id);
                     end
                     
-                    % Add control points and elements id's on vectors
-                    % ctrlNet and elems
-                    ctrlNet = sort(unique([ctrlNet; connec]));
+                    % Add elements id's on vector elems
                     elems = sort([elems; id]);
                 end
                 
-                % Store control points and elements id's in surface
-                mdl.surfaces(surfId).ctrlNet = ctrlNet;
+                % Store elements id's in surface
                 mdl.surfaces(surfId).elems = elems;
-                
-                % Add weights of points in control net on vector weights
-                weights = zeros(length(ctrlNet),1);
-                for m = 1:length(ctrlNet)
-                    weights(m) = mdl.nodes(ctrlNet(m)).weight;
-                end
-                
-                % Store weights of points in control net in surface
-                mdl.surfaces(surfId).weights = weights;
             end
         end
         
