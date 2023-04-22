@@ -194,19 +194,60 @@ classdef Anm_PlaneStress < fem.Anm
         % results using the TGN matrix.
         % In structural analysis, derived variables are stresses.
         function elemDerivedVarExtrap(~,mdl)
-            r = mdl.res;
+            res = mdl.res;
             
             for i = 1:mdl.nel
                 TGN = mdl.elems(i).TGN;
                 nep = mdl.elems(i).shape.nep;
-                ngp = r.ngp(i);
+                ngp = res.ngp(i);
                 
-                r.sxx_elemextrap(1:nep,i)  = TGN * r.sxx_gp(1:ngp,i);
-                r.syy_elemextrap(1:nep,i)  = TGN * r.syy_gp(1:ngp,i);
-                r.txy_elemextrap(1:nep,i)  = TGN * r.txy_gp(1:ngp,i);
-                r.s1_elemextrap(1:nep,i)   = TGN * r.s1_gp(1:ngp,i);
-                r.s2_elemextrap(1:nep,i)   = TGN * r.s2_gp(1:ngp,i);
-                r.tmax_elemextrap(1:nep,i) = TGN * r.tmax_gp(1:ngp,i);
+                gle = mdl.elems(i).gle;
+                gle_x = gle(1:2:end);
+                gle_y = gle(2:2:end);
+                
+                U_x = mdl.res.U(gle_x);
+                U_y = mdl.res.U(gle_y);
+                
+                if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                    res.dx_elemextrap(:,i) = U_x;
+                    res.dy_elemextrap(:,i) = U_y;
+                    
+                elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                    surfId = mdl.elems(i).surfId;
+                    surface = mdl.surfaces(surfId);
+                    xiSpan = mdl.elems(i).knotSpanXi;
+                    etaSpan = mdl.elems(i).knotSpanEta;
+
+                    % Surface properties
+                    p = surface.degreeXi;
+                    q = surface.degreeEta;
+                    knotVectorXi = surface.knotVectorXi;
+                    knotVectorEta = surface.knotVectorEta;
+                    weights = surface.weights;
+
+                    for j = 1:nep
+                        % Extrapolation points parent coordinates
+                        r = mdl.elems(i).shape.parCoord(j,1);
+                        s = mdl.elems(i).shape.parCoord(j,2);
+
+                        % Extrapolation points parametric coordinates
+                        xi  = mdl.elems(i).shape.parent2ParametricSpace(xiSpan,r);
+                        eta = mdl.elems(i).shape.parent2ParametricSpace(etaSpan,s);
+
+                        % Basis functions
+                        N = mdl.elems(i).shape.Nmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
+
+                        res.dx_elemextrap(j,i) = N * U_x;
+                        res.dy_elemextrap(j,i) = N * U_y;
+                    end
+                end
+
+                res.sxx_elemextrap(1:nep,i)  = TGN * res.sxx_gp(1:ngp,i);
+                res.syy_elemextrap(1:nep,i)  = TGN * res.syy_gp(1:ngp,i);
+                res.txy_elemextrap(1:nep,i)  = TGN * res.txy_gp(1:ngp,i);
+                res.s1_elemextrap(1:nep,i)   = TGN * res.s1_gp(1:ngp,i);
+                res.s2_elemextrap(1:nep,i)   = TGN * res.s2_gp(1:ngp,i);
+                res.tmax_elemextrap(1:nep,i) = TGN * res.tmax_gp(1:ngp,i);
             end
         end
         
@@ -218,69 +259,100 @@ classdef Anm_PlaneStress < fem.Anm
         % to each node.
         % In structural analysis, derived variables are stresses.
         function nodeDerivedVarExtrap(~,mdl)
-            r = mdl.res;
+            res = mdl.res;
             
             % Sum contributions of extrapolated node results from connected elements
             for i = 1:mdl.nel
                 for j = 1:mdl.elems(i).shape.nep
-                        %n = mdl.elems(i).shape.nodes(j).id; % num da linha da matriz dos ePoints
-                    ccwNodeIds = mdl.elems(i).shape.ccwNodeIds;
-                    n = ccwNodeIds(j);
-                    r.sxx_nodeextrap(n)  = r.sxx_nodeextrap(n)  + r.sxx_elemextrap(j,i);
-                    r.syy_nodeextrap(n)  = r.syy_nodeextrap(n)  + r.syy_elemextrap(j,i);
-                    r.txy_nodeextrap(n)  = r.txy_nodeextrap(n)  + r.txy_elemextrap(j,i);
-                    r.s1_nodeextrap(n)   = r.s1_nodeextrap(n)   + r.s1_elemextrap(j,i);
-                    r.s2_nodeextrap(n)   = r.s2_nodeextrap(n)   + r.s2_elemextrap(j,i);
-                    r.tmax_nodeextrap(n) = r.tmax_nodeextrap(n) + r.tmax_elemextrap(j,i);
+                    n = mdl.elems(i).shape.extNodes(j).id; % num da linha da matriz dos ePoints
+                    res.dx_nodeextrap(n)   = res.dx_nodeextrap(n)   + res.dx_elemextrap(j,i);
+                    res.dy_nodeextrap(n)   = res.dy_nodeextrap(n)   + res.dy_elemextrap(j,i);
+                    res.sxx_nodeextrap(n)  = res.sxx_nodeextrap(n)  + res.sxx_elemextrap(j,i);
+                    res.syy_nodeextrap(n)  = res.syy_nodeextrap(n)  + res.syy_elemextrap(j,i);
+                    res.txy_nodeextrap(n)  = res.txy_nodeextrap(n)  + res.txy_elemextrap(j,i);
+                    res.s1_nodeextrap(n)   = res.s1_nodeextrap(n)   + res.s1_elemextrap(j,i);
+                    res.s2_nodeextrap(n)   = res.s2_nodeextrap(n)   + res.s2_elemextrap(j,i);
+                    res.tmax_nodeextrap(n) = res.tmax_nodeextrap(n) + res.tmax_elemextrap(j,i);
                 end
             end
             
             % Average nodal values by the number of connected elements
             for i = 1:mdl.nep
-                %nadjelems = length(mdl.nodes(i).elems); % num de vezes que um epoint aparece naquela matriz do mdl
-                nadjelems = numel(find(mdl.ePointsId == i));
-                r.sxx_nodeextrap(i)  = r.sxx_nodeextrap(i)  / nadjelems;
-                r.syy_nodeextrap(i)  = r.syy_nodeextrap(i)  / nadjelems;
-                r.txy_nodeextrap(i)  = r.txy_nodeextrap(i)  / nadjelems;
-                r.s1_nodeextrap(i)   = r.s1_nodeextrap(i)   / nadjelems;
-                r.s2_nodeextrap(i)   = r.s2_nodeextrap(i)   / nadjelems;
-                r.tmax_nodeextrap(i) = r.tmax_nodeextrap(i) / nadjelems;
+                nadjelems = length(mdl.extNodes(i).elems);
+                res.dx_nodeextrap(i)   = res.dx_nodeextrap(i)   / nadjelems;
+                res.dy_nodeextrap(i)   = res.dy_nodeextrap(i)   / nadjelems;
+                res.sxx_nodeextrap(i)  = res.sxx_nodeextrap(i)  / nadjelems;
+                res.syy_nodeextrap(i)  = res.syy_nodeextrap(i)  / nadjelems;
+                res.txy_nodeextrap(i)  = res.txy_nodeextrap(i)  / nadjelems;
+                res.s1_nodeextrap(i)   = res.s1_nodeextrap(i)   / nadjelems;
+                res.s2_nodeextrap(i)   = res.s2_nodeextrap(i)   / nadjelems;
+                res.tmax_nodeextrap(i) = res.tmax_nodeextrap(i) / nadjelems;
             end
         end
         
         %------------------------------------------------------------------
         function ePointsCoordAndConec(~,mdl)
             if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                for i = 1:mdl.nel
+                    mdl.elems(i).shape.setExtNodesCoord();
+                end
                 mdl.nep = mdl.nnp;
                 
+                extNodes(mdl.nep,1) = fem.ExtNode();
+
+                mdl.extNodes = extNodes;
+                for i = 1:mdl.nep
+                    mdl.extNodes(i).id = mdl.nodes(i).id;
+                    mdl.extNodes(i).coord = mdl.nodes(i).coord;
+                    mdl.extNodes(i).elems = fem.Element_Isoparametric().empty;
+                    mdl.extNodes(i).elems = mdl.nodes(i).elems;
+                end
+                
+                for i = 1:mdl.nel
+                    for j = 1:mdl.elems(i).shape.nep
+                        extNodeId = mdl.elems(i).shape.nodes(j).id;
+                        mdl.elems(i).shape.extNodes(j) = mdl.extNodes(extNodeId);
+                    end
+                end
+                
             elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
-                ePoints = [];
+                GlobalExtNodes = [];
                 for i = 1:mdl.nel
                     % Element knot spans
-                    xiSpan = mdl.elems(i).knotSpanU;
-                    etaSpan = mdl.elems(i).knotSpanV;
+                    xiSpan = mdl.elems(i).knotSpanXi;
+                    etaSpan = mdl.elems(i).knotSpanEta;
 
                     surfId = mdl.elems(i).surfId;
                     surface = mdl.surfaces(surfId);
-                    mdl.elems(i).shape.setEPoints(xiSpan,etaSpan,surface);
+                    mdl.elems(i).shape.setExtNodesCoord(xiSpan,etaSpan,surface);
 
-                    epCarCoord = mdl.elems(i).shape.epCarCoord;
-                    ePoints = uniquetol([ePoints; epCarCoord],1e-5,'ByRows',true);
+                    extCarCoord = mdl.elems(i).shape.extCarCoord;
+                    GlobalExtNodes = uniquetol([GlobalExtNodes; extCarCoord],1e-5,'ByRows',true);
                 end
-                mdl.ePoints = ePoints;
-                mdl.nep = size(ePoints,1);
+                mdl.nep = size(GlobalExtNodes,1);
                 
-                maxNen  = mdl.maxNumElemNodes();
-                mdl.ePointsId = zeros(mdl.nel,maxNen);
-                for i = 1:mdl.nel
-                    epCarCoord = mdl.elems(i).shape.epCarCoord;
-                    [~, ccwNodeIds] = ismembertol(epCarCoord,mdl.ePoints,1e-5,'ByRows',true);
-                    ccwNodeIds = [ ccwNodeIds(1)  ccwNodeIds(5)  ccwNodeIds(2)  ccwNodeIds(6)...
-                                   ccwNodeIds(3)  ccwNodeIds(7)  ccwNodeIds(4)  ccwNodeIds(8)];
-                    mdl.elems(i).shape.ccwNodeIds = ccwNodeIds;
-                    mdl.ePointsId(i,:) = ccwNodeIds';
+                %extNodes(mdl.nep,1) = fem.ExtNode(2*ones(mdl.nep,1));
+                extNodes(mdl.nep,1) = fem.ExtNode();
+
+                mdl.extNodes = extNodes;
+                for i = 1:mdl.nep
+                    mdl.extNodes(i).id = i;
+                    mdl.extNodes(i).coord = GlobalExtNodes(i,:);
+                    mdl.extNodes(i).coord(1,3) = 0;
+                    mdl.extNodes(i).elems = fem.Element_Isogeometric().empty;
                 end
-                mdl.ePoints(:,3) = zeros(size(ePoints,1),1);
+                
+                for i = 1:mdl.nel
+                    extCarCoord = mdl.elems(i).shape.extCarCoord;
+                    [~, extNodeIds] = ismembertol(extCarCoord,GlobalExtNodes,1e-5,'ByRows',true);
+                    mdl.elems(i).shape.setccwExtNodeIds(extNodeIds);
+                    
+                    % Set extrapolation nodes incidence
+                    for j = 1:mdl.elems(i).shape.nep
+                        mdl.extNodes(extNodeIds(j)).elems(end+1) = mdl.elems(i);
+                        mdl.elems(i).shape.extNodes(j) = mdl.extNodes(extNodeIds(j));
+                    end
+                end
             end
         end
     end
