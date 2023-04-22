@@ -59,8 +59,7 @@ classdef Anl_LinearSteadyState < fem.Anl
         %------------------------------------------------------------------
         % Pos-process results to compute derived variables.
         function posProcess(~,mdl)
-            % Criar método para determinar as coordendas dos pontos de
-            % extrapolação e a conectividade
+            % Método para criar os pontos extrapolação
             mdl.anm.ePointsCoordAndConec(mdl);
             
             % Initialize result arrays
