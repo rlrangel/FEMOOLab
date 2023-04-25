@@ -27,6 +27,10 @@ classdef Anme < handle
         %------------------------------------------------------------------
         function this = Anme(type)
             this.type = type;
+            if this.type == this.ISOGEOMETRIC
+                addpath ders/ders2d
+                addpath ders/ders1d
+            end
         end
     end
 end
