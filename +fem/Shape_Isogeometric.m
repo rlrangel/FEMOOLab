@@ -100,19 +100,13 @@ classdef Shape_Isogeometric < fem.Shape
         % Evaluate matrix of d.o.f. shape functions at a given position in
         % parametric coordinates.
         function N = Nmtx(~,xi,eta,p,q,knotVectorXi,knotVectorEta,weights)
-            addpath ders/ders2d
             [N, ~, ~] = NURBS2DBasisDers([xi;eta],p,q,knotVectorXi,knotVectorEta,weights');
         end
         
         %------------------------------------------------------------------
         % Evaluate matrix of edge d.o.f. shape functions at a given
         % position in parametric coordinates.
-        function N = NmtxEdge(this,xi,p,knotVector)
-            weights = zeros(this.nen,1);
-            for i = 1:this.nen
-                weights(i) = this.nodes(i).weight;
-            end
-            addpath ders/ders1d
+        function N = NmtxEdge(~,xi,p,knotVector,weights)
             [N, ~] = NURBS1DBasisDers(xi,p,knotVector,weights);
         end
         
@@ -129,7 +123,6 @@ classdef Shape_Isogeometric < fem.Shape
         % Evaluate matrix of d.o.f. shape functions derivatives
         % w.r.t. parametric coordinates at a given position.
         function GradNpar = gradNmtx(~,xi,eta,p,q,knotVectorXi,knotVectorEta,weights)
-            addpath ders/ders2d
             [~, dNdxi, dNdeta] = NURBS2DBasisDers([xi;eta],p,q,knotVectorXi,knotVectorEta,weights');
             GradNpar = [dNdxi; dNdeta];
         end
@@ -137,12 +130,7 @@ classdef Shape_Isogeometric < fem.Shape
         %------------------------------------------------------------------
         % Evaluate matrix of edge geometry shape functions derivatives
         % w.r.t. parametric coordinates at a given position.
-        function GradMpar = gradMmtxEdge(this,xi,p,knotVector)
-            weights = zeros(this.nen,1);
-            for i = 1:this.nen
-                weights(i) = this.nodes(i).weight;
-            end
-            addpath ders/ders1d
+        function GradMpar = gradMmtxEdge(~,xi,p,knotVector,weights)
             [~, dNdxi] = NURBS1DBasisDers(xi,p,knotVector,weights);
             GradMpar = dNdxi;
         end
