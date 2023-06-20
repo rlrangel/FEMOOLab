@@ -15,14 +15,13 @@ classdef Model < handle
     properties (SetAccess = public, GetAccess = public)
         % General
         anm             = [];               % object of Anm (Analysis Model) class
-        anme fem.Anme   = fem.Anme.empty    % object of Anme (Analysis Method) class
         res  drv.Result = drv.Result.empty; % object of Result class
         
         % Model properties
         nnp       int32        = int32.empty;        % number of nodes
-        nodes                  = [];                 % vector of objects of Node class or CtrlPt class
+        nodes                  = [];                 % vector of objects of Node_Isoparametric class or Node_Isogeometric class
         nel       int32        = int32.empty;        % number of elements
-        elems                  = [];                 % vector of objects of Element_Isoparametric class
+        elems                  = [];                 % vector of objects of Element_Isoparametric class or Element_Isogeometric class
         nmat      int32        = int32.empty;        % number of materials
         materials fem.Material = fem.Material.empty; % vector of objects of Material class
         nep       int32        = int32.empty         % number of extrapolation nodes

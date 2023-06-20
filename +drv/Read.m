@@ -50,8 +50,6 @@ classdef Read < handle
                 switch string
                     case '%HEADER.ANALYSIS'
                         status = this.analysisModel(fid,sim);
-                    case '%HEADER.ANALYSIS.METHOD'
-                        status = this.analysisMethod(fid,sim);
                     case '%HEADER.ANALYSIS.TYPE' % This is not on NF documentation
                         status = this.analysisMode(fid,sim);
                     case '%HEADER.ANALYSIS.ALGORITHM' % This is being used for time integration scheme
@@ -149,8 +147,11 @@ classdef Read < handle
             status = 1;
             string = deblank(fgetl(fid));
             
-            if (strcmp(string,'''PLANE_STRESS''') || strcmp(string,'''plane_stress'''))
-                sim.mdl.anm = fem.Anm_PlaneStress();
+            if (strcmp(string,'''PLANE_STRESS ISOPARAMETRIC''') || strcmp(string,'''plane_stress ISOPARAMETRIC'''))
+                sim.mdl.anm = fem.Anm_PlaneStress(fem.Anm.ISOPARAMETRIC);
+                sim.plot = drv.Plot_StructInPlane();
+            elseif (strcmp(string,'''PLANE_STRESS ISOGEOMETRIC''') || strcmp(string,'''plane_stress ISOGEOMETRIC'''))
+                sim.mdl.anm = fem.Anm_PlaneStress(fem.Anm.ISOGEOMETRIC);
                 sim.plot = drv.Plot_StructInPlane();
             elseif (strcmp(string,'''PLANE_STRAIN''') || strcmp(string,'''plane_strain'''))
                 sim.mdl.anm = fem.Anm_PlaneStrain();
@@ -170,21 +171,6 @@ classdef Read < handle
             elseif (strcmp(string,'''PLANE_CONVECTION_DIFFUSION''') || strcmp(string,'''plane_convection_diffusion'''))
                 sim.mdl.anm = fem.Anm_PlaneConvDiff();
                 sim.plot = drv.Plot_ThermalPlane();
-            else
-                fprintf('Invalid input data: analysis model!\n');
-                status = 0;
-            end
-        end
-        
-        %------------------------------------------------------------------
-        function status = analysisMethod(~,fid,sim)
-            status = 1;
-            string = deblank(fgetl(fid));
-            
-            if (strcmp(string,'''ISOPARAMETRIC''') || strcmp(string,'''isoparametric'''))
-                sim.mdl.anme = fem.Anme(1);
-            elseif (strcmp(string,'''ISOGEOMETRIC''') || strcmp(string,'''isogeometric'''))
-                sim.mdl.anme = fem.Anme(2);
             else
                 fprintf('Invalid input data: analysis model!\n');
                 status = 0;
@@ -331,12 +317,12 @@ classdef Read < handle
             
             % Create vector of Node objects
             mdl.nnp = n;
-            if mdl.anme.type == mdl.anme.ISOPARAMETRIC
-                nodes(n,1) = fem.Node();
-            elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
-                nodes(n,1) = fem.CtrlPt();
+            if mdl.anm.meth == mdl.anm.ISOPARAMETRIC
+                nodes(n,1) = fem.Node_Isoparametric();
+            elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
+                nodes(n,1) = fem.Node_Isogeometric();
             else
-                fprintf('Invalid analysis method %d\n',mdl.anme.type);
+                fprintf('Invalid analysis method %d\n',mdl.anm.meth);
                 status = 0;
             end
             mdl.nodes = nodes;
@@ -821,12 +807,12 @@ classdef Read < handle
             
             % Create vector of Element objects
             mdl.nel = n;
-            if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+            if mdl.anm.meth == mdl.anm.ISOPARAMETRIC
                 elems(n,1) = fem.Element_Isoparametric();
-            elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+            elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
                 elems(n,1) = fem.Element_Isogeometric();
             else
-                fprintf('Invalid analysis method %d\n',mdl.anme.type);
+                fprintf('Invalid analysis method %d\n',mdl.anm.meth);
                 status = 0;
             end  
             mdl.elems = elems;

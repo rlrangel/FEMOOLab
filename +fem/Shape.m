@@ -47,7 +47,7 @@ classdef Shape < handle
         
         % Nodes and extrapolation nodes
         nen                int32       = int32.empty;       % number of nodes (isoparametric case) or associated control points (isogeometric case)
-        nodes                          = [];                % vector of objects of Node class or CtrlPt class
+        nodes                          = [];                % vector of objects of Node_Isoparametric class or Node_Isogeometric class
         nep                int32       = int32.empty;       % number of extrapolation nodes
         extNodes           fem.ExtNode = fem.ExtNode.empty; % vector of objects of Node class
         ccwLocalExtNodeIds int32       = int32.empty;       % vector of local extrapolation nodes ids in ccw order

@@ -14,41 +14,7 @@
 %
 %% Class definition
 %
-classdef Element_Isoparametric < handle
-    %% Public properties
-    properties (SetAccess = public, GetAccess = public)
-        % General
-        id    int32 = int32.empty;              % identification number
-        gle   int32 = int32.empty;              % gather vector (stores element global d.o.f. numbers)
-        anm   = [];                             % object of Anm class
-        shape = [];                             % object of Shape class
-        gauss = [];                             % object of Gauss class
-        
-        % Gauss integration quadrature
-        gsystem_order int32  = int32.empty;     % order of Gauss quadrature for computation of global system arrays
-        gderive_order int32  = int32.empty;     % order of Gauss quadrature for computation of derived variables
-        gderive_npts  int32  = int32.empty;     % number of Gauss points for computation of derived variables        
-        TGN           double = double.empty;    % transformation matrix of Gauss points results to nodal results
-        
-        % Physical attributes
-        mat fem.Material = fem.Material.empty;  % object of Material class
-        thk double       = double.empty;        % thickness
-        
-        % Domain forcing source
-        src double = double.empty;              % components of body force (structural) / internal heat generation (thermal)
-        
-        % Natural boundary conditions (uniformly distributed over edges)
-        lineNBC1 double = double.empty;         % matrix of standard NBCs (constant values) [corner1,corner2,forcing_components]
-        lineNBC2 double = double.empty;         % matrix of radiative NBCs (d.o.f. dependent values) [corner1,corner2,forcing_term]
-        
-        % Convection conditions
-        avgV   double = double.empty            % cartesian components of average nodal velocities
-        normV  double = double.empty            % norm of average nodal velocities vector
-        peclet double = double.empty            % Peclet number
-        alpha  double = double.empty            % stabilization coefficient alpha
-        beta   double = double.empty            % stabilization coefficient beta
-    end
-    
+classdef Element_Isoparametric < fem.Element
     %% Constructor method
     methods
         %------------------------------------------------------------------

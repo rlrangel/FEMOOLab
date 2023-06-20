@@ -14,42 +14,13 @@
 %
 %% Class definition
 %
-classdef Element_Isogeometric < handle
+classdef Element_Isogeometric < fem.Element
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % General
-        id          int32  = int32.empty;       % identification number
         surfId      int32  = int32.empty;       % surface identification number
         knotSpanXi  double = double.empty;      % knot span in xi direction
         knotSpanEta double = double.empty;      % knot span in eta direction
-        gle         int32  = int32.empty;       % gather vector (stores element global d.o.f. numbers)
-        anm   = [];                             % object of Anm class
-        shape = [];                             % object of Shape class
-        gauss = [];                             % object of Gauss class
-        
-        % Gauss integration quadrature
-        gsystem_order int32  = int32.empty;     % order of Gauss quadrature for computation of global system arrays
-        gderive_order int32  = int32.empty;     % order of Gauss quadrature for computation of derived variables
-        gderive_npts  int32  = int32.empty;     % number of Gauss points for computation of derived variables        
-        TGN           double = double.empty;    % transformation matrix of Gauss points results to nodal results
-        
-        % Physical attributes
-        mat fem.Material = fem.Material.empty;  % object of Material class
-        thk double       = double.empty;        % thickness
-        
-        % Domain forcing source
-        src double = double.empty;              % components of body force (structural) / internal heat generation (thermal)
-        
-        % Natural boundary conditions (uniformly distributed over edges)
-        lineNBC1 double = double.empty;         % matrix of standard NBCs (constant values) [corner1,corner2,forcing_components]
-        lineNBC2 double = double.empty;         % matrix of radiative NBCs (d.o.f. dependent values) [corner1,corner2,forcing_term]
-        
-        % Convection conditions
-        avgV   double = double.empty            % cartesian components of average nodal velocities
-        normV  double = double.empty            % norm of average nodal velocities vector
-        peclet double = double.empty            % Peclet number
-        alpha  double = double.empty            % stabilization coefficient alpha
-        beta   double = double.empty            % stabilization coefficient beta
     end
     
     %% Constructor method
@@ -72,6 +43,7 @@ classdef Element_Isogeometric < handle
         % Addison-Wesley, 1987.
         % -Martha, L.F., "Notas de Aula do Curso CIV 2118 - Metodo dos Elementos
         % Finitos", 1994.
+        % ### Same as Element_Isoparametric ###
         function TGNmtx(this)
             % Get parametric coordinates of Gauss points
             [ngp,~,gp] = this.gauss.quadrature(this.gderive_order);
@@ -117,6 +89,7 @@ classdef Element_Isogeometric < handle
         %------------------------------------------------------------------
         % Initialize convection properties: velocities, Peclet number, and
         % stabilization coefficients.
+        % ### Not implemented (same as Element_Isoparametric) ###
         function convProps(this)
             nen = this.shape.nen;
             dim = this.shape.dim;
@@ -145,7 +118,6 @@ classdef Element_Isogeometric < handle
         % Compute gradient matrix in a position of element domain given by
         % parametric coordinates.
         function B = BmtxElem(this,J2,surface,xi,eta)
-            
             % Surface properties
             p = surface.degreeXi;
             q = surface.degreeEta;
@@ -168,7 +140,7 @@ classdef Element_Isogeometric < handle
         %------------------------------------------------------------------
         % Compute Jacobian matrix in a position of element domain given by
         % parametric coordinates.
-        function J = JmtxDomainPaToPa(this)
+        function J = JmtxDomainParentToParametric(this)
             
             % Element knot spans
             xiSpan  = this.knotSpanXi;
@@ -182,7 +154,7 @@ classdef Element_Isogeometric < handle
         %------------------------------------------------------------------
         % Compute Jacobian matrix in a position of element domain given by
         % parametric coordinates.
-        function J = JmtxDomainPatoPhy(this,surface,xi,eta)
+        function J = JmtxDomain(this,surface,xi,eta)
             % Cartesian coordinates matrix
             X = this.shape.carCoord;
             
@@ -200,11 +172,19 @@ classdef Element_Isogeometric < handle
             % Jacobian matrix
             J = GradMpar * X;
         end
+
+        %------------------------------------------------------------------
+        % Compute Jacobian matrix in a position of element edge given by
+        % parametric coordinates.
+        function J = JmtxEdgeParentToParametric(~,Span)
+            % Jacobian matrix
+            J = [0.5 *(Span(2) - Span(1)), 0.0]; 
+        end
         
         %------------------------------------------------------------------
         % Compute Jacobian matrix in a position of element edge given by
         % parametric coordinates.
-        function J = JmtxEdgePatoPhy(this,edgLocIds,xi,p,knotVector,weights)
+        function J = JmtxEdge(this,edgLocIds,xi,p,knotVector,weights)
             % Cartesian coordinates matrix
             X = this.shape.carCoord(edgLocIds,:);
             
@@ -235,6 +215,7 @@ classdef Element_Isogeometric < handle
         
         %------------------------------------------------------------------
         % Assemble edge gather vector (stores local d.o.f.'s numbers).
+        % ### Same as Element_Isoparametric ###
         function gledge = gleEdgeVct(this,nedgen,edgLocIds)
             ndof = this.anm.ndof;
             gledge = zeros(nedgen*ndof,1);
@@ -277,10 +258,10 @@ classdef Element_Isogeometric < handle
                 eta = this.shape.parent2ParametricSpace(etaSpan,s);
             
                 % Jacobian matrix parent to parametric space
-                J1 = this.JmtxDomainPaToPa;
+                J1 = this.JmtxDomainParentToParametric;
                 
                 % Jacobian matrix parametric to physical space
-                J2 = this.JmtxDomainPatoPhy(surface,xi,eta);
+                J2 = this.JmtxDomain(surface,xi,eta);
                 
                 % Gradient matrix 
                 B = this.BmtxElem(J2,surface,xi,eta);
@@ -296,6 +277,7 @@ classdef Element_Isogeometric < handle
         %------------------------------------------------------------------
         % Numerical integration of stiffness matrix part accounting for the
         % convective term: [N]'[v]'[B]
+        % ### Not implemented (same as Element_Isoparametric) ###
         function K = stiffConvMtx(this)
             % Initialize element matrix
             ndof = this.anm.ndof;
@@ -318,7 +300,7 @@ classdef Element_Isogeometric < handle
                 N = this.shape.Nmtx(r,s);
                 
                 % Jacobian matrix
-                J = this.JmtxDomainPatoPhy(r,s);
+                J = this.JmtxDomain(r,s);
                 
                 % Gradient matrix 
                 B = this.BmtxElem(J,r,s);
@@ -332,6 +314,7 @@ classdef Element_Isogeometric < handle
         % Numerical integration of stiffness matrix part accounting for the
         % stabilization of convective term: b[B]'[V][B]
         % (steady-state analysis by SUPG method)
+        % ### Not implemented (same as Element_Isoparametric) ###
         function K = stiffStabMtx(this)
             % Initialize element matrix
             ndof = this.anm.ndof;
@@ -354,7 +337,7 @@ classdef Element_Isogeometric < handle
                 s = gp(2,i);
                 
                 % Jacobian matrix
-                J = this.JmtxDomainPatoPhy(r,s);
+                J = this.JmtxDomain(r,s);
                 
                 % Gradient matrix 
                 B = this.BmtxElem(J,r,s);
@@ -367,6 +350,7 @@ classdef Element_Isogeometric < handle
         %------------------------------------------------------------------
         % Numerical integration of stiffness matrix part accounting for the
         % radiative boundary conditions over edges: [N]'[N]h
+        % ### Not implemented (same as Element_Isoparametric) ###
         function K = stiffRadMtx(this)
             % Initialize element matrix
             ndof = this.anm.ndof;
@@ -403,7 +387,7 @@ classdef Element_Isogeometric < handle
                     N = this.shape.NmtxEdge(r);
                     
                     % Jacobian matrix
-                    J = this.JmtxEdgePatoPhy(edgLocIds,r);
+                    J = this.JmtxEdge(edgLocIds,r);
                     detJ = sqrt(J(1)*J(1) + J(2)*J(2));
                     
                     % Accumulate Gauss point contributions
@@ -420,6 +404,7 @@ classdef Element_Isogeometric < handle
         
         %------------------------------------------------------------------
         % Numerical integration of mass matrix: [N]'[N]m
+        % ### Not implemented (same as Element_Isoparametric) ###
         function M = massMtx(this)
             % Initialize element matrix
             ndof = this.anm.ndof;
@@ -442,7 +427,7 @@ classdef Element_Isogeometric < handle
                 N = this.shape.Nmtx(r,s);
                 
                 % Jacobian matrix
-                J = this.JmtxDomainPatoPhy(r,s);
+                J = this.JmtxDomain(r,s);
                                 
                 % Accumulate Gauss point contributions
                 M = M + w(i) * (N' * N) * m * det(J);
@@ -524,24 +509,25 @@ classdef Element_Isogeometric < handle
                     r = gp(i);
                     
                     % Element parametric coordinates
-                    xi  = this.shape.parent2ParametricSpace(Span,r);
+                    xi = this.shape.parent2ParametricSpace(Span,r);
             
                     % Edge d.o.f. shape functions matrix
                     N = this.shape.NmtxEdge(xi,degree,knotVector,weights);
                     
-                    % Jacobian 2
-                    J2 = 0.5 * (Span(2) - Span(1));
+                    % Jacobian parent to parametric space
+                    J1 = this.JmtxEdgeParentToParametric(Span);
+                    detJ1 = J1(1);
                     
-                    % Jacobian matrix
-                    J = this.JmtxEdgePatoPhy(edgLocIds,xi,degree,knotVector,weights);
-                    detJ = sqrt(J(1)*J(1) + J(2)*J(2));
+                    % Jacobian parametric to physical space
+                    J2 = this.JmtxEdge(edgLocIds,xi,degree,knotVector,weights);
+                    detJ2 = sqrt(J2(1)*J2(1) + J2(2)*J2(2));
                     
                     % Accumulate Gauss point contributions
                     m = 0;
                     for j = 1:nedgen
                         for k = 1:ndof
                             m = m + 1;
-                            Fedge(m) = Fedge(m) + w(i) * N(j) * p(k) * detJ * J2;
+                            Fedge(m) = Fedge(m) + w(i) * N(j) * p(k) * detJ1 * detJ2;
                         end
                     end
                 end
@@ -557,6 +543,7 @@ classdef Element_Isogeometric < handle
         %------------------------------------------------------------------
         % Numerical integration of equivalent nodal forcing vector from
         % internal domain source: [N]'Q
+        % ### Not implemented (same as Element_Isoparametric) ###
         function F = domainEquivForceVct(this)
             ndof = this.anm.ndof;
             nen  = this.shape.nen;
@@ -580,7 +567,7 @@ classdef Element_Isogeometric < handle
                 N = this.shape.Nmtx(r,s);
                 
                 % Jacobian matrix
-                J = this.JmtxDomainPatoPhy(r,s);
+                J = this.JmtxDomain(r,s);
                 detJ = det(J);
                 
                 % Accumulate Gauss point contributions
@@ -598,6 +585,7 @@ classdef Element_Isogeometric < handle
         % Numerical integration of nodal forcing vector accounting for the
         % stabilization of convective term: b[B]'[v]'Q
         % (steady-state analysis by SUPG method)
+        % ### Not implemented (same as Element_Isoparametric) ###
         function F = domainStabForceVct(this)
             % Initialize element forcing vector
             ndof = this.anm.ndof;
@@ -619,7 +607,7 @@ classdef Element_Isogeometric < handle
                 s = gp(2,i);
                 
                 % Jacobian matrix
-                J = this.JmtxDomainPatoPhy(r,s);
+                J = this.JmtxDomain(r,s);
                 
                 % Gradient matrix 
                 B = this.BmtxElem(J,r,s);
@@ -678,7 +666,7 @@ classdef Element_Isogeometric < handle
                 M = this.shape.Mmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
                 
                 % Gradient matrix 
-                J = this.JmtxDomainPatoPhy(surface,xi,eta);
+                J = this.JmtxDomain(surface,xi,eta);
                 B = this.BmtxElem(J,surface,xi,eta);
                 
                 % Gauss point stress components and cartesian coordinates

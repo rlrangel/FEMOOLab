@@ -12,8 +12,8 @@ classdef Anm_PlaneStress < fem.Anm
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anm_PlaneStress()
-            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.PLANE_STRESS,2,3,[1 2]);
+        function this = Anm_PlaneStress(meth)
+            this = this@fem.Anm(fem.Anm.STRUCTURAL,fem.Anm.PLANE_STRESS,meth,2,3,[1 2]);
             
             % Types of response
             this.DISPL_X  = true;  % Displacement X
@@ -86,9 +86,9 @@ classdef Anm_PlaneStress < fem.Anm
             
             for i = 1:mdl.nel
                 % Get element matrices
-                if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                if mdl.anm.meth == mdl.anm.ISOPARAMETRIC
                     Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
-                elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
                     surface = mdl.surfaces(mdl.elems(i).surfId);
                     Kdiff = mdl.elems(i).stiffDiffMtx(surface);
                 end
@@ -153,9 +153,9 @@ classdef Anm_PlaneStress < fem.Anm
                 % Compute stress components and cartesian coord at Gauss points
                 U = r.U(mdl.elems(i).gle);
                 
-                if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                if mdl.anm.meth == mdl.anm.ISOPARAMETRIC
                     [ngp,str,gpc] = mdl.elems(i).derivedVar(U);
-                elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
                     surface = mdl.surfaces(mdl.elems(i).surfId);
                     [ngp,str,gpc] = mdl.elems(i).derivedVar(U,surface);
                 end
@@ -208,11 +208,11 @@ classdef Anm_PlaneStress < fem.Anm
                 U_x = mdl.res.U(gle_x);
                 U_y = mdl.res.U(gle_y);
                 
-                if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+                if mdl.anm.meth == mdl.anm.ISOPARAMETRIC
                     res.dx_elemextrap(:,i) = U_x;
                     res.dy_elemextrap(:,i) = U_y;
                     
-                elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
                     surfId = mdl.elems(i).surfId;
                     surface = mdl.surfaces(surfId);
                     xiSpan = mdl.elems(i).knotSpanXi;
@@ -292,7 +292,7 @@ classdef Anm_PlaneStress < fem.Anm
         
         %------------------------------------------------------------------
         function ePointsCoordAndConec(~,mdl)
-            if mdl.anme.type == mdl.anme.ISOPARAMETRIC
+            if mdl.anm.meth == mdl.anm.ISOPARAMETRIC
                 for i = 1:mdl.nel
                     mdl.elems(i).shape.setExtNodesCoord();
                 end
@@ -315,7 +315,7 @@ classdef Anm_PlaneStress < fem.Anm
                     end
                 end
                 
-            elseif mdl.anme.type == mdl.anme.ISOGEOMETRIC
+            elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
                 GlobalExtNodes = [];
                 for i = 1:mdl.nel
                     % Element knot spans

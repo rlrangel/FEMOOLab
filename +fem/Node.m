@@ -23,7 +23,6 @@ classdef Node < handle
         % General properties
         id    int32                     = int32.empty;                     % identification number
         coord double                    = double.empty;                    % vector of coordinates in global system [X Y Z]
-        elems fem.Element_Isoparametric = fem.Element_Isoparametric.empty; % vector of objects of Element_Isoparametric class (incident elements)
         
         % Boundary conditions
         fixdDOF   logical = logical.empty;      % vector of flags for fixed d.o.f.'s (indicate essential boundary conditions)
