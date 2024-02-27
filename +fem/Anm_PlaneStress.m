@@ -88,7 +88,7 @@ classdef Anm_PlaneStress < fem.Anm
                 % Get element matrices
                 if mdl.anm.meth == mdl.anm.ISOPARAMETRIC
                     Kdiff = mdl.elems(i).stiffDiffMtx(); % diffusive term
-                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
+                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC || mdl.anm.meth == mdl.anm.ISOGEOMETRIC_BEZIER_EXTRACTION
                     surface = mdl.surfaces(mdl.elems(i).surfId);
                     Kdiff = mdl.elems(i).stiffDiffMtx(surface);
                 end
@@ -155,7 +155,7 @@ classdef Anm_PlaneStress < fem.Anm
                 
                 if mdl.anm.meth == mdl.anm.ISOPARAMETRIC
                     [ngp,str,gpc] = mdl.elems(i).derivedVar(U);
-                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
+                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC || mdl.anm.meth == mdl.anm.ISOGEOMETRIC_BEZIER_EXTRACTION
                     surface = mdl.surfaces(mdl.elems(i).surfId);
                     [ngp,str,gpc] = mdl.elems(i).derivedVar(U,surface);
                 end
@@ -231,8 +231,8 @@ classdef Anm_PlaneStress < fem.Anm
                         s = mdl.elems(i).shape.parCoord(j,2);
 
                         % Extrapolation points parametric coordinates
-                        xi  = mdl.elems(i).shape.parent2ParametricSpace(xiSpan,r);
-                        eta = mdl.elems(i).shape.parent2ParametricSpace(etaSpan,s);
+                        xi  = mdl.elems(i).shape.parentToParametricSpace(xiSpan,r);
+                        eta = mdl.elems(i).shape.parentToParametricSpace(etaSpan,s);
 
                         % Basis functions
                         N = mdl.elems(i).shape.Nmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
@@ -240,6 +240,31 @@ classdef Anm_PlaneStress < fem.Anm
                         res.dx_elemextrap(j,i) = N * U_x;
                         res.dy_elemextrap(j,i) = N * U_y;
                     end
+                    
+                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC_BEZIER_EXTRACTION
+                    surfId = mdl.elems(i).surfId;
+                    surface = mdl.surfaces(surfId);
+                    extractionOperator = mdl.elems(i).extractionOperator;
+
+                    % Surface properties
+                    p = surface.degreeXi;
+                    q = surface.degreeEta;
+
+                    for j = 1:nep
+                        % Extrapolation points parent coordinates
+                        r = mdl.elems(i).shape.parCoord(j,1);
+                        s = mdl.elems(i).shape.parCoord(j,2);
+
+                        % Basis functions
+                        N = mdl.elems(i).shape.Nmtx(r,s,p,q);
+                        
+                        N = extractionOperator * N';
+                        N = N';
+
+                        res.dx_elemextrap(j,i) = N * U_x;
+                        res.dy_elemextrap(j,i) = N * U_y;
+                    end
+                    
                 end
 
                 res.sxx_elemextrap(1:nep,i)  = TGN * res.sxx_gp(1:ngp,i);
@@ -291,7 +316,7 @@ classdef Anm_PlaneStress < fem.Anm
         end
         
         %------------------------------------------------------------------
-        function ePointsCoordAndConec(~,mdl)
+        function extPointsCoords(~,mdl)
             if mdl.anm.meth == mdl.anm.ISOPARAMETRIC
                 for i = 1:mdl.nel
                     mdl.elems(i).shape.setExtNodesCoord();
@@ -340,6 +365,43 @@ classdef Anm_PlaneStress < fem.Anm
                     mdl.extNodes(i).coord = GlobalExtNodes(i,:);
                     mdl.extNodes(i).coord(1,3) = 0;
                     mdl.extNodes(i).elems = fem.Element_Isogeometric().empty;
+                end
+                
+                for i = 1:mdl.nel
+                    extCarCoord = mdl.elems(i).shape.extCarCoord;
+                    [~, extNodeIds] = ismembertol(extCarCoord,GlobalExtNodes,1e-5,'ByRows',true);
+                    mdl.elems(i).shape.setccwExtNodeIds(extNodeIds);
+                    
+                    % Set extrapolation nodes incidence
+                    for j = 1:mdl.elems(i).shape.nep
+                        mdl.extNodes(extNodeIds(j)).elems(end+1) = mdl.elems(i);
+                        mdl.elems(i).shape.extNodes(j) = mdl.extNodes(extNodeIds(j));
+                    end
+                end
+                
+            elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC_BEZIER_EXTRACTION
+                GlobalExtNodes = [];
+                for i = 1:mdl.nel
+                    surfId = mdl.elems(i).surfId;
+                    surface = mdl.surfaces(surfId);
+                    
+                    extractionOperator = mdl.elems(i).extractionOperator;
+                    mdl.elems(i).shape.setExtNodesCoord(extractionOperator,surface);
+
+                    extCarCoord = mdl.elems(i).shape.extCarCoord;
+                    GlobalExtNodes = uniquetol([GlobalExtNodes; extCarCoord],1e-5,'ByRows',true);
+                end
+                mdl.nep = size(GlobalExtNodes,1);
+                
+                %extNodes(mdl.nep,1) = fem.ExtNode(2*ones(mdl.nep,1));
+                extNodes(mdl.nep,1) = fem.ExtNode();
+
+                mdl.extNodes = extNodes;
+                for i = 1:mdl.nep
+                    mdl.extNodes(i).id = i;
+                    mdl.extNodes(i).coord = GlobalExtNodes(i,:);
+                    mdl.extNodes(i).coord(1,3) = 0;
+                    mdl.extNodes(i).elems = fem.Element_Isogeometric_Bezier_Extraction().empty;
                 end
                 
                 for i = 1:mdl.nel

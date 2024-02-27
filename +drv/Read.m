@@ -100,6 +100,8 @@ classdef Read < handle
                         status = this.elementQuad8(fid,mdl,gauss_quad,thickness,intgrorder);
                     case '%ELEMENT.ISOGEOMETRIC'
                         status = this.elementIsogeometric(fid,mdl,gauss_quad,thickness,intgrorder);
+                    case '%ELEMENT.ISOGEOMETRIC.BEZIER_EXTRACTION'
+                        status = this.elementIsogeometricBezierExtraction(fid,mdl,gauss_quad,thickness,intgrorder);
                     case '%LOAD.CASE.NODAL.DISPLACEMENT'
                         status = this.nodePrescDispl(fid,mdl);
                     case '%LOAD.CASE.NODAL.INITIAL.DISPLACEMENT' % This is not on NF documentation
@@ -153,9 +155,17 @@ classdef Read < handle
             elseif (strcmp(string,'''PLANE_STRESS ISOGEOMETRIC''') || strcmp(string,'''plane_stress ISOGEOMETRIC'''))
                 sim.mdl.anm = fem.Anm_PlaneStress(fem.Anm.ISOGEOMETRIC);
                 sim.plot = drv.Plot_StructInPlane();
-            elseif (strcmp(string,'''PLANE_STRAIN''') || strcmp(string,'''plane_strain'''))
-                sim.mdl.anm = fem.Anm_PlaneStrain();
+            elseif (strcmp(string,'''PLANE_STRESS ISOGEOMETRIC BEZIER_EXTRACTION''') || strcmp(string,'''plane_stress ISOGEOMETRIC BEZIER_EXTRACTION'''))
+                sim.mdl.anm = fem.Anm_PlaneStress(fem.Anm.ISOGEOMETRIC_BEZIER_EXTRACTION);
                 sim.plot = drv.Plot_StructInPlane();
+                
+            elseif (strcmp(string,'''PLANE_STRAIN ISOPARAMETRIC''') || strcmp(string,'''plane_strain ISOPARAMETRIC'''))
+                sim.mdl.anm = fem.Anm_PlaneStrain(fem.Anm.ISOPARAMETRIC);
+                sim.plot = drv.Plot_StructInPlane();
+            elseif (strcmp(string,'''PLANE_STRAIN ISOGEOMETRIC''') || strcmp(string,'''plane_strain ISOGEOMETRIC'''))
+                sim.mdl.anm = fem.Anm_PlaneStrain(fem.Anm.ISOGEOMETRIC);
+                sim.plot = drv.Plot_StructInPlane();
+                
             elseif (strcmp(string,'''AXISYM_STRESS''') || strcmp(string,'''axisym_stress'''))
                 sim.mdl.anm = fem.Anm_AxisymStress();
                 sim.plot = drv.Plot_StructInPlane();
@@ -321,6 +331,8 @@ classdef Read < handle
                 nodes(n,1) = fem.Node_Isoparametric();
             elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
                 nodes(n,1) = fem.Node_Isogeometric();
+            elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC_BEZIER_EXTRACTION
+                nodes(n,1) = fem.Node_Isogeometric_Bezier_Extraction();
             else
                 fprintf('Invalid analysis method %d\n',mdl.anm.meth);
                 status = 0;
@@ -773,22 +785,39 @@ classdef Read < handle
                 degreeEta = mdl.surfaces(surfId).degreeEta;
                 
                 % Number of control points in xi and eta directions
-                nCPXi = length(mdl.surfaces(surfId).knotVectorXi) - degreeXi - 1;
-                nCPEta = length(mdl.surfaces(surfId).knotVectorEta) - degreeEta - 1;
-                
+                if mdl.anm.meth == mdl.anm.ISOGEOMETRIC
+                    nCPXi = length(mdl.surfaces(surfId).knotVectorXi) - degreeXi - 1;
+                    nCPEta = length(mdl.surfaces(surfId).knotVectorEta) - degreeEta - 1;
+                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC_BEZIER_EXTRACTION
+                    [sizeCtrlNet,~] = fscanf(fid,'%d',1);
+                end
+
                 % Store control points ID's in ctrlNet matrix
-                ctrlNet = zeros(nCPEta,nCPXi);
-                for j = 1:nCPEta
-                    [ctrlPoints,~] = fscanf(fid,'%d',nCPXi);
-                    ctrlNet(j,:) = ctrlPoints';
+                if mdl.anm.meth == mdl.anm.ISOGEOMETRIC
+                    ctrlNet = zeros(nCPEta,nCPXi);
+                    for j = 1:nCPEta
+                        [ctrlPoints,~] = fscanf(fid,'%d',nCPXi);
+                        ctrlNet(j,:) = ctrlPoints';
+                    end
+                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC_BEZIER_EXTRACTION
+                    ctrlNet = zeros(sizeCtrlNet,1);
+                    [ctrlPoints,~] = fscanf(fid,'%d',sizeCtrlNet);
+                    ctrlNet(:) = ctrlPoints;
                 end
                 mdl.surfaces(surfId).ctrlNet = ctrlNet;
                 
                 % Store weights
-                ctrlNet = reshape(ctrlNet',[],1); % convert matrix to column vector
-                weights = zeros(nCPXi*nCPEta,1);
-                for k = 1:nCPXi*nCPEta
-                    weights(k) = mdl.nodes(ctrlNet(k)).weight;
+                if mdl.anm.meth == mdl.anm.ISOGEOMETRIC
+                    ctrlNet = reshape(ctrlNet',[],1); % convert matrix to column vector
+                    weights = zeros(nCPXi*nCPEta,1);
+                    for k = 1:nCPXi*nCPEta
+                        weights(k) = mdl.nodes(ctrlNet(k)).weight;
+                    end
+                elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC_BEZIER_EXTRACTION
+                    weights = zeros(sizeCtrlNet,1);
+                    for k = 1:sizeCtrlNet
+                        weights(k) = mdl.nodes(ctrlNet(k)).weight;
+                    end
                 end
                 mdl.surfaces(surfId).weights = weights;
             end
@@ -811,6 +840,8 @@ classdef Read < handle
                 elems(n,1) = fem.Element_Isoparametric();
             elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC
                 elems(n,1) = fem.Element_Isogeometric();
+            elseif mdl.anm.meth == mdl.anm.ISOGEOMETRIC_BEZIER_EXTRACTION
+                elems(n,1) = fem.Element_Isogeometric_Bezier_Extraction();
             else
                 fprintf('Invalid analysis method %d\n',mdl.anm.meth);
                 status = 0;
@@ -1170,6 +1201,111 @@ classdef Read < handle
                     mdl.elems(id).surfId = surfId;
                     mdl.elems(id).knotSpanXi = xiSpan';
                     mdl.elems(id).knotSpanEta = etaSpan';
+
+                    % Set control points incidence
+                    for l = 1:ncp
+                        mdl.nodes(connec(l)).elems(end+1) = mdl.elems(id);
+                    end
+                    
+                    % Add elements id's on vector elems
+                    elems = sort([elems; id]);
+                end
+                
+                % Store elements id's in surface
+                mdl.surfaces(surfId).elems = elems;
+            end
+        end
+        
+        %------------------------------------------------------------------
+        function status = elementIsogeometricBezierExtraction(this,fid,mdl,gauss,thickness,intgrorder)
+            %                          CTRL_PT_8
+            %       CTRL_PT_7+             +             +CTRL_PT_9
+            %                       ---------------
+            %                      |               |
+            %                      |   CTRL_PT_5   |
+            %       CTRL_PT_4+     |       +       |     +CTRL_PT_6
+            %                      |               |
+            %                      |     ISOGe     |
+            %                       ---------------
+            %       CTRL_PT_1+             +             +CTRL_PT_3
+            %                          CTRL_PT_2
+            status = 1;
+            if (isempty(mdl.nodes) || isempty(mdl.materials))
+                fprintf('Node coordinates and materials must be provided before elements!\n');
+                status = 0;
+                return;
+            elseif (isempty(thickness) || isempty(intgrorder))
+                fprintf('Thicknesses and integration orders must be provided before elements!\n');
+                status = 0;
+                return;
+            end
+            
+            for i = 1:mdl.nsurf
+                % Surface ID
+                surfId = fscanf(fid,'%d',1);
+                if (~this.chkInt(surfId,mdl.nel,'surface id'))
+                    status = 0;
+                    return;
+                end
+
+                % Number of elements in Surface
+                n = fscanf(fid,'%d',1);
+                if (~this.chkInt(n,mdl.nel,'number of elements Isogeometric'))
+                    status = 0;
+                    return;
+                end
+                
+                elems = [];
+                for j = 1:n
+                    % Element ID
+                    id = fscanf(fid,'%d',1);
+                    if (~this.chkInt(id,mdl.nel,'element Isogeometric ID'))
+                        status = 0;
+                        return;
+                    end
+
+                    % Element properties:
+                    % Material ID, Thickness ID, Integration order ID
+                    [prop,count1] = fscanf(fid,'%d',3);
+
+                    % Number of associated control points
+                    [ncp,~] = fscanf(fid,'%d',1);
+
+                    % Connectivity
+                    [connec,count2] = fscanf(fid,'%d',ncp);
+                    
+                    % Extraction operator
+                    nRows = ncp;
+                    nColumns = (mdl.surfaces(surfId).degreeXi + 1)*(mdl.surfaces(surfId).degreeEta + 1);
+                    extractionOperator = zeros(nRows,nColumns);
+                    for k = 1:nRows
+                        [extractionOperatorRow,~] = fscanf(fid,'%f',nColumns);
+                        extractionOperator(k,:) = extractionOperatorRow;
+                    end
+
+                    % Check properties
+                    p = [prop; connec];
+                    count = count1 + count2;
+                    if (~this.chkElemProp(mdl,id,p,thickness,intgrorder,count,3+ncp))
+                        status = 0;
+                        return;
+                    end
+
+                    % Create shape object:
+                    % Node incidence starts in the positive direction of xi
+                    % and goes in the positive direction of eta
+                    shape = fem.Shape_Isogeometric_Bezier_Extraction(mdl.nodes(connec(1:ncp)));
+
+                    % Store properties
+                    mdl.elems(id).anm   = mdl.anm;
+                    mdl.elems(id).mat   = mdl.materials(p(1));
+                    mdl.elems(id).thk   = thickness(p(2));
+                    mdl.elems(id).shape = shape;
+                    mdl.elems(id).gauss = gauss;
+                    mdl.elems(id).gsystem_order = intgrorder(p(3),1);
+                    mdl.elems(id).gderive_order = intgrorder(p(3),2);
+                    mdl.elems(id).surfId = surfId;
+                    mdl.elems(id).extractionOperator = extractionOperator;
 
                     % Set control points incidence
                     for l = 1:ncp
@@ -1894,6 +2030,7 @@ classdef Read < handle
             elseif (length(nodesIDs) ~= length(unique(nodesIDs)))
                 fprintf('Invalid properties of element %d\n',id);
                 fprintf('Repeated node ID!\n');
+                status = 1; % Added this line
             else
                 status = 1;
             end

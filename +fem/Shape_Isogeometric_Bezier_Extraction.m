@@ -20,11 +20,11 @@
 %
 %% Class definition
 %
-classdef Shape_Isogeometric < fem.Shape
+classdef Shape_Isogeometric_Bezier_Extraction < fem.Shape
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Shape_Isogeometric(nodes)
+        function this = Shape_Isogeometric_Bezier_Extraction(nodes)
             this = this@fem.Shape(fem.Shape.ISOGe,2,length(nodes),8);
             
             if (nargin > 0)
@@ -55,31 +55,39 @@ classdef Shape_Isogeometric < fem.Shape
     %% Public methods
     % Implementation of the abstract methods declared in super-class Shape
     methods
-        function setExtNodesCoord(this,xiSpan,etaSpan,surface)
+        function setExtNodesCoord(this,Ce,surface)
             for i = 1:this.nep
                 % Extrapolation points parent coordinates
                 r = this.parCoord(i,1);
                 s = this.parCoord(i,2);
-
-                % Extrapolation points parametric coordinates
-                xi  = this.parentToParametricSpace(xiSpan,r);
-                eta = this.parentToParametricSpace(etaSpan,s);
                 
-                % Surface properties
+                % Polynomial orders
                 p = surface.degreeXi;
                 q = surface.degreeEta;
-                knotVectorXi = surface.knotVectorXi;
-                knotVectorEta = surface.knotVectorEta;
-                weights = surface.weights;
+                
+                % Bernstein polynomials
+                Bernstein = this.Nmtx(r,s,p,q);
+                Bernstein = Bernstein';
+                
+                % Weight vector
+                ctrlpts = this.nodes;
+                weights = arrayfun(@(x) x.weight, ctrlpts);
+
+                % Diagonal weight matrix
+                W = diag(weights);
+
+                % Weight function
+                weightsb = Ce' * weights;
+                Wfunc = weightsb' * Bernstein;
                 
                 % Basis functions
-                R = this.Nmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
+                R = 1/Wfunc * W * Ce * Bernstein;
                 
                 % Cartesian coordinates
                 X = this.carCoord;
                 
                 % Extrapolation points cartesian coordinates
-                this.extCarCoord(i,:) = R * X;
+                this.extCarCoord(i,:) = R' * X;
             end
         end
         
@@ -95,22 +103,32 @@ classdef Shape_Isogeometric < fem.Shape
         % parametric coordinates.
         % Since this is an isoparametric element shape it returns the
         % evaluation of d.o.f. shape functions. 
-        function M = Mmtx(this,xi,eta,p,q,knotVectorXi,knotVectorEta,weights)
-            M = this.Nmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
+        function M = Mmtx(this,xi,eta,p,q)
+            M = this.Nmtx(xi,eta,p,q);
         end
         
         %------------------------------------------------------------------
         % Evaluate matrix of d.o.f. shape functions at a given position in
         % parametric coordinates.
-        function N = Nmtx(~,xi,eta,p,q,knotVectorXi,knotVectorEta,weights)
-            [N, ~, ~] = NURBS2DBasisDers([xi;eta],p,q,knotVectorXi,knotVectorEta,weights');
+        function N = Nmtx(this,xi,eta,p,q)
+            N = zeros(1, (p+1) * (q+1));
+            
+            for j=1:q+1
+                for i=1:p+1
+                    N((p+1)*(j-1)+i)= this.bernstein(p,i,xi) * this.bernstein(q,j,eta);
+                end
+            end
+            
         end
         
         %------------------------------------------------------------------
         % Evaluate matrix of edge d.o.f. shape functions at a given
         % position in parametric coordinates.
-        function N = NmtxEdge(~,xi,p,knotVector,weights)
-            [N, ~] = NURBS1DBasisDers(xi,p,knotVector,weights);
+        function N = NmtxEdge(this,xi,p)
+            N = zeros((p+1),1);
+            for i = 1:p+1
+                N(i) = this.bernstein(p,i,xi);
+            end
         end
         
         %------------------------------------------------------------------
@@ -118,23 +136,52 @@ classdef Shape_Isogeometric < fem.Shape
         % w.r.t. parametric coordinates at a given position.
         % Since this is an isoparametric element shape it returns the
         % evaluation of displacement shape functions derivatives. 
-        function GradMpar = gradMmtx(this,xi,eta,p,q,knotVectorXi,knotVectorEta,weights)
-            GradMpar = this.gradNmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
+        function GradMpar = gradMmtx(this,xi,eta,p,q)
+            GradMpar = this.gradNmtx(xi,eta,p,q);
         end
         
         %------------------------------------------------------------------
         % Evaluate matrix of d.o.f. shape functions derivatives
         % w.r.t. parametric coordinates at a given position.
-        function GradNpar = gradNmtx(~,xi,eta,p,q,knotVectorXi,knotVectorEta,weights)
-            [~, dNdxi, dNdeta] = NURBS2DBasisDers([xi;eta],p,q,knotVectorXi,knotVectorEta,weights');
+        function GradNpar = gradNmtx(this,xi,eta,p,q)
+            dNdxi = zeros(1, (p+1) * (q+1));
+            dNdeta = zeros(1, (p+1) * (q+1));
+            
+            for j=1:q+1
+                for i=1:p+1
+                    dNdxi((p+1)*(j-1)+i) = 0.5 * p * (this.bernstein(p-1,i-1,xi) - this.bernstein(p- 1,i,xi)) * this.bernstein(q,j,eta);
+                    dNdeta((p+1)*(j-1)+i) = this.bernstein(p,i,xi) * 0.5 * q * (this.bernstein(q-1,j- 1,eta) - this.bernstein(q-1,j,eta));
+                end
+            end
+            
             GradNpar = [dNdxi; dNdeta];
+        end
+        
+        function B = bernstein(this,p,a,xi)
+            if p==0 && a==1
+                B=1;
+            elseif p==0 && a~=1
+                B=0;
+            else
+                if a<1 || a>p+1
+                    B=0;
+                else
+                    B1=this.bernstein(p-1,a,xi); 
+                    B2=this.bernstein(p-1,a-1,xi); 
+                    B=0.5*(1-xi)*B1+0.5*(1+xi)*B2;
+                end
+            end
+            
         end
         
         %------------------------------------------------------------------
         % Evaluate matrix of edge geometry shape functions derivatives
         % w.r.t. parametric coordinates at a given position.
-        function GradMpar = gradMmtxEdge(~,xi,p,knotVector,weights)
-            [~, dNdxi] = NURBS1DBasisDers(xi,p,knotVector,weights);
+        function GradMpar = gradMmtxEdge(this,xi,p)
+            dNdxi = zeros((p+1),1);
+            for i = 1:p+1
+                dNdxi(i) = 0.5 * p * (this.bernstein(p-1,i-1,xi) - this.bernstein(p- 1,i,xi));
+            end
             GradMpar = dNdxi;
         end
         
@@ -205,12 +252,10 @@ classdef Shape_Isogeometric < fem.Shape
             end
             valid = true;
         end
-
+    
         %------------------------------------------------------------------
-        % Transformation of coordinates from the parent domain to the 
-        % parametric domain.
-        function xi = parentToParametricSpace(~,range,pt)
-            xi = 0.5 * ((range(2) - range(1)) * pt + range(2) + range(1)); 
+        function xi = parent2ParametricSpace(~,range,pt)
+            xi = 0.5 * ( (range(2) - range(1)) * pt + range(2) + range(1)); 
         end
     end
 end

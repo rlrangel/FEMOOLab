@@ -112,5 +112,6 @@ classdef Shape < handle
         % of this node is returned in the parameter mid. Otherwise, the
         % returned value of mid is zero.
         [valid,n1,n2,mid] = edgeLocalIds(this,corner1,corner2);
+
     end
 end

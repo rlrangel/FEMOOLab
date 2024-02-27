@@ -14,19 +14,18 @@
 %
 %% Class definition
 %
-classdef Element_Isogeometric < fem.Element
+classdef Element_Isogeometric_Bezier_Extraction < fem.Element
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % General
         surfId      int32  = int32.empty;       % surface identification number
-        knotSpanXi  double = double.empty;      % knot span in xi direction
-        knotSpanEta double = double.empty;      % knot span in eta direction
+        extractionOperator double = double.empty;      % extraction operator
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Element_Isogeometric()
+        function this = Element_Isogeometric_Bezier_Extraction()
             return;
         end
     end
@@ -118,69 +117,87 @@ classdef Element_Isogeometric < fem.Element
         % Compute gradient matrix in a position of element domain given by
         % parametric coordinates.
         function B = BmtxElem(this,J2,Rders,xi,eta)
-            % Matrix of d.o.f. shape functions derivatives w.r.t.
-            % cartesian coordinates
+            % Matrix of d.o.f. basis functions derivatives w.r.t.
             GradNcar = J2 \ Rders;
-            
+
             % Gradient matrix
             B = this.anm.Bmtx(this,GradNcar,xi,eta);
         end
 
         %------------------------------------------------------------------
-        % Compute Jacobian matrix associated with the mapping from the 
-        % parent domain to the parametric domain.
-        function J1 = JmtxDomainParentToParametric(this)
-            % Element knot spans
-            xiSpan  = this.knotSpanXi;
-            etaSpan = this.knotSpanEta;
-            
-            % Jacobian matrix
-            J1 = [0.5*(xiSpan(2) - xiSpan(1)), 0.0; 
-                 0.0, 0.5*(etaSpan(2) - etaSpan(1))];
-        end
-
-        %------------------------------------------------------------------
-        % Compute Jacobian matrix associated with the mapping from the
-        % parametric domain to the physical domain in a position given by
+        % Compute Jacobian matrix in a position of element domain given by
         % parametric coordinates.
-        function [J2,Rders] = JmtxDomain(this,surface,xi,eta)
-            % Surface properties
-            p = surface.degreeXi;
-            q = surface.degreeEta;
-            knotVectorXi = surface.knotVectorXi;
-            knotVectorEta = surface.knotVectorEta;
-            weights = surface.weights;
-            
+        function [J,Rders] = JmtxDomain(this,p,q,xi,eta)
+            % Weight vector
+            ctrlpts = this.shape.nodes;
+            weights = arrayfun(@(x) x.weight, ctrlpts);
+
+            % Diagonal weight matrix
+            W = diag(weights);
+
+            % Bernstein polynomials
+            Bernstein = this.shape.Mmtx(xi,eta,p,q);
+            Bernstein = Bernstein';
+
+            % Matrix of Bernstein polynomials derivatives
+            Bernsteinders = this.shape.gradMmtx(xi,eta,p,q);
+            BernsteinderXi = Bernsteinders(1,:)';
+            BernsteinderEta = Bernsteinders(2,:)';
+
+            % Extraction operator
+            Ce = this.extractionOperator;
+
+            % Weight function
+            weightsb = Ce' * weights;
+            Wfunc = weightsb' * Bernstein;
+
+            % Weight function derivatives
+            WfuncderXi = weightsb' * BernsteinderXi;
+            WfuncderEta = weightsb' * BernsteinderEta;
+
             % Matrix of basis functions derivatives
-            Rders = this.shape.gradMmtx(xi,eta,p,q,knotVectorXi,...
-                knotVectorEta,weights);
+            component1 = 1/Wfunc * BernsteinderXi - ...
+                WfuncderXi * Bernstein / Wfunc^2;
+            RderXi = W * Ce * component1;
+
+            component2 = 1/Wfunc * BernsteinderEta - ...
+                WfuncderEta * Bernstein / Wfunc^2;
+            RderEta = W * Ce * component2;
+
+            Rders = [RderXi'; RderEta'];
             
-            % Cartesian coordinates matrix
+            % Cartesian coordinates
             X = this.shape.carCoord;
             
             % Jacobian matrix
-            J2 = Rders * X;
-        end
-
-        %------------------------------------------------------------------
-        % Compute Jacobian matrix associated with the 1D mapping from the 
-        % parent domain to the parametric domain.
-        function J1 = JmtxEdgeParentToParametric(~,Span)
-            % Jacobian matrix
-            J1 = [0.5 *(Span(2) - Span(1)), 0.0]; 
+            J = Rders * X;
         end
         
         %------------------------------------------------------------------
-        % Compute Jacobian matrix associated with the 1D mapping from the
-        % parametric domain to the physical domain in a position given by a
-        % parametric coordinate.
-        function J2 = JmtxEdge(this,edgLocIds,p,knotVector,weights,xi)
-            % Basis functions derivative
-            Nder = this.shape.gradMmtxEdge(xi,p,knotVector,weights);
+        % Compute Jacobian matrix in a position of element edge given by
+        % parametric coordinates.
+        function J2 = JmtxEdge(this,edgLocIds,p,q,direc,xi,eta)
+            % Matrix of Bernstein polynomials derivatives
+            Bernsteinders = this.shape.gradMmtx(xi,eta,p,q);
+            BernsteinderXi = Bernsteinders(1,:)';
+            BernsteinderEta = Bernsteinders(2,:)';
+
+            % Extraction operator
+            Ce = this.extractionOperator;
+
+            % Basis functions derivatives;
+            NderXi = Ce * BernsteinderXi;
+            NderEta = Ce * BernsteinderEta;
+            
+            if direc == "xi"
+                Nder = NderXi(edgLocIds)';
+            elseif direc == "eta"
+                Nder = NderEta(edgLocIds)';
+            end
             
             % Cartesian coordinates matrix
             X = this.shape.carCoord(edgLocIds,:);
-            
+       
             % Jacobian matrix
             J2 = Nder * X;
         end
@@ -229,37 +246,30 @@ classdef Element_Isogeometric < fem.Element
             % Material constitutive matrix
             C = this.anm.Cmtx(this);
             
+            % Polynomial orders
+            p = surface.degreeXi;
+            q = surface.degreeEta;
+            
             % Gauss points and weights
             [ngp,w,gp] = this.gauss.quadrature(this.gsystem_order);
             
             % Loop over Gauss integration points
             for i = 1:ngp
                 % Parent coordinates
-                r = gp(1,i);
-                s = gp(2,i);
-                
-                % Element knot spans
-                xiSpan  = this.knotSpanXi;
-                etaSpan = this.knotSpanEta;
-                
-                % Element parametric coordinates
-                xi  = this.shape.parentToParametricSpace(xiSpan,r);
-                eta = this.shape.parentToParametricSpace(etaSpan,s);
-            
-                % Jacobian matrix parent to parametric space
-                J1 = this.JmtxDomainParentToParametric;
-                
-                % Jacobian matrix parametric to physical space
-                [J2,Rders] = this.JmtxDomain(surface,xi,eta);
+                xi = gp(1,i);
+                eta = gp(2,i);
+
+                % Jacobian matrix
+                [J,Rders] = this.JmtxDomain(p,q,xi,eta);
                 
                 % Gradient matrix 
-                B = this.BmtxElem(J2,Rders,xi,eta);
+                B = this.BmtxElem(J,Rders,xi,eta);
                 
                 % Rigidity coefficient at integration point
                 h = this.anm.rigidityCoeff(this,xi,eta);
                 
                 % Accumulate Gauss point contributions
-                K = K + w(i) * B' * C * B * h * det(J1) * det(J2);
+                K = K + w(i) * B' * C * B * h * det(J);
             end
         end
         
@@ -456,99 +466,86 @@ classdef Element_Isogeometric < fem.Element
                 
                 % Gauss points and weights for integration on edge
                 [ngp,w,gp] = this.gauss.lineQuadrature(this.gsystem_order);
-                
-                % Knot span, degree and knot vector
-                if direc == "xi"
-                    Span = this.knotSpanXi;
-                    degree = surface.degreeXi;
-                    knotVector = surface.knotVectorXi;
-                elseif direc == "eta"
-                    Span = this.knotSpanEta;
-                    degree = surface.degreeEta;
-                    knotVector = surface.knotVectorEta;
-                else
-                    return
-                end
-                
-                % Weights along the curve
-                if direc == "xi"
-                    if edgLocIds(1) == 1
-                        ctrlptsIds = surface.ctrlNet(1,:);
-                    else
-                        ctrlptsIds = surface.ctrlNet(end,:);
-                    end
                     
-                elseif direc == "eta"
-                    if edgLocIds(1) == 1
-                        ctrlptsIds = surface.ctrlNet(:,1);
-                    else
-                        ctrlptsIds = surface.ctrlNet(:,end);
-                    end
-                    
-                else
-                    return
-                end
-                    
-                ctrlpts = mdl.nodes(ctrlptsIds);
-                weights = arrayfun(@(x) x.weight, ctrlpts);
-            
                 % Loop over edge Gauss integration points
                 for i = 1:ngp
                     % Parent coordinates
                     r = gp(i);
+                    if direc == "xi"
+                        xi = r;
+                        if edgLocIds(1) == 1
+                            eta = -0.99999;
+                        else
+                            eta = 0.99999;
+                        end
+
+                    elseif direc == "eta"
+                        eta = r;
+                        if edgLocIds(1) == 1
+                            xi = -0.99999;
+                        else
+                            xi = 0.99999;
+                        end
+
+                    else
+                        return
+                    end
+                   
+                   % Edge d.o.f. shape functions matrix
+                   % Bernstein polynomials
+                    Bernstein = this.shape.Mmtx(xi,eta,surface.degreeXi,surface.degreeEta);
+                    Bernstein = Bernstein';
+
+                    % Extraction operator
+                    Ce = this.extractionOperator;
+
+                    % Basis functions
+                    N = Ce * Bernstein;
+                    N = N(edgLocIds);
+                    N = N';
                     
-                    % Element parametric coordinates
-                    xi = this.shape.parentToParametricSpace(Span,r);
-            
-                    % Edge d.o.f. shape functions matrix
-                    N = this.shape.NmtxEdge(xi,degree,knotVector,weights);
-                    
-                    % Jacobian parent to parametric space
-                    J1 = this.JmtxEdgeParentToParametric(Span);
-                    detJ1 = J1(1);
-                    
-                    % Jacobian parametric to physical space
-                    J2 = this.JmtxEdge(edgLocIds,degree,knotVector,weights,xi);
-                    detJ2 = sqrt(J2(1)*J2(1) + J2(2)*J2(2));
+                    % Jacobian
+                    J = this.JmtxEdge(edgLocIds,surface.degreeXi,surface.degreeEta,direc,xi,eta);
+                    detJ = sqrt(J(1)*J(1) + J(2)*J(2));
                     
                     % Plate Hole Analytical solution
-                    coordCtrlPts = this.shape.carCoord(edgLocIds,:);
-                    X = N * coordCtrlPts;
-                    
-                    x = X(1,1);
-                    y = X(1,2);
-
-                    a = 1;
-                    r = sqrt(x*x + y*y);
-                    theta = atan(y/x);
-
-                    c2t = cos(2*theta);
-                    c4t = cos(4*theta);
-                    s2t = sin(2*theta);
-                    s4t = sin(4*theta);
-                    fac1 = (a/r)^2;
-                    fac2 = fac1*fac1;
-                    
-                    exact_stress(1) = (1-fac1*(1.5*c2t+c4t)+1.5*fac2*c4t);
-                    exact_stress(2) = (-fac1*(0.5*c2t-c4t)-1.5*fac2*c4t);
-                    exact_stress(3) = (-fac1*(0.5*s2t+s4t)+1.5*fac2*s4t);
-                    
-                    p_analytical = zeros(2,1);
-                    if x >= -4.001 && x <= -3.999
-                        p_analytical(1) = exact_stress(1) * p(1) * (-10);
-                        p_analytical(2) = exact_stress(3) * p(2) * (-10);
-                    elseif y >= 3.999 && y<= 4.001
-                        p_analytical(1) = exact_stress(3) * p(1) * (10);
-                        p_analytical(2) = exact_stress(2) * p(2) * (10);
-                    end
+%                     coordCtrlPts = this.shape.carCoord(edgLocIds,:);
+%                     X = N * coordCtrlPts;
+%                     
+%                     x = X(1,1);
+%                     y = X(1,2);
+% 
+%                     a = 1;
+%                     r = sqrt(x*x + y*y);
+%                     theta = atan(y/x);
+% 
+%                     c2t = cos(2*theta);
+%                     c4t = cos(4*theta);
+%                     s2t = sin(2*theta);
+%                     s4t = sin(4*theta);
+%                     fac1 = (a/r)^2;
+%                     fac2 = fac1*fac1;
+%                     
+%                     exact_stress(1) = (1-fac1*(1.5*c2t+c4t)+1.5*fac2*c4t);
+%                     exact_stress(2) = (-fac1*(0.5*c2t-c4t)-1.5*fac2*c4t);
+%                     exact_stress(3) = (-fac1*(0.5*s2t+s4t)+1.5*fac2*s4t);
+%                     
+%                     p_analytical = zeros(2,1);
+%                     if x >= -4.001 && x <= -3.999
+%                         p_analytical(1) = exact_stress(1) * p(1) * (-10);
+%                         p_analytical(2) = exact_stress(3) * p(2) * (-10);
+%                     elseif y >= 3.999 && y<= 4.001
+%                         p_analytical(1) = exact_stress(3) * p(1) * (10);
+%                         p_analytical(2) = exact_stress(2) * p(2) * (10);
+%                     end
                     
                     % Accumulate Gauss point contributions
                     m = 0;
                     for j = 1:nedgen
                         for k = 1:ndof
                             m = m + 1;
-%                             Fedge(m) = Fedge(m) + w(i) * N(j) * p(k) * detJ1 * detJ2;
-                            Fedge(m) = Fedge(m) + w(i) * N(j) * p_analytical(k) * detJ1 * detJ2;
+                            Fedge(m) = Fedge(m) + w(i) * N(j) * p(k) * detJ;
+%                             Fedge(m) = Fedge(m) + w(i) * N(j) * p_analytical(k) * detJ;
                         end
                     end
                 end
@@ -658,16 +655,9 @@ classdef Element_Isogeometric < fem.Element
             % Cartesian coordinates
             X = this.shape.carCoord;
             
-            % Surface properties
+            % Polynomial orders
             p = surface.degreeXi;
             q = surface.degreeEta;
-            knotVectorXi = surface.knotVectorXi;
-            knotVectorEta = surface.knotVectorEta;
-            weights = surface.weights;
-            
-            % Element knot spans
-            xiSpan  = this.knotSpanXi;
-            etaSpan = this.knotSpanEta;
             
             % Material constituive matrix
             C = this.anm.Cmtx(this);
@@ -676,23 +666,37 @@ classdef Element_Isogeometric < fem.Element
             for i = 1:ngp
                 
                 % Parent coordinates
-                r = gp(1,i);
-                s = gp(2,i);
+                xi = gp(1,i);
+                eta = gp(2,i);
+                
+               % Bernstein polynomials
+                Bernstein = this.shape.Mmtx(xi,eta,p,q);
+                Bernstein = Bernstein';
+                
+                % Weight vector
+                ctrlpts = this.shape.nodes;
+                weights = arrayfun(@(x) x.weight, ctrlpts);
 
-                % Element parametric coordinates
-                xi  = this.shape.parentToParametricSpace(xiSpan,r);
-                eta = this.shape.parentToParametricSpace(etaSpan,s);
+                % Diagonal weight matrix
+                W = diag(weights);
+                
+                % Extraction operator
+                Ce = this.extractionOperator;
+
+                % Weight function
+                weightsb = Ce' * weights;
+                Wfunc = weightsb' * Bernstein;
                 
                 % Basis functions
-                R = this.shape.Mmtx(xi,eta,p,q,knotVectorXi,knotVectorEta,weights);
+                R = 1/Wfunc * W * Ce * Bernstein;
                 
                 % Gradient matrix 
-                [J,Rders] = this.JmtxDomain(surface,xi,eta);
+                [J,Rders] = this.JmtxDomain(p,q,xi,eta);
                 B = this.BmtxElem(J,Rders,xi,eta);
                 
                 % Gauss point stress components and cartesian coordinates
                 dvar(:,i) = this.anm.pointDerivedVar(C,B,u);
-                gpc(:,i) = R * X;
+                gpc(:,i) = R' * X;
             end
         end
     end

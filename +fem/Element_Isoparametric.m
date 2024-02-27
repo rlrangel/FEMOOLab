@@ -421,12 +421,44 @@ classdef Element_Isoparametric < fem.Element
                     J = this.JmtxEdge(edgLocIds,r);
                     detJ = sqrt(J(1)*J(1) + J(2)*J(2));
                     
+                    % Plate Hole Analytical solution
+                    coordCtrlPts = this.shape.carCoord(edgLocIds,:);
+                    X = N * coordCtrlPts;
+                    
+                    x = X(1,1);
+                    y = X(1,2);
+
+                    a = 1;
+                    r = sqrt(x*x + y*y);
+                    theta = atan(y/x);
+
+                    c2t = cos(2*theta);
+                    c4t = cos(4*theta);
+                    s2t = sin(2*theta);
+                    s4t = sin(4*theta);
+                    fac1 = (a/r)^2;
+                    fac2 = fac1*fac1;
+                    
+                    exact_stress(1) = (1-fac1*(1.5*c2t+c4t)+1.5*fac2*c4t);
+                    exact_stress(2) = (-fac1*(0.5*c2t-c4t)-1.5*fac2*c4t);
+                    exact_stress(3) = (-fac1*(0.5*s2t+s4t)+1.5*fac2*s4t);
+                    
+                    p_analytical = zeros(2,1);
+                    if x >= -4.001 && x <= -3.999
+                        p_analytical(1) = exact_stress(1) * p(1) * (-10);
+                        p_analytical(2) = exact_stress(3) * p(2) * (-10);
+                    elseif y >= 3.999 && y<= 4.001
+                        p_analytical(1) = exact_stress(3) * p(1) * (10);
+                        p_analytical(2) = exact_stress(2) * p(2) * (10);
+                    end
+                    
                     % Accumulate Gauss point contributions
                     m = 0;
                     for j = 1:nedgen
                         for k = 1:ndof
                             m = m + 1;
-                            Fedge(m) = Fedge(m) + w(i) * N(j) * p(k) * detJ;
+                            Fedge(m) = Fedge(m) + w(i) * N(j) * p_analytical(k) * detJ;
+%                             Fedge(m) = Fedge(m) + w(i) * N(j) * p(k) * detJ;
                         end
                     end
                 end

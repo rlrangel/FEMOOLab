@@ -16,13 +16,13 @@
 % For thermal problems, these properties are scalars (temperature d.o.f.).
 %
 %% Class definition
-%
-classdef Node_Isogeometric < fem.Node
+
+classdef Node_Isogeometric_Bezier_Extraction < fem.Node
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % General properties
         weight double                  = double.empty;                     % vector of weights
-        elems fem.Element_Isogeometric = fem.Element_Isogeometric.empty; % vector of objects of Element_Isogeometric class (incident elements)
+        elems fem.Element_Isogeometric_Bezier_Extraction = fem.Element_Isogeometric_Bezier_Extraction.empty; % vector of objects of Element_Isogeometric_Bezier_Extraction class (incident elements)
     end
 
     %% Constructor method

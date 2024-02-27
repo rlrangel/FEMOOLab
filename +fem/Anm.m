@@ -40,6 +40,7 @@ classdef Anm < handle
         % Analysis method
         ISOPARAMETRIC = int32(1);
         ISOGEOMETRIC  = int32(2);
+        ISOGEOMETRIC_BEZIER_EXTRACTION = int32(3);
     end
     
     %% Flags for types of responses
