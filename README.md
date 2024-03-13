@@ -32,8 +32,8 @@ To cite this repository, you can use the metadata from [this file][citation_link
 
 ## Authorship
 
-- **Rafael Rangel**^(1,2) (<rafaelrangel@tecgraf.puc-rio.br>)
-- **Luiz Fernando Martha**^(1,2) (<lfm@tecgraf.puc-rio.br>)
+- **Rafael Rangel**<sup>(1,2)</sup> (<rafaelrangel@tecgraf.puc-rio.br>)
+- **Luiz Fernando Martha**<sup>(1,2)</sup> (<lfm@tecgraf.puc-rio.br>)
 
 1. Pontifical Catholic University of Rio de Janeiro (PUC-Rio) -
 [Department of Civil and Environmental Engineering][civil_website]
@@ -50,5 +50,5 @@ No liability and warranty are provided.
 [contribute_link]:  https://github.com/rlrangel/FEMOOLab/blob/master/CONTRIBUTING.md
 [citation_link]:    https://github.com/rlrangel/FEMOOLab/blob/master/CITATION.cff
 [mit_license_link]: https://choosealicense.com/licenses/mit/
-[civil_website]:    https://bananastudio.com.br/civil/web/
+[civil_website]:    https://www.civ.puc-rio.br/en/
 [tecgraf_website]:  https://www.tecgraf.puc-rio.br/
