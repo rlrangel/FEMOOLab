@@ -7,7 +7,9 @@ authors:
     given-names: Rafael L.
   - family-names: Martha
     given-names: Luiz F.
-version: 1.0.0
-date-released: "2024-03-13"
+  - family-names: Peixoto
+    given-names: João C.
+version: 2.0.0
+date-released: "2024-03-14"
 license: MIT
 repository-code: "https://github.com/rlrangel/FEMOOLab"

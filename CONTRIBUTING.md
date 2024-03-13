@@ -17,7 +17,7 @@ Alternatively, you can contact the [authors][authors_link] by email.
 
 ## Implementations
 
-It includes implementing a new feature, change an existing one, or fix a bug.
+It includes implementing a new feature, changing an existing one, or fixing a bug.
 
 To modify the source code or files, create a [new branch][new_branch_link] from the master branch, and work on that branch to make the modifications.
 

@@ -98,14 +98,15 @@ To cite this repository, you can use the metadata from [this file][citation_link
 
 ## Authorship
 
-- **Rafael Rangel**<sup>1,2</sup> (<rafaelrangel@tecgraf.puc-rio.br>)
-- **Luiz Fernando Martha**<sup>1,2</sup> (<lfm@tecgraf.puc-rio.br>)
+- **Rafael Rangel**<sup>1</sup> (<rrangel@cimne.upc.edu>)
+- **Luiz Fernando Martha**<sup>2,3</sup> (<lfm@tecgraf.puc-rio.br>)
+- **João Carlos Peixoto**<sup>2,3</sup> (<aaaaaaaa@tecgraf.puc-rio.br>)
 
-<sup>1</sup> Pontifical Catholic University of Rio de Janeiro (PUC-Rio) -
-[Department of Civil and Environmental Engineering][civil_website]
+<sup>1</sup> International Center for Numerical Methods in Engineering ([CIMNE][cimne_website])
 
-<sup>2</sup> Tecgraf Institute of Technical-Scientific Software Development of PUC-Rio
-([Tecgraf/PUC-Rio][tecgraf_website])
+<sup>2</sup> Pontifical Catholic University of Rio de Janeiro (PUC-Rio) - [Department of Civil and Environmental Engineering][civil_website]
+
+<sup>3</sup> Tecgraf Institute of Technical-Scientific Software Development of PUC-Rio ([Tecgraf/PUC-Rio][tecgraf_website])
 
 ## License
 
@@ -115,11 +116,12 @@ No liability and warranty are provided.
 
 [matlab_website]:   https://www.mathworks.com/
 [nf_link]:          https://web.tecgraf.puc-rio.br/neutralfile
-[main_file_link]:   https://github.com/rlrangel/FEMOOLab/blob/master/main.m
+[main_file_link]:   https://github.com/rlrangel/FEMOOLab/blob/master/src/main.m
 [src_folder_link]:  https://github.com/rlrangel/FEMOOLab/tree/master/src
-[examples_link]:    https://github.com/rlrangel/FEMOOLab/tree/master/models
+[examples_link]:    https://github.com/rlrangel/FEMOOLab/tree/master/examples
 [contribute_link]:  https://github.com/rlrangel/FEMOOLab/blob/master/CONTRIBUTING.md
 [citation_link]:    https://github.com/rlrangel/FEMOOLab/blob/master/CITATION.cff
 [mit_license_link]: https://choosealicense.com/licenses/mit/
+[cimne_website]:    https://www.cimne.com/
 [civil_website]:    https://www.civ.puc-rio.br/en/
 [tecgraf_website]:  https://www.tecgraf.puc-rio.br/
