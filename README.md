@@ -35,9 +35,9 @@ FEMOOLab is a MATLAB program for performing FEM-based numerical simulations, imp
 The program solves 2D steady-state and transient problems of
 structural analysis (linear-elasticity) and
 thermal analysis (conductive and convective heat transfer)
-with isoparametric Finite Element formulations.
+with isoparametric finite element formulations.
 
-The available **model types** are:
+The available **analysis model types** are:
 - Structural plane stress
 - Structural plane strain
 - Structural axisymmetric
