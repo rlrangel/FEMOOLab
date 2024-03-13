@@ -32,15 +32,32 @@ FEMOOLab is a MATLAB program for performing FEM-based numerical simulations, imp
 
 ## Main Features
 
+The program solves 2D steady-state and transient problems of
+structural analysis (linear-elasticity) and
+thermal analysis (conductive and convective heat transfer)
+with isoparametric Finite Element formulations.
 
+The available **model types** are:
+- Structural plane stress
+- Structural plane strain
+- Structural axisymmetric
+- Structural thick (mindlin) plate
+- Thermal plane conduction
+- Thermal axisymmetric conduction
+- Thermal plane convection-diffusion
+
+The available **element types** are:
+- T3: Linear planar triangular isoparametric element with 3 nodes and Lagrangean interpolation
+- Q4: Linear planar quadrilateral isoparametric element with 4 nodes and Lagrangean interpolation
+- T6: Quadratic planar triangular isoparametric element with 6 nodes and Lagrangean interpolation
+- Q8: Quadratic planar quadrilateral isoparametric element with 8 nodes and Serendipity interpolation
 
 ## Implementation Aspects
 
 FEMOOLab is fully written in the [MATLAB][matlab_website] programming language,
 and adopts the Object Oriented Programming (OOP) paradigm to offer modularity and extensibility.
 
-The source code can run in any operating system where MATLAB can be installed
-(the program is tested for version 2019b of MATLAB).
+The source code can run in any operating system where MATLAB can be installed.
 
 ## Instructions
 
