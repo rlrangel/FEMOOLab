@@ -46,6 +46,8 @@ classdef Simulation < handle
                 full_name = strcat(file_path,string(file_names(i)));
                 [~,name,~] = fileparts(full_name);
                 
+                addpath ders/ders2d
+                addpath ders/ders1d
                 fprintf('Start of analysis: %s\n',name);
                 
                 % Get file id

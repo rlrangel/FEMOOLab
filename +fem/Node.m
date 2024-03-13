@@ -21,9 +21,8 @@ classdef Node < handle
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % General properties
-        id    int32       = int32.empty;        % identification number
-        coord double      = double.empty;       % vector of coordinates in global system [X Y Z]
-        elems fem.Element = fem.Element.empty;  % vector of objects of Element class (incident elements)
+        id    int32                     = int32.empty;                     % identification number
+        coord double                    = double.empty;                    % vector of coordinates in global system [X Y Z]
         
         % Boundary conditions
         fixdDOF   logical = logical.empty;      % vector of flags for fixed d.o.f.'s (indicate essential boundary conditions)

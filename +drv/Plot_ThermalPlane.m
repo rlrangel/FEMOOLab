@@ -185,7 +185,7 @@ classdef Plot_ThermalPlane < drv.Plot
             if (mdl.res.pec)
                 figure(this.fig_pec);
                 if (isempty(mdl.res.maxNen))
-                    maxNen = mdl.maxNumElemNodes();
+                    maxNen = mdl.maxNumElemExtNodes();
                 else
                     maxNen = mdl.res.maxNen;
                 end
@@ -269,7 +269,7 @@ classdef Plot_ThermalPlane < drv.Plot
             if (mdl.res.pec)
                 figure(this.fig_pec);
                 if (isempty(mdl.res.maxNen))
-                    maxNen = mdl.maxNumElemNodes();
+                    maxNen = mdl.maxNumElemExtNodes();
                 else
                     maxNen = mdl.res.maxNen;
                 end
@@ -288,7 +288,7 @@ classdef Plot_ThermalPlane < drv.Plot
                 
                 % Create arrays with data to be ploted in all steps
                 if (isempty(mdl.res.maxNen))
-                    maxNen = mdl.maxNumElemNodes();
+                    maxNen = mdl.maxNumElemExtNodes();
                 else
                     maxNen = mdl.res.maxNen;
                 end

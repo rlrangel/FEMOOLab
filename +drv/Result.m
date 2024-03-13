@@ -166,6 +166,12 @@ classdef Result < handle
         fmz_gp                double = double.empty; % vector of gauss heat flux module z components
         
         % Structural analysis stresses extrapolated to element nodes
+        dx_elemextrap         double = double.empty; % displacements x element node extrap. array
+        dx_elemextrap_min     double = double.empty; % min. displacement x element node extrap. array
+        dx_elemextrap_max     double = double.empty; % max. displacement x element node extrap. array
+        dy_elemextrap         double = double.empty; % displacements y element node extrap. array
+        dy_elemextrap_min     double = double.empty; % min. displacement y element node extrap. array
+        dy_elemextrap_max     double = double.empty; % max. displacement y element node extrap. array
         sxx_elemextrap        double = double.empty; % sigma x element node extrap. stress array
         sxx_elemextrap_min    double = double.empty; % sigma x element node extrap. min. stress
         sxx_elemextrap_max    double = double.empty; % sigma x element node extrap. max. stress
@@ -238,6 +244,12 @@ classdef Result < handle
         fm_elemextrap_max     double = double.empty; % flux module element node extrap. max. value
         
         % Structural analysis stresses smoothed at nodes
+        dx_nodeextrap         double = double.empty; % displacements x extrap. node smoothed array
+        dx_nodeextrap_min     double = double.empty; % min. displacement x extrap. node smoothed array
+        dx_nodeextrap_max     double = double.empty; % max. displacement x extrap. node smoothed array
+        dy_nodeextrap         double = double.empty; % displacements y extrap. node smoothed array
+        dy_nodeextrap_min     double = double.empty; % min. displacement y extrap. node smoothed array
+        dy_nodeextrap_max     double = double.empty; % max. displacement y extrap. node smoothed array
         sxx_nodeextrap        double = double.empty; % sigma x extrap. node smoothed stress array
         sxx_nodeextrap_min    double = double.empty; % sigma x extrap. node smoothed min. stress
         sxx_nodeextrap_max    double = double.empty; % sigma x extrap. node smoothed max. stress
@@ -325,7 +337,7 @@ classdef Result < handle
         function initPosResults(this,mdl)
             % Get maximum number of Gauss points and nodes of all elements
             this.maxGPts = mdl.maxGaussDerivedVarNpts();
-            this.maxNen  = mdl.maxNumElemNodes();
+            this.maxNen  = mdl.maxNumElemExtNodes();
             
             % Initialize arrays of active results
             this.ngp  = zeros(mdl.nel,1);
@@ -333,133 +345,153 @@ classdef Result < handle
             this.y_gp = zeros(this.maxGPts*mdl.nel,1);
             this.z_gp = zeros(this.maxGPts*mdl.nel,1);
             
+            if (mdl.anm.DISPL_X)
+                this.dx_elemextrap = zeros(this.maxNen,mdl.nel);
+                this.dx_nodeextrap = zeros(mdl.nep,1);
+            end
+            if (mdl.anm.DISPL_Y)
+                this.dy_elemextrap = zeros(this.maxNen,mdl.nel);
+                this.dy_nodeextrap = zeros(mdl.nep,1);
+            end
             if (mdl.anm.SIGMA_XX)
                 this.sxx_gp         = zeros(this.maxGPts,mdl.nel);
                 this.sxx_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.sxx_nodeextrap = zeros(mdl.nnp,1);
+                this.sxx_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.SIGMA_YY)
                 this.syy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.syy_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.syy_nodeextrap = zeros(mdl.nnp,1);
+                this.syy_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.SIGMA_ZZ)
                 this.szz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.szz_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.szz_nodeextrap = zeros(mdl.nnp,1);
+                this.szz_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.TAU_XY)
                 this.txy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.txy_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.txy_nodeextrap = zeros(mdl.nnp,1);
+                this.txy_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.TAU_XZ)
                 this.txz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.txz_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.txz_nodeextrap = zeros(mdl.nnp,1);
+                this.txz_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.TAU_YZ)
                 this.tyz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.tyz_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.tyz_nodeextrap = zeros(mdl.nnp,1);
+                this.tyz_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.SIGMA_1)
                 this.s1_gp         = zeros(this.maxGPts,mdl.nel);
                 this.s1x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s1y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s1_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.s1_nodeextrap = zeros(mdl.nnp,1);
+                this.s1_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.SIGMA_2)
                 this.s2_gp         = zeros(this.maxGPts,mdl.nel);
                 this.s2x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s2y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s2_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.s2_nodeextrap = zeros(mdl.nnp,1);
+                this.s2_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.SIGMA_3)
                 this.s3_gp         = zeros(this.maxGPts,mdl.nel);
                 this.s3x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s3y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.s3_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.s3_nodeextrap = zeros(mdl.nnp,1);
+                this.s3_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.TAU_MAX)
                 this.tmax_gp         = zeros(this.maxGPts,mdl.nel);
                 this.tmax_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.tmax_nodeextrap = zeros(mdl.nnp,1);
+                this.tmax_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.SHEAR_XZ)
                 this.qxz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.qxz_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.qxz_nodeextrap = zeros(mdl.nnp,1);
+                this.qxz_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.SHEAR_YZ)
                 this.qyz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.qyz_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.qyz_nodeextrap = zeros(mdl.nnp,1);
+                this.qyz_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.MOMENT_XX)
                 this.mxx_gp         = zeros(this.maxGPts,mdl.nel);
                 this.mxx_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.mxx_nodeextrap = zeros(mdl.nnp,1);
+                this.mxx_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.MOMENT_YY)
                 this.myy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.myy_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.myy_nodeextrap = zeros(mdl.nnp,1);
+                this.myy_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.MOMENT_XY)
                 this.mxy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.mxy_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.mxy_nodeextrap = zeros(mdl.nnp,1);
+                this.mxy_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.MOMENT_1)
                 this.m1_gp         = zeros(this.maxGPts,mdl.nel);
                 this.m1x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.m1y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.m1_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.m1_nodeextrap = zeros(mdl.nnp,1);
+                this.m1_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.MOMENT_2)
                 this.m2_gp         = zeros(this.maxGPts,mdl.nel);
                 this.m2x_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.m2y_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.m2_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.m2_nodeextrap = zeros(mdl.nnp,1);
+                this.m2_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.TORSION_MAX)
                 this.tormax_gp         = zeros(this.maxGPts,mdl.nel);
                 this.tormax_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.tormax_nodeextrap = zeros(mdl.nnp,1);
+                this.tormax_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.FLUX_XX)
                 this.fxx_gp         = zeros(this.maxGPts,mdl.nel);
                 this.fxx_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.fxx_nodeextrap = zeros(mdl.nnp,1);
+                this.fxx_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.FLUX_YY)
                 this.fyy_gp         = zeros(this.maxGPts,mdl.nel);
                 this.fyy_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.fyy_nodeextrap = zeros(mdl.nnp,1);
+                this.fyy_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.FLUX_ZZ)
                 this.fzz_gp         = zeros(this.maxGPts,mdl.nel);
                 this.fzz_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.fzz_nodeextrap = zeros(mdl.nnp,1);
+                this.fzz_nodeextrap = zeros(mdl.nep,1);
             end
             if (mdl.anm.FLUX_MOD)
                 this.fm_gp         = zeros(this.maxGPts,mdl.nel);
                 this.fmx_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.fmy_gp        = zeros(this.maxGPts*mdl.nel,1);
                 this.fm_elemextrap = zeros(this.maxNen,mdl.nel);
-                this.fm_nodeextrap = zeros(mdl.nnp,1);
+                this.fm_nodeextrap = zeros(mdl.nep,1);
             end
         end
         
         %------------------------------------------------------------------
         % Compute minimum and maximum values of obtained results.
         function setMinMaxValues(this,mdl)
+            if (mdl.anm.DISPL_X)
+                this.dx_elemextrap_min = min(min(this.dx_elemextrap));
+                this.dx_elemextrap_max = max(max(this.dx_elemextrap));
+                this.dx_nodeextrap_min = min(min(this.dx_nodeextrap));
+                this.dx_nodeextrap_max = max(max(this.dx_nodeextrap));
+            end
+            if (mdl.anm.DISPL_Y)
+                this.dy_elemextrap_min = min(min(this.dy_elemextrap));
+                this.dy_elemextrap_max = max(max(this.dy_elemextrap));
+                this.dy_nodeextrap_min = min(min(this.dy_nodeextrap));
+                this.dy_nodeextrap_max = max(max(this.dy_nodeextrap));
+            end
             if (mdl.anm.SIGMA_XX)
                 this.sxx_gp_min         = min(min(this.sxx_gp));
                 this.sxx_gp_max         = max(max(this.sxx_gp));

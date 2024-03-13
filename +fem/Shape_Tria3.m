@@ -24,27 +24,28 @@ classdef Shape_Tria3 < fem.Shape
     methods
         %------------------------------------------------------------------
         function this = Shape_Tria3(nodes)
-            this = this@fem.Shape(fem.Shape.TRIA3,2,3);
+            this = this@fem.Shape(fem.Shape.TRIA3,2,3,3);
+            this.nep = this.nen;
             
             if (nargin > 0)
                 this.nodes = nodes;
                 
                 % Cartesian nodal coordiantes matrix [X Y]
-                this.carCoord = [ nodes(1).coord(1) nodes(1).coord(2);
-                                  nodes(2).coord(1) nodes(2).coord(2);
-                                  nodes(3).coord(1) nodes(3).coord(2) ];
+                this.carCoord = [nodes(1).coord(1) nodes(1).coord(2);
+                                 nodes(2).coord(1) nodes(2).coord(2);
+                                 nodes(3).coord(1) nodes(3).coord(2)];
                 
                 % Parametric nodal coordinates matrix [r s]
-                this.parCoord = [ 0  0;
-                                  1  0;
-                                  0  1 ];
+                this.parCoord = [0  0;
+                                 1  0;
+                                 0  1];
                 
                 % Vector of local node ids in ccw order
-                this.ccwLocalNodeIds = [ 1  2  3 ];
+                this.ccwLocalExtNodeIds = [1  2  3];
                 
                 % Vector of global node ids in ccw order
-                this.ccwNodeIds = ...
-                [ nodes(1).id  nodes(2).id  nodes(3).id ];
+                this.ccwExtNodeIds = ...
+                [nodes(1).id  nodes(2).id  nodes(3).id];
                 
                 % Area
                 x = this.carCoord(:,1);
@@ -60,6 +61,11 @@ classdef Shape_Tria3 < fem.Shape
     %% Public methods
     % Implementation of the abstract methods declared in super-class Shape
     methods
+        %------------------------------------------------------------------
+        function setExtNodesCoord(this)
+            this.extCarCoord = this.carCoord;
+        end
+        
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.

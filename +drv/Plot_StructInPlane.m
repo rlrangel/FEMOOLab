@@ -51,16 +51,10 @@ classdef Plot_StructInPlane < drv.Plot
             
             % Deformed configuration
             if (mdl.res.deform)
-                % Create nodal displacement response data
-                udispl     = mdl.res.U(mdl.ID(1,:));
-                vdispl     = mdl.res.U(mdl.ID(2,:));
-                udispl_min = min(udispl);
-                udispl_max = max(udispl);
-                vdispl_min = min(vdispl);
-                vdispl_max = max(vdispl);
+                res = mdl.res;
                 
                 % Compute deformed factor based on maximum displacement abs. value
-                max_displ = max([abs(udispl_min), abs(udispl_max), abs(vdispl_min), abs(vdispl_max)]);
+                max_displ = max([abs(res.dx_nodeextrap_min), abs(res.dx_nodeextrap_max), abs(res.dy_nodeextrap_min), abs(res.dy_nodeextrap_max)]);
                 min_plotsize = min(this.plot_xmax - this.plot_xmin, this.plot_ymax - this.plot_ymin);
                 
                 if (mdl.res.scl == 0)
@@ -207,13 +201,13 @@ classdef Plot_StructInPlane < drv.Plot
             
             if (mdl.res.dx)
                 figure(this.fig_dx);
-                contour = mdl.res.U(mdl.ID(1,:));
+                contour = mdl.res.dx_nodeextrap;
                 this.plotNodeContour2D(mdl,contour);
             end
             
             if (mdl.res.dy)
                 figure(this.fig_dy);
-                contour = mdl.res.U(mdl.ID(2,:));
+                contour = mdl.res.dy_nodeextrap;
                 this.plotNodeContour2D(mdl,contour);
             end
             
@@ -331,20 +325,20 @@ classdef Plot_StructInPlane < drv.Plot
         %------------------------------------------------------------------
         % Plot deformed mesh in active figure.
         function plotDeformMesh(this,mdl)
-            u = mdl.res.U(mdl.ID(1,:));
-            v = mdl.res.U(mdl.ID(2,:));
+            u = mdl.res.dx_nodeextrap;
+            v = mdl.res.dy_nodeextrap;
             for i = 1:mdl.nel
-                nen = mdl.elems(i).shape.nen;
-                XX = zeros(1,nen+1);
-                YY = zeros(1,nen+1);
-                for j = 1:nen
-                    node = mdl.elems(i).shape.ccwNodeIds(j);
+                nep = mdl.elems(i).shape.nep;
+                XX = zeros(1,nep+1);
+                YY = zeros(1,nep+1);
+                for j = 1:nep
+                    node = mdl.elems(i).shape.ccwExtNodeIds(j);
                     XX(j) = this.x_coord(node) + this.deform_fac*u(node);
                     YY(j) = this.y_coord(node) + this.deform_fac*v(node);
                 end
-                node1 = mdl.elems(i).shape.ccwNodeIds(1);
-                XX(nen+1) = this.x_coord(node1) + this.deform_fac*u(node1);
-                YY(nen+1) = this.y_coord(node1) + this.deform_fac*v(node1);
+                node1 = mdl.elems(i).shape.ccwExtNodeIds(1);
+                XX(nep+1) = this.x_coord(node1) + this.deform_fac*u(node1);
+                YY(nep+1) = this.y_coord(node1) + this.deform_fac*v(node1);
                 plot(XX,YY,this.color_deform);
                 hold on;
             end

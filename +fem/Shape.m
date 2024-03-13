@@ -26,43 +26,51 @@ classdef Shape < handle
         QUAD4 = int32(2);
         TRIA6 = int32(3);
         QUAD8 = int32(4);
+        ISOGe = int32(5);
     end
     
     %% Public properties
     properties (SetAccess = public, GetAccess = public)
         % General
-        type  int32  = int32.empty;                 % flag for type of shape
-        order int32  = int32.empty;                 % linear (1) or quadratic (2)
+        type  int32  = int32.empty; % flag for type of shape
+        order int32  = int32.empty; % linear (1) or quadratic (2)
         
         % Dimensions
-        dim   double = double.empty;                % dimension
-        size  double = double.empty;                % size (length, area, or volume)
-        Lchr  double = double.empty;                % characteristic length
+        dim   double = double.empty; % dimension
+        size  double = double.empty; % size (length, area, or volume)
+        Lchr  double = double.empty; % characteristic length
         
         % Coordinates
-        carCoord        double   = double.empty;    % matrix of cartesian nodal coordinates
-        parCoord        double   = double.empty;    % matrix of parametric nodal coordinates
+        carCoord     double = double.empty; % matrix of cartesian nodal coordinates
+        parCoord     double = double.empty; % matrix of parametric nodal coordinates
+        extCarCoord  double = double.empty; % matrix of cartesian coordinates of extrapolation points
         
-        % Nodes
-        nen             int32    = int32.empty;     % number of nodes
-        nodes           fem.Node = fem.Node.empty;  % vector of objects of Node class
-        ccwLocalNodeIds int32    = int32.empty;     % vector of local node ids in ccw order
-        ccwNodeIds      int32    = int32.empty;     % vector of global node ids in ccw order
+        % Nodes and extrapolation nodes
+        nen                int32       = int32.empty;       % number of nodes (isoparametric case) or associated control points (isogeometric case)
+        nodes                          = [];                % vector of objects of Node_Isoparametric class or Node_Isogeometric class
+        nep                int32       = int32.empty;       % number of extrapolation nodes
+        extNodes           fem.ExtNode = fem.ExtNode.empty; % vector of objects of Node class
+        ccwLocalExtNodeIds int32       = int32.empty;       % vector of local extrapolation nodes ids in ccw order
+        ccwExtNodeIds      int32       = int32.empty;       % vector of global extrapolation nodes ids in ccw order
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Shape(type,dim,nen)
+        function this = Shape(type,dim,nen,nep)
             this.type = type;
             this.dim  = dim;
             this.nen  = nen;
+            this.nep  = nep;
         end
     end
     
     %% Abstract methods
     % Declaration of abstract methods implemented in derived sub-classes.
     methods (Abstract)
+        %------------------------------------------------------------------
+        setExtNodesCoord(this);
+
         %------------------------------------------------------------------
         % Evaluate matrix of geometry shape functions at a given position in
         % parametric coordinates.
@@ -104,5 +112,6 @@ classdef Shape < handle
         % of this node is returned in the parameter mid. Otherwise, the
         % returned value of mid is zero.
         [valid,n1,n2,mid] = edgeLocalIds(this,corner1,corner2);
+
     end
 end

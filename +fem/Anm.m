@@ -36,6 +36,11 @@ classdef Anm < handle
         PLANE_CONDUCTION     = int32(5);
         AXISYM_CONDUCTION    = int32(6);
         CONVECTION_DIFFUSION = int32(7);
+        
+        % Analysis method
+        ISOPARAMETRIC = int32(1);
+        ISOGEOMETRIC  = int32(2);
+        ISOGEOMETRIC_BEZIER_EXTRACTION = int32(3);
     end
     
     %% Flags for types of responses
@@ -78,17 +83,20 @@ classdef Anm < handle
     properties (SetAccess = public, GetAccess = public)
         phys int32 = int32.empty;  % flag for type of physics
         type int32 = int32.empty;  % flag for type of analysis model
+        meth int32 = int32.empty;  % flag for analysis method (Isoparametric or Isogeometric)
         ndof int32 = int32.empty;  % number of d.o.f.'s per node
         ndvc int32 = int32.empty;  % number of derived variable components
         gla  int32 = int32.empty;  % gather vector (stores local displ. d.o.f. numbers of a node)
+        anls int32 = int32.empty;  % flag for analysis set
     end
     
     %% Constructor method
     methods
         %------------------------------------------------------------------
-        function this = Anm(phys,type,ndof,ndvc,gla)
+        function this = Anm(phys,type,meth,ndof,ndvc,gla)
             this.phys = phys;
             this.type = type;
+            this.meth = meth;
             this.ndof = ndof;
             this.ndvc = ndvc;
             this.gla  = gla;
