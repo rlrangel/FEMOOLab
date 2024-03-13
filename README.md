@@ -4,7 +4,7 @@
 
 [![Release][release-image]][release] [![License][license-image]][license] [![Contributing][contributing-image]][contributing]
 
-[release-image]: https://img.shields.io/badge/release-1.0.0-green.svg?style=flat
+[release-image]: https://img.shields.io/badge/release-2.0.0-green.svg?style=flat
 [release]: https://github.com/rlrangel/FEMOOLab/releases
 
 [license-image]: https://img.shields.io/badge/license-MIT-green.svg?style=flat
@@ -35,7 +35,7 @@ FEMOOLab is a MATLAB program for performing FEM-based numerical simulations, imp
 The program solves 2D steady-state and transient problems of
 structural analysis (linear-elasticity) and
 thermal analysis (conductive and convective heat transfer)
-with isoparametric finite element formulations.
+with isoparametric and isogeometric finite element formulations.
 
 The available **analysis model types** are:
 - Structural plane stress
@@ -74,7 +74,7 @@ Multiple input files can be selected to run simulations sequentially, as long as
 
 If the models and parameters are read correctly, the simulations are started and their progresses are printed in the MATLAB command window.
 
-Graphical results are plotted in MATLAB figure windows.
+The desired results options are selected in the [*main.m*][main_file_link] script file, and they are displayed in MATLAB figure windows after the simulation finishes.
 
 ### Testing
 
@@ -95,6 +95,9 @@ Please check the [contribution guidelines][contribute_link].
 ## How to Cite
 
 To cite this repository, you can use the metadata from [this file][citation_link].
+
+Alternatively, you can cite the following work:
+- J.C.L. Peixoto, R.L. Rangel, L.F. Martha. Isogeometric analysis with interactive modeling of multi-patches NURBS. *Proceedings of the XLIV Ibero-Latin-American Congress on Computational Methods in Engineering (CILAMCE 2023)*, ABMEC, Porto, Portugal, November 13-16, 2023.
 
 ## Authorship
 
