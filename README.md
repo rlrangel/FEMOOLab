@@ -63,7 +63,7 @@ The source code can run in any operating system where MATLAB can be installed.
 
 ### Input Files
 
-The program reads a file with Finite Element model data that follows Tecgraf's [neutral file][nf_link] format.
+The program reads a file with finite element model data that follows Tecgraf's [neutral file][nf_link] format.
 
 ### Running Simulations
 

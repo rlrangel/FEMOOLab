@@ -10,6 +10,7 @@
 % as long as they are located in the same folder.
 %
 %% Plotting Options
+%
 % Set result plotting options with flags (true or false):
 
 % Mesh labels:
