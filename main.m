@@ -1,73 +1,63 @@
-%% FEMOOLab - Finite Element Method Object-Oriented Laboratory
-%
-%% Instructions
-%
-% This is the main script file of the FEMOOLab program.
-%
-% To run a simulation, execute this script and select appropriate input files.
-%
-% Multiple files can be selected to run simulations sequentially,
-% as long as they are located in the same folder.
-%
-%% Plotting Options
-%
-% Set result plotting options with flags (true or false):
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% elasticity2D - FEM                                                    %
+% Main driver file.                                                     % 
+% This file contains MATLAB code of a program for linear-elastic,       %
+% displacement-based, two-dimensional, finite-element analysis for      %
+% solving a stress-distribution elasticity problem.                     % 
+% The program reads a file with FE model data, in a neutral format,     %
+% assembles a system of equations, solves the system and visualizes     %
+% the response data.                                                    %
+%                                                                       %
+% Author:                                                               %
+% Luiz Fernando Martha                                                  %
+% Pontifical Catholic University of Rio de Janeiro - PUC-Rio            %
+% Department of Civil Engineering and Tecgraf                           %
+%                                                                       %
+% Adapted from the program Heat2D                                       %
+% by Haim Waisman, Rensselaer Polytechnic Institute.                    %
+% Available in the the companion site (http://1coursefem.blogspot.com)  %
+% of the book by Fish, J. and Belytschko, T., A First Course in Finite  %
+% Elements - Chapter 12: Finite Element Programming with MATLAB, 2007.  %
+%                                                                       %
+% It is assumed that there is only one type of element and only one     %
+% type of gauss integration order in each finite element model.         %
+%                                                                       %
+% It is assumed that there is a single load case.                       %
+%                                                                       %
+% See global variables in file include_gbl_refs.m.                      %
+%                                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+clc;
+clear all;
+close all; 
 
-% Mesh labels:
-opt.eid    = false;  % Plot element numbers
-opt.nid    = false;  % Plot node numbers
-opt.gid    = false;  % Plot gauss points
+% Include global variables
+include_gblrefs;  
 
-% Mesh deformation:
-opt.deform = true;   % Plot deformed mesh
-opt.scl    = 0.0;    % Scale factor for deformed mesh (false or 0.0: scale automatically calculated)
+% Initialize constant global variables
+init_constants;  
 
-% Nodal results:
-opt.dx     = true;   % Plot contour of displacements in X direction
-opt.dy     = true;   % Plot contour of displacements in Y direction
-opt.dz     = true;   % Plot contour of displacements in Z directiont
-opt.rx     = true;   % Plot contour of rotations about X axis
-opt.ry     = true;   % Plot contour of rotations about Y axis
-opt.rz     = true;   % Plot contour of rotations about Z axis
-opt.temp   = true;   % Plot contour of temperature field
+% Preprocessing
+[K,F,D] = preProcessor;
 
-% Smoothing:
-opt.smooth = true;   % Smooth element results at common nodes
+% Assemble global stiffness matrix
+fprintf(1,'Assembling stiffness matrix...\n');
+for e = 1:nel
+ ke = elemStiffMtx(e);
+ K = drvAssembleMtx(K,e,ke);
+end
 
-% Element stress results:
-opt.sxx    = true;   % Plot contour of normal stresses in X direction
-opt.syy    = true;   % Plot contour of normal stresses in Y direction
-opt.szz    = true;   % Plot contour of normal stresses in Z direction
-opt.txy    = true;   % Plot contour of XY shear stresses
-opt.txz    = true;   % Plot contour of XZ shear stresses
-opt.tyz    = true;   % Plot contour of YZ shear stresses
-opt.s1     = true;   % Plot contour of principal stresses 1
-opt.s2     = true;   % Plot contour of principal stresses 2
-opt.s3     = true;   % Plot contour of principal stresses 3
-opt.taumax = true;   % Plot contour of maximum shear stresses
+% Assemble global forcing vector
+fprintf(1,'Assembling forcing vector...\n');
+F = drvPointLoads(F);    % initialize forcing vector with nodal point loads
+F = drvEdgeLoads(F);     % add edge (element side) loads to forcing vector
+F = drvAreaLoads(F);     % add area (element) loads to forcing vector
 
-% Element internal forces results:
-opt.qxz    = true;   % Plot contour of XZ shear force
-opt.qyz    = true;   % Plot contour of YZ shear force 
-opt.mxx    = true;   % Plot contour of moment about X direction
-opt.myy    = true;   % Plot contour of moment about Y direction
-opt.mxy    = true;   % Plot contour of torsion moment
-opt.m1     = true;   % Plot contour of principal moment 1
-opt.m2     = true;   % Plot contour of principal moment 2
-opt.tormax = true;   % Plot contour of maximum torsion
+% Partition and solve system of equations
+fprintf(1,'Solving system of equations...\n');
+[D,F] = drvSolveEqnSystem(neq,neqfree,K,F,D);
 
-% Element heat flux results:
-opt.fxx    = true;   % Plot contour of heat fluxes in X direction
-opt.fyy    = true;   % Plot contour of heat fluxes in Y direction
-opt.fzz    = true;   % Plot contour of heat fluxes in Z direction
-opt.fm     = true;   % Plot contour of heat flux module
+% Postprocessing
+posProcessor(D);
 
-% Element properties:
-opt.pec    = false;   % Plot contour of Peclet numbers
-
-% Other options:
-opt.tol    = 1e-5;   % Tolerance for cleaning small result values and differences
-
-%% Run Analysis
-close(findall(0,'Type','figure')); clearvars -except opt; clc; 
-drv.Simulation(opt);
+fprintf(1,'Finished.\n');
