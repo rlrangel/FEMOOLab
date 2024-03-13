@@ -32,13 +32,13 @@ To cite this repository, you can use the metadata from [this file][citation_link
 
 ## Authorship
 
-- **Rafael Rangel**<sup>(1,2)</sup> (<rafaelrangel@tecgraf.puc-rio.br>)
-- **Luiz Fernando Martha**<sup>(1,2)</sup> (<lfm@tecgraf.puc-rio.br>)
+- **Rafael Rangel**<sup>1,2</sup> (<rafaelrangel@tecgraf.puc-rio.br>)
+- **Luiz Fernando Martha**<sup>1,2</sup> (<lfm@tecgraf.puc-rio.br>)
 
-1. Pontifical Catholic University of Rio de Janeiro (PUC-Rio) -
+<sup>1</sup> Pontifical Catholic University of Rio de Janeiro (PUC-Rio) -
 [Department of Civil and Environmental Engineering][civil_website]
 
-2. Tecgraf Institute of Technical-Scientific Software Development of PUC-Rio
+<sup>2</sup> Tecgraf Institute of Technical-Scientific Software Development of PUC-Rio
 ([Tecgraf/PUC-Rio][tecgraf_website])
 
 ## License
