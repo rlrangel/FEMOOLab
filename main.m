@@ -1,15 +1,13 @@
 %% FEMOOLab - Finite Element Method Object-Oriented Laboratory
 %
-%% Description
+%% Instructions
 %
-% This is the main script file of FEMOOLab.
-% Run this script to select the input file with model and analysis data for
-% performing the simulation.
+% This is the main script file of the FEMOOLab program.
 %
-% Multiple files can be selected, by holding down the Shift or Ctrl key and
-% clicking on file names, to run the simulations sequentially.
+% To run a simulation, execute this script and select appropriate input files.
 %
-% For more information, check the <readme.html README> file.
+% Multiple files can be selected to run simulations sequentially,
+% as long as they are located in the same folder.
 %
 %% Plotting Options
 % Set result plotting options with flags (true or false):
