@@ -10,6 +10,6 @@ authors:
   - family-names: Peixoto
     given-names: João C.
 version: 2.0.0
-date-released: "2024-03-14"
+date-released: "2024-03-20"
 license: MIT
 repository-code: "https://github.com/rlrangel/FEMOOLab"
