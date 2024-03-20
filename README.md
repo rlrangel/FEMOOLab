@@ -103,7 +103,7 @@ Alternatively, you can cite the following work:
 
 - **Rafael Rangel**<sup>1</sup> (<rrangel@cimne.upc.edu>)
 - **Luiz Fernando Martha**<sup>2,3</sup> (<lfm@tecgraf.puc-rio.br>)
-- **João Carlos Peixoto**<sup>2,3</sup> (<user@tecgraf.puc-rio.br>)
+- **João Carlos Peixoto**<sup>2,3</sup> (<joaocpeixoto@tecgraf.puc-rio.br>)
 
 <sup>1</sup> International Center for Numerical Methods in Engineering ([CIMNE][cimne_website])
 
